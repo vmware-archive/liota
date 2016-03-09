@@ -42,7 +42,9 @@ from time import timezone
 
 from cloud_provider_base import CloudProvider
 from helix_protocol import HelixProtocol
+from liota.core.metric_handler import Metric
 from liota.utilities.utility import getUTCmillis
+
 
 log = logging.getLogger(__name__)
 
@@ -119,74 +121,8 @@ class Vrops(CloudProvider):
     def connect_soc(self, protocol, url, user_name, password):
         pass
 
-    def create_metric(self, gw, details, unit, value, sampling_interval_sec=10, report_interval_sec=30):
-        return self.Metric(gw, details, unit, sampling_interval_sec, report_interval_sec, value, self)
-
-
-    class Metric(object):
-        """ Sub-class defined in order to create the metric and publish data
-            after the defined report_interval_sec
-
-        """
-        def __init__(self, gw, details, unit, sampling_interval_sec, report_interval_sec, sample_function, vrops_object):
-            self.vrops_object = vrops_object
-            self.gw = gw
-            self.details = details
-            self.unit = unit
-            self.sampling_interval_sec = sampling_interval_sec
-            self.report_interval_sec = report_interval_sec
-            self.sample_function = sample_function
-            self.values = []
-            signal.signal(signal.SIGINT, signal.SIG_IGN)
-
-        def write_full(self, t, v):
-            self.values.append((t, v))
-
-        def write_map_values(self, v):
-            self.write_full(getUTCmillis(), v)
-
-        def start_collecting(self):
-            """ This function starts the thread in order to collect stats
-
-            """
-            if self.gw.res_uuid != None:
-                executor = threading.Thread(target=self.execute)
-                executor.start()
-                threading.Timer(self.report_interval_sec, self.report_data).start()
-
-        def execute(self):
-            try:
-                while True:
-                    log.debug("Collecting values for the resource {0} {1}".format(self.details, self.gw.res_name))
-                    self.args_required = len(inspect.getargspec(self.sample_function)[0])
-                    if self.args_required is not 0:
-                        self.cal_value = self.sample_function(1)
-                    else:
-                        self.cal_value = self.sample_function()
-                    log.debug("{0} Sample Value: {1}".format(self.details, self.cal_value))
-                    log.debug("Size of the list {0}".format(len(self.values)))
-                    self.write_map_values(self.cal_value)
-                    # Batch processing if required
-                    # if len(self.values) == 6:
-                    #    self.report_data()
-                    time.sleep(self.sampling_interval_sec)
-            except Exception:
-                log.exception("Error while collecting values for metrics.")
-
-        def report_data(self):
-            """ This function published the sample values onto the cloud_provider solution
-
-            """
-            threading.Timer(self.report_interval_sec, self.report_data).start()
-            log.info("Publishing values for the resource {0} {1}".format(self.details, self.gw.res_name))
-            if not self.values:
-                # No values measured since last report_data
-                return True
-            timestamps = [t for t, _ in self.values]
-            values = [v for _, v in self.values]
-            update = self.gw._report_data(self.vrops_object.con.next_id(), self.details, timestamps, values)
-            self.vrops_object.con.send(update)
-            self.values[:] = []
+    def create_metric(self, gw, details, unit, value, sampling_interval_sec=10, aggregation_size=6):
+        return Metric(gw, details, unit, sampling_interval_sec, aggregation_size, value, self)
 
     def subscribe(self):
         pass
