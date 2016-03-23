@@ -127,3 +127,4 @@ class WebSocket(TransportLayer):
       if self.ws is not None:
           self.ws.close()
       log.info("Connection closed, cleanup done")
+

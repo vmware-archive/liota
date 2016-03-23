@@ -1,3 +1,35 @@
+# -*- coding: utf-8 -*-
+# ----------------------------------------------------------------------------#
+#  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
+#                                                                             #
+#  Licensed under the BSD 2-Clause License (the “License”); you may not use   #
+#  this file except in compliance with the License.                           #
+#                                                                             #
+#  The BSD 2-Clause License                                                   #
+#                                                                             #
+#  Redistribution and use in source and binary forms, with or without         #
+#  modification, are permitted provided that the following conditions are met:#
+#                                                                             #
+#  - Redistributions of source code must retain the above copyright notice,   #
+#      this list of conditions and the following disclaimer.                  #
+#                                                                             #
+#  - Redistributions in binary form must reproduce the above copyright        #
+#      notice, this list of conditions and the following disclaimer in the    #
+#      documentation and/or other materials provided with the distribution.   #
+#                                                                             #
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"#
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE  #
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE #
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE  #
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR        #
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF       #
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS   #
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN    #
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)    #
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
+#  THE POSSIBILITY OF SUCH DAMAGE.                                            #
+# ----------------------------------------------------------------------------#
+
 from Queue import Queue, PriorityQueue, Full
 import heapq
 import inspect
@@ -160,8 +192,8 @@ def initialize():
 
 class Metric(object):
 
-        def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sample_function, vrops_object):
-            self.vrops_object = vrops_object
+        def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sample_function, data_center_component):
+            self.data_center_component = data_center_component
             self.gw = gw
             self.details = details
             self.unit = unit
@@ -198,9 +230,8 @@ class Metric(object):
             # TODO: Add a check to ensure that start_collecting for a metric is called only once by the client code
             initialize()
             global event_ds
-            if self.gw.res_uuid != None:
-                self.next_run_time = getUTCmillis() + (self.sampling_interval_sec * 1000)
-                event_ds.put_and_notify(self)
+            self.next_run_time = getUTCmillis() + (self.sampling_interval_sec * 1000)
+            event_ds.put_and_notify(self)
 
         def is_ready_to_send(self):
             log.debug("self.current_aggregation_size:" + str(self.current_aggregation_size))
@@ -220,13 +251,11 @@ class Metric(object):
             self.current_aggregation_size = self.current_aggregation_size + 1
 
         def send_data(self):
-            log.info("Publishing values for the resource {0} {1}".format(self.details, self.gw.res_name))
+            log.info("Publishing values {0} for the resource {1} {2}".format(self.values, self.details, self.gw.res_name))
             if not self.values:
                 # No values measured since last report_data
                 return True
-            timestamps = [t for t, _ in self.values]
-            values = [v for _, v in self.values]
-            update = self.gw._report_data(self.vrops_object.con.next_id(), self.details, timestamps, values)
-            self.vrops_object.con.send(update)
+            self.data_center_component.publish(self)
             self.values[:] = []
             self.current_aggregation_size = 0
+

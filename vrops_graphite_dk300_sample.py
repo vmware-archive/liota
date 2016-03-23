@@ -149,6 +149,7 @@ if __name__ == '__main__':
     # Sending data to an alternate data center component (e.g. data lake for analytics)
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
-    # graphite = Graphite(Socket(sampleProp.GraphiteIP, sampleProp.GraphitePort))
-    # content_metric = graphite.create_metric(gateway, sampleProp.GraphiteMetric, report_interval_sec=15, value=simulated_device)
-    # content_metric.start_collecting()
+    graphite = Graphite(Socket(sampleProp.GraphiteIP, sampleProp.GraphitePort))
+    content_metric = graphite.create_metric(gateway, sampleProp.GraphiteMetric, unit=None, sampling_interval_sec=10, aggregation_size=2, value=simulated_device)
+    content_metric.start_collecting()
+

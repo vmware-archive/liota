@@ -44,6 +44,10 @@ class TransportLayer:
            self.url = 'wss://' + url
         self.connect_soc()
 
+    @abstractmethod
+    def send(self, message):
+        pass
+
     def publish(self, message):
         pass
 
@@ -52,3 +56,4 @@ class TransportLayer:
 
     def receive(self, is_blocking=True):
         pass
+

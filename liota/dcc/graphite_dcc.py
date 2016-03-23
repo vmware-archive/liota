@@ -34,48 +34,23 @@ import logging
 import threading
 import time
 
-from cloud_provider_base import CloudProvider
+from liota.dcc.dcc_base import DataCenterComponent
 
 log = logging.getLogger(__name__)
 
-class Graphite(CloudProvider):
+class Graphite(DataCenterComponent):
 
     def __init__(self, socket_obj):
-        self.sock = socket_obj.sock
+        self.con = socket_obj
         pass
 
-    def create_metric(self, gw, details, value, report_interval_sec=10):
-        return self.Metric(gw, details, value, self, report_interval_sec)
-
-    # TO DO Move metric to one place
-    class Metric(object):
-        """ Sub-class defined in order to create the metric and publish data
-            after the defined report_interval_sec
-
-        """
-        def __init__(self, gw, details, sample_function, graphite_obj, report_interval_sec):
-            self.gw = gw
-            self.details = details
-            self.report_interval_sec = report_interval_sec
-            self.sample_function = sample_function
-            self.graphite_obj = graphite_obj
-            log.info("Metrics Created")
-
-        def start_collecting(self):
-            """ This function starts the thread in order to collect stats
-
-            """
-            message = '%s %s %d\n' % (self.details , self.sample_function(), int(time.time()))
-            if self.graphite_obj.sock is not None:
-                self.graphite_obj.sock.sendall(message)
-                log.info("Publishing value to Graphite DCC for the metric {0}".format(message))
-                threading.Timer(self.report_interval_sec, self.start_collecting).start()
-            else:
-                log.error("DCC Socket Exception")
-
-
-    def publish(self, sample):
-        pass
+    def publish(self, metric):
+        if self.con is not None:
+            for t,v in metric.values:
+                message = '%s %s %d\n' % (metric.details , v, t/1000) # Graphite expects time in seconds, not milliseconds. Hence, dividing by 1000
+                log.info("Sending message: {0}".format(message))
+                self.con.send(message)
 
     def subscribe(self):
         pass
+

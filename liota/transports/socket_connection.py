@@ -51,8 +51,13 @@ class Socket(TransportLayer):
         log.info("Creating Socket")
         try:
             self.sock.connect((self.carbon_server, self.carbon_port))
+            log.info("Socket Created")
         except Exception:
             log.exception("Socket connection cannot be established to Graphite DCC. Please check the firewall rules an try again.")
             self.sock.close()
             self.sock = None
+
+    def send(self, message):
+        if self.sock is not None:
+            self.sock.sendall(message)
 

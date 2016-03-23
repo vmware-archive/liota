@@ -31,11 +31,12 @@
 # ----------------------------------------------------------------------------#
 
 from abc import ABCMeta, abstractmethod
+from liota.core.metric_handler import Metric
 
 
-class CloudProvider:
+class DataCenterComponent:
     """ The base class in order to define the various functions
-        that are required for cloud provider solution
+        that are required for data center components
 
     """
     __metaclass__ = ABCMeta
@@ -44,9 +45,13 @@ class CloudProvider:
         pass
 
     @abstractmethod
-    def publish(self, sample):
+    def publish(self, metric):
         pass
 
     @abstractmethod
     def subscribe(self):
         pass
+
+    def create_metric(self, gw, details, unit, value, sampling_interval_sec=10, aggregation_size=6):
+        return Metric(gw, details, unit, sampling_interval_sec, aggregation_size, value, self)
+

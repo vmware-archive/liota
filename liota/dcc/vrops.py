@@ -40,7 +40,7 @@ import sys
 import threading
 from time import timezone
 
-from cloud_provider_base import CloudProvider
+from liota.dcc.dcc_base import DataCenterComponent
 from helix_protocol import HelixProtocol
 from liota.core.metric_handler import Metric
 from liota.utilities.utility import getUTCmillis
@@ -48,7 +48,7 @@ from liota.utilities.utility import getUTCmillis
 
 log = logging.getLogger(__name__)
 
-class Vrops(CloudProvider):
+class Vrops(DataCenterComponent):
     """ The implementation of vROPS cloud provider soultion
 
     """
@@ -121,15 +121,14 @@ class Vrops(CloudProvider):
     def connect_soc(self, protocol, url, user_name, password):
         pass
 
-    def create_metric(self, gw, details, unit, value, sampling_interval_sec=10, aggregation_size=6):
-        return Metric(gw, details, unit, sampling_interval_sec, aggregation_size, value, self)
-
     def subscribe(self):
         pass
 
-    # TO DO: To be implemented later if required
-    def publish(self, sample):
-        pass
+    def publish(self, metric):
+        timestamps = [t for t, _ in metric.values]
+        values = [v for _, v in metric.values]
+        message = metric.gw._report_data(self.con.next_id(), metric.details, timestamps, values)
+        self.con.send(message)
 
     def init_relations(self, gw):
       """ This function initializes all relations between gateway and it's children.
@@ -152,5 +151,4 @@ class Vrops(CloudProvider):
             "name": res_name
          }
       }
-
 
