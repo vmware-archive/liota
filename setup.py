@@ -31,7 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 # Get the long description from the README file
 with open('README.rst') as f:
@@ -40,7 +40,7 @@ with open('README.rst') as f:
 setup(
     name='liota',
     version='1.0',
-    packages = ['liota'],
+    packages = find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
 
@@ -73,7 +73,10 @@ setup(
     install_requires=['websocket-client', 'linux_metrics'],
 
     # 'data_file'(conf_files) at custom location
-    data_files=[('/etc/liota/example', ['example/vrops_graphite_dk300_sample.py', 'example/sampleProp.py']),
-                ('/etc/liota/conf', ['liota.conf']),
+    data_files=[('/etc/liota/example', ['example/vrops_graphite_simulated.py',
+                'example/vrops_graphite_dk300_sample.py',
+                'example/vrops_graphite_withTemp.py',
+                'example/sampleProp.py']),
+                ('/etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
                 ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt'])]
 )

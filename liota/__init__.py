@@ -36,17 +36,48 @@ import logging
 import logging.config
 import os
 import time
+import ConfigParser
+
+syswide_path = "/etc/liota/conf/"
+
+def read_log_cfg(path):
+    """ a multi-step search for the configuration file.
+    1. Local directory. ./liota.conf.
+    2. User's home directory (~user/liota.conf)
+    3. A standard system-wide directory (such as /etc/liota/conf/liota.conf)
+    4. A place named by an environment variable (LIOTA_CONF)
+    """
+    log_cfg = None
+    config = ConfigParser.RawConfigParser()
+    for loc in os.curdir, os.path.expanduser("~"), syswide_path, os.environ.get("LIOTA_CONF"):
+        if loc is None:
+            continue
+        path = os.path.join(loc,"liota.conf")
+        print path
+        try:
+            if config.read(path) != []:
+                # now use json file for logging settings
+                try:
+                    log_cfg = config.get('LOG_CFG', 'json_path')
+                    print log_cfg
+                    break
+                except ConfigParser.ParsingError, err:
+                    print 'Could not parse:', err
+            else:
+                raise IOError('Cannot open configuration file ' + path)
+        except IOError, err:
+            print 'Could not open:', err
+    return log_cfg
 
 def setup_logging(
-    default_path='liota/logging.json',
-    default_level=logging.INFO,
-    env_key='LOG_CFG'
+    default_path='../config/logging.json',
+    default_level=logging.WARNING,
 ):
     """Setup logging configuration
 
     """
     path = default_path
-    value = os.getenv(env_key, None)
+    value = read_log_cfg(syswide_path)
     if value:
         path = value
     if os.path.exists(path):

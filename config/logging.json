@@ -13,7 +13,7 @@
         "default_file_handler": {
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "simple",
-            "filename": "liota.log",
+            "filename": "/var/log/liota/liota.log",
             "maxBytes": 10485760,
             "backupCount": 20,
             "encoding": "utf8"
@@ -23,7 +23,7 @@
             "class": "logging.handlers.RotatingFileHandler",
             "level": "ERROR",
             "formatter": "simple",
-            "filename": "liota.errors.log",
+            "filename": "/var/log/liota/liota.errors.log",
             "maxBytes": 10485760,
             "backupCount": 20,
             "encoding": "utf8"
@@ -31,7 +31,7 @@
     },
 
     "root": {
-        "level": "INFO",
+        "level": "WARNING",
         "handlers": ["default_file_handler", "error_file_handler"]
     }
 }
