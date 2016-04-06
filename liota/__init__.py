@@ -37,54 +37,46 @@ import logging.config
 import os
 import time
 import ConfigParser
+from utilities.utility import systemUUID, findLiotaConfigFullPath
 
-syswide_path = "/etc/liota/conf/"
 
-def read_log_cfg(path):
-    """ a multi-step search for the configuration file.
-    1. Local directory. ./liota.conf.
-    2. User's home directory (~user/liota.conf)
-    3. A standard system-wide directory (such as /etc/liota/conf/liota.conf)
-    4. A place named by an environment variable (LIOTA_CONF)
-    """
-    log_cfg = None
-    config = ConfigParser.RawConfigParser()
-    for loc in os.curdir, os.path.expanduser("~"), syswide_path, os.environ.get("LIOTA_CONF"):
-        if loc is None:
-            continue
-        path = os.path.join(loc,"liota.conf")
-        print path
-        try:
-            if config.read(path) != []:
-                # now use json file for logging settings
-                try:
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                    print log_cfg
-                    break
-                except ConfigParser.ParsingError, err:
-                    print 'Could not parse:', err
-            else:
-                raise IOError('Cannot open configuration file ' + path)
-        except IOError, err:
-            print 'Could not open:', err
-    return log_cfg
-
-def setup_logging(
-    default_path='../config/logging.json',
-    default_level=logging.WARNING,
-):
+def setup_logging(default_level=logging.WARNING):
     """Setup logging configuration
 
     """
-    path = default_path
-    value = read_log_cfg(syswide_path)
-    if value:
-        path = value
-    if os.path.exists(path):
-        with open(path, 'rt') as f:
-            config = json.load(f)
-        logging.config.dictConfig(config)
+    log = logging.getLogger(__name__)
+    fullPath = findLiotaConfigFullPath().get_liota_fullpath()
+    if fullPath != '':
+          config = ConfigParser.RawConfigParser()
+          try:
+              if config.read(fullPath) != []:
+                  # now use json file for logging settings
+                  try:
+                      log_cfg = config.get('LOG_CFG', 'json_path')
+                  except ConfigParser.ParsingError, err:
+                      print 'Could not parse:', err
+              else:
+                  raise IOError('Cannot open configuration file ' + fullPath)
+          except IOError, err:
+              print 'Could not open:', err
+          if os.path.exists(log_cfg):
+              with open(log_cfg, 'rt') as f:
+                  config = json.load(f)
+              logging.config.dictConfig(config)
+              log.info('created logger with ' + log_cfg)
+          else:
+              # missing logging.json file 
+              logging.basicConfig(level=default_level)
+              log.warn('logging.json missing,created default logger with level = ' + str(default_level))
     else:
-        logging.basicConfig(level=default_level)
+          # missing config file
+          logging.basicConfig(level=default_level)
+          log.warn('liota.conf missing, created default logger with level = ' + str(default_level))        
 
 setup_logging()
+systemUUID()
+
+
+
+
+

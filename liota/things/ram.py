@@ -34,7 +34,7 @@ from liota.boards.gateway import Gateway
 from liota.boards.handlers import ObjectConfig
 from liota.utilities import utility
 from liota.utilities.utility import getUTCmillis
-from liota.utilities.utility import get_linx_version, get_uuid
+from liota.utilities.utility import get_linx_version, systemUUID
 
 
 class RAM(Gateway):
@@ -42,7 +42,7 @@ class RAM(Gateway):
 
     """
     def __init__(self, label, type, parent):
-        Gateway.__init__(self, '', '', '', get_uuid(label), label, None, parent, type, "RAM")
+        Gateway.__init__(self, '', '', '', systemUUID().get_uuid(label), label, None, parent, type, "RAM")
 
     def _configure_pins(self):
         pass
