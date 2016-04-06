@@ -70,7 +70,7 @@ setup(
     keywords='iot liota agent',
 
     # Installation requirement
-    install_requires=['websocket-client', 'linux_metrics'],
+    install_requires=['websocket-client', 'linux_metrics', 'netifaces'],
 
     # 'data_file'(conf_files) at custom location
     data_files=[('/etc/liota/example', ['example/vrops_graphite_simulated.py',
@@ -78,5 +78,6 @@ setup(
                 'example/vrops_graphite_withTemp.py',
                 'example/sampleProp.py']),
                 ('/etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
-                ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt'])]
+                ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
+		('/var/log/liota', [])]
 )
