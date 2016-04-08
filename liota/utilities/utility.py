@@ -71,7 +71,6 @@ class systemUUID:
 					macHash = m.hexdigest()
 					log.info('mac address for interface ' + ifaceName + ' mac=' +str(mac))
 					break
-				
 		else:
 			if platform.system() == 'Linux': # netifaces does not exist and this is a Linux variant
 				for ifaceName in ['eth0', 'eth1', 'wlan0']:
