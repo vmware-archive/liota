@@ -40,7 +40,7 @@ with open('README.rst') as f:
 setup(
     name='liota',
     version='1.0',
-    packages = find_packages(exclude=["*.json", "*.txt"]),
+    packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
 
@@ -61,6 +61,7 @@ setup(
         'Operating System :: POSIX :: Linux',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python :: 2.7',
+        # TO DO: Check for other python versions
         # 'Programming Language :: Python :: 3',
         # 'Programming Language :: Python :: 3.3',
         # 'Programming Language :: Python :: 3.4',
@@ -76,8 +77,8 @@ setup(
     data_files=[('/etc/liota/example', ['example/vrops_graphite_simulated.py',
                 'example/vrops_graphite_dk300_sample.py',
                 'example/vrops_graphite_withTemp.py',
-                'example/sampleProp.py']),
+                'example/sampleProp.conf']),
                 ('/etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
                 ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
-		('/var/log/liota', [])]
-)
+                ('/var/log/liota', [])]
+      )

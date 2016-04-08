@@ -1,30 +1,59 @@
-# getting values from properties
-import sampleProp
+# -*- coding: utf-8 -*-
+# ----------------------------------------------------------------------------#
+#  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
+#                                                                             #
+#  Licensed under the BSD 2-Clause License (the “License”); you may not use   #
+#  this file except in compliance with the License.                           #
+#                                                                             #
+#  The BSD 2-Clause License                                                   #
+#                                                                             #
+#  Redistribution and use in source and binary forms, with or without         #
+#  modification, are permitted provided that the following conditions are met:#
+#                                                                             #
+#  - Redistributions of source code must retain the above copyright notice,   #
+#      this list of conditions and the following disclaimer.                  #
+#                                                                             #
+#  - Redistributions in binary form must reproduce the above copyright        #
+#      notice, this list of conditions and the following disclaimer in the    #
+#      documentation and/or other materials provided with the distribution.   #
+#                                                                             #
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"#
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE  #
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE #
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE  #
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR        #
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF       #
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS   #
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN    #
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)    #
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
+#  THE POSSIBILITY OF SUCH DAMAGE.                                            #
+# ----------------------------------------------------------------------------#
 
 # some standard metrics for Linux systems
 from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
-import random
-
-# agent classes for different IoT gateways
 from liota.boards import gateway
 from liota.boards.gateway_dk300 import Dk300
-
-# agent classes for different data center components
 from liota.dcc.graphite_dcc import Graphite
 from liota.dcc.vrops import Vrops
+from liota.things.ram import RAM
+from liota.transports.socket_connection import Socket
+from liota.transports.web_socket import WebSocket
+import random
 
+from liota.things.TemperF1 import TemperF1
+from temper import TemperHandler
+
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
+
+# agent classes for different IoT gateways
+# agent classes for different data center components
 # agent classes for different kinds of of devices, 'Things', connected to the gw
 # we are showing here how to create a representation for a Thing in vROps but
 # using the notion of RAM (because we have no connected devies yet)
-from liota.things.ram import RAM
-from liota.things.TemperF1 import TemperF1
-
-#agent classes for different kinds of layer 4/5 connections from agent to DCC
-from liota.transports.socket_connection import Socket
-from liota.transports.web_socket import WebSocket
-
-from temper import TemperHandler
-
+# agent classes for different kinds of layer 4/5 connections from agent to DCC
 # -------User defined functions for getting the next value for a metric --------
 # usage of these shown below in main
 # semantics are that on each call the function returns the next available value
@@ -66,11 +95,11 @@ if __name__ == '__main__':
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
     # UID/PASS login for now. TOKEN-BASED authentication will be ready this week.
     # Note this is a secure websocket
-    vrops = Vrops(sampleProp.vROpsUID, sampleProp.vROpsPass, WebSocket(ip_address=sampleProp.WebSocketIP, port=None, secure="secure"))
+    vrops = Vrops(config['vROpsUID'], config['vROpsPass'], WebSocket(ip_address=config['WebSocketUrl'], secure="secure"))
 
     # create a gateway object encapsulating the particulars of a gateway/board
     # argument is the name of this gateway
-    gateway = Dk300(sampleProp.Gateway1Name)
+    gateway = Dk300(config['Gateway1Name'])
 
     # resister the gateway with the vrops instance
     # this call creates a representation (a Resource) in vrops for this gateway with the name given
@@ -79,7 +108,7 @@ if __name__ == '__main__':
     # these call set properties on the Resource representing the gateway in the vrops instance
     # properties are a key:value store
     # arguments are (key, value)
-    for item in sampleProp.Gateway1PropList:
+    for item in config['Gateway1PropList']:
      for key, value in item.items():
          gateway.set_properties(key, value)
 
@@ -112,9 +141,9 @@ if __name__ == '__main__':
     #        device name
     #        Read or Write
     #        another Resource in vrops of which the should be the child of a parent-child relationship among Resources
-    ram = RAM(sampleProp.Device1Name, 'Read', gateway)
+    ram = RAM(config['Device1Name'], 'Read', gateway)
     vrops.register(ram)
-    for item in sampleProp.Device1PropList:
+    for item in config['Device1PropList']:
      for key, value in item.items():
          ram.set_properties(key, value)
 
@@ -132,6 +161,6 @@ if __name__ == '__main__':
     # Sending data to an alternate data center component (e.g. data lake for analytics)
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
-    graphite = Graphite(Socket(sampleProp.GraphiteIP, sampleProp.GraphitePort))
-    content_metric = graphite.create_metric(gateway, sampleProp.GraphiteMetric, report_interval_sec=15, value=simulated_device)
+    graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
+    content_metric = graphite.create_metric(gateway, config['GraphiteMetric'], report_interval_sec=15, value=simulated_device)
     content_metric.start_collecting()

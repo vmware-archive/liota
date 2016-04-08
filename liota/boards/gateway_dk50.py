@@ -38,7 +38,7 @@ class Dk50(Gateway):
     # Basic implementation gateway DK50 Object
 
     def __init__(self, res_name):
-        Gateway.__init__(self, 'Intel', 'Galileo', '', res_name)
+        Gateway.__init__(self, 'Intel', 'Galileo-DK50', '', res_name)
 
 
     def _configure_pins(self):

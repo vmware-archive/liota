@@ -32,7 +32,6 @@
 
 class ObjectConfig(object):
    """ Configuration Struct used for Gateway, physical and virtual Inputs/Outputs.
-       Provides utility methods for formatting JSON messages.
 
    """
    def __init__(self, identifier, name, local_identifier=None,

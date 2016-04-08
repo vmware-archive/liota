@@ -83,3 +83,8 @@ ENV/
 
 # Spyder project settings
 .spyderproject
+
+# Development IDE
+.project
+.pydevproject
+.settings/

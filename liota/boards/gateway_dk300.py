@@ -30,10 +30,11 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+from liota.dcc.helix_protocol import getUTCmillis
+from liota.utilities.utility import get_linux_version, systemUUID
+
 from gateway import Gateway
 from handlers import ObjectConfig
-from liota.dcc.helix_protocol import getUTCmillis
-from liota.utilities.utility import get_linx_version, systemUUID
 
 
 class Dk300(Gateway):
@@ -42,7 +43,7 @@ class Dk300(Gateway):
     """
 
     def __init__(self, label):
-        Gateway.__init__(self, 'Intel', 'Galileo-DK300', get_linx_version(), systemUUID().get_uuid(label), label, None, None, None, "HelixGateway")
+        Gateway.__init__(self, 'Intel', 'Galileo-DK300', get_linux_version(), systemUUID().get_uuid(label), label, None, None, None, "HelixGateway")
 
     def _configure_pins(self):
         pass
@@ -60,10 +61,3 @@ class Dk300(Gateway):
 
     def set_properties(self, key, value):
         Gateway.set_properties(self, key, value)
-
-
-
-
-
-
-

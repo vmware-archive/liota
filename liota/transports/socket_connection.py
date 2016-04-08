@@ -44,7 +44,7 @@ class Socket(TransportLayer):
     def __init__(self, carbon_server, carbon_port):
         self.carbon_server = carbon_server
         self.carbon_port = carbon_port
-        self.connect_soc()
+        TransportLayer.__init__(self)
 
     def connect_soc(self):
         self.sock = socket.socket()

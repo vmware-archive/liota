@@ -30,11 +30,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-# getting values from properties
-import random
-
 from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
-
 from liota.boards import gateway
 from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.graphite_dcc import Graphite
@@ -42,8 +38,11 @@ from liota.dcc.vrops import Vrops
 from liota.things.ram import RAM
 from liota.transports.socket_connection import Socket
 from liota.transports.web_socket import WebSocket
-import sampleProp
+import random
 
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
 
 # some standard metrics for Linux systems
 # agent classes for different IoT gateways
@@ -87,11 +86,11 @@ if __name__ == '__main__':
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
     # UID/PASS login for now. TOKEN-BASED authentication will be ready this week.
     # Note this is a secure websocket
-    vrops = Vrops(sampleProp.vROpsUID, sampleProp.vROpsPass, WebSocket(ip_address=sampleProp.WebSocketIP, port=sampleProp.WebSocketPort, secure="secure"))
+    vrops = Vrops(config['vROpsUID'], config['vROpsPass'], WebSocket(url=config['WebSocketUrl'], secure="secure"))
 
     # create a gateway object encapsulating the particulars of a gateway/board
     # argument is the name of this gateway
-    gateway = Dk300(sampleProp.Gateway1Name)
+    gateway = Dk300(config['Gateway1Name'])
 
     # resister the gateway with the vrops instance
     # this call creates a representation (a Resource) in vrops for this gateway with the name given
@@ -100,7 +99,7 @@ if __name__ == '__main__':
     # these call set properties on the Resource representing the gateway in the vrops instance
     # properties are a key:value store
     # arguments are (key, value)
-    for item in sampleProp.Gateway1PropList:
+    for item in config['Gateway1PropList']:
      for key, value in item.items():
          gateway.set_properties(key, value)
 
@@ -133,9 +132,9 @@ if __name__ == '__main__':
     #        device name
     #        Read or Write
     #        another Resource in vrops of which the should be the child of a parent-child relationship among Resources
-    ram = RAM(sampleProp.Device1Name, 'Read', gateway)
+    ram = RAM(config['Device1Name'], 'Read', gateway)
     vrops.register(ram)
-    for item in sampleProp.Device1PropList:
+    for item in config['Device1PropList']:
         for key, value in item.items():
             ram.set_properties(key, value)
 
@@ -149,7 +148,7 @@ if __name__ == '__main__':
     # Sending data to an alternate data center component (e.g. data lake for analytics)
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
-    graphite = Graphite(Socket(sampleProp.GraphiteIP, sampleProp.GraphitePort))
-    content_metric = graphite.create_metric(gateway, sampleProp.GraphiteMetric, unit=None, sampling_interval_sec=10, aggregation_size=2, value=simulated_device)
+    graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
+    content_metric = graphite.create_metric(gateway, config['GraphiteMetric'], unit=None, sampling_interval_sec=10, aggregation_size=2, value=simulated_device)
     content_metric.start_collecting()
 

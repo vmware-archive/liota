@@ -49,12 +49,13 @@ class Mqtt(TransportLayer):
         log.debug("mid: {0}".format(str(mid)))
 
     def __init__(self, url, port):
+        self.url = url
         self.port = port
         self.client = paho.Client()
         self.client.on_message = self.on_message
         self.client.on_publish = self.on_publish
         self.client.on_subscribe = self.on_subscribe
-        TransportLayer.__init__(self, url, '')
+        TransportLayer.__init__(self)
 
     def connect_soc(self):
         self.client.connect_soc(host=self.url, port=self.port, keepalive=60)

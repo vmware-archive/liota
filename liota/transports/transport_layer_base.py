@@ -38,10 +38,7 @@ class TransportLayer:
     """
     __metaclass__ = ABCMeta
 
-    def __init__(self, url, secure):
-        # TO DO : Move it to websocket later stage
-        if secure is "secure":
-           self.url = 'wss://' + url
+    def __init__(self):
         self.connect_soc()
 
     @abstractmethod

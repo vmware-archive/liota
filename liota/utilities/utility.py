@@ -125,7 +125,7 @@ class systemUUID:
         return str(tmp)
 
 
-def get_linx_version():
+def get_linux_version():
     return platform.platform()
 
 
