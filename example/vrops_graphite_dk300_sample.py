@@ -111,18 +111,18 @@ if __name__ == '__main__':
     #          sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
     #          report_interfal = the interval between subsequent sends to the data center component. If sample > report values are queued
     #          value = user defined function to obtain the next value from the device associated with this metric
-    cpu_utilization = vrops.create_metric(gateway, "CPU_Utilization", unit=None, sampling_interval_sec=50, aggregation_size=2, value=read_cpu_utilization)
+    cpu_utilization = vrops.create_metric(gateway, "CPU_Utilization", unit=None, sampling_interval_sec=50, aggregation_size=2, sampling_function=read_cpu_utilization)
 
     # call to start collecting values from the device or system and sending to the data center component
     cpu_utilization.start_collecting()
 
-    cpu_procs = vrops.create_metric(gateway, "CPU_Process", unit=None, sampling_interval_sec=6, value=read_cpu_procs)
+    cpu_procs = vrops.create_metric(gateway, "CPU_Process", unit=None, sampling_interval_sec=6, sampling_function=read_cpu_procs)
     cpu_procs.start_collecting()
 
-    disk_busy_stats = vrops.create_metric(gateway, "Disk_Busy_Stats", unit=None, aggregation_size=6, value=read_disk_busy_stats)
+    disk_busy_stats = vrops.create_metric(gateway, "Disk_Busy_Stats", unit=None, aggregation_size=6, sampling_function=read_disk_busy_stats)
     disk_busy_stats.start_collecting()
 
-    network_bits_recieved = vrops.create_metric(gateway, "Network_Bits_Recieved", unit=None, sampling_interval_sec=5, value=read_network_bits_recieved)
+    network_bits_recieved = vrops.create_metric(gateway, "Network_Bits_Recieved", unit=None, sampling_interval_sec=5, sampling_function=read_network_bits_recieved)
     network_bits_recieved.start_collecting()
 
     # Here we are showing how to create a device object, registering it in vrops, and setting properties on it
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     # note that the location of this 'device' is different from the location of the gateway. It's not really different
     # but just an example of how one might create a device different from the gateway
 
-    mem_free = vrops.create_metric(ram, "Memory_Free", unit=None, sampling_interval_sec=10, value=read_mem_free)
+    mem_free = vrops.create_metric(ram, "Memory_Free", unit=None, sampling_interval_sec=10, sampling_function=read_mem_free)
     mem_free.start_collecting()
 
 
@@ -149,6 +149,6 @@ if __name__ == '__main__':
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
     graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
-    content_metric = graphite.create_metric(gateway, config['GraphiteMetric'], unit=None, sampling_interval_sec=10, aggregation_size=2, value=simulated_device)
+    content_metric = graphite.create_metric(gateway, config['GraphiteMetric'], unit=None, sampling_interval_sec=10, aggregation_size=2, sampling_function=simulated_device)
     content_metric.start_collecting()
 

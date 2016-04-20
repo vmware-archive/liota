@@ -30,7 +30,6 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-# some standard metrics for Linux systems
 from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
 from liota.boards import gateway
 from liota.boards.gateway_dk300 import Dk300
@@ -41,13 +40,11 @@ from liota.transports.socket_connection import Socket
 from liota.transports.web_socket import WebSocket
 import random
 
-from liota.things.TemperF1 import TemperF1
-from temper import TemperHandler
-
 # getting values from conf file
 config = {}
 execfile('sampleProp.conf', config)
 
+# some standard metrics for Linux systems
 # agent classes for different IoT gateways
 # agent classes for different data center components
 # agent classes for different kinds of of devices, 'Things', connected to the gw
@@ -80,87 +77,15 @@ def simulated_device():
 #---------------------------------------------------------------------------
 
 
-def getTemp():
-    th = TemperHandler()
-    devs = th.get_devices()
-    t = devs[0].get_temperatures()
-    return  t[0]['temperature_c']
 
-#--------------------------------------------------------------------------
+
 
 if __name__ == '__main__':
 
 
-    # create a data center object, vROps in this case, using a secure websocket as a transport layer
-    # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
-    # UID/PASS login for now. TOKEN-BASED authentication will be ready this week.
-    # Note this is a secure websocket
-    vrops = Vrops(config['vROpsUID'], config['vROpsPass'], WebSocket(ip_address=config['WebSocketUrl'], secure="secure"))
-
-    # create a gateway object encapsulating the particulars of a gateway/board
-    # argument is the name of this gateway
-    gateway = Dk300(config['Gateway1Name'])
-
-    # resister the gateway with the vrops instance
-    # this call creates a representation (a Resource) in vrops for this gateway with the name given
-    vrops.register(gateway)
-
-    # these call set properties on the Resource representing the gateway in the vrops instance
-    # properties are a key:value store
-    # arguments are (key, value)
-    for item in config['Gateway1PropList']:
-     for key, value in item.items():
-         gateway.set_properties(key, value)
-
-    # ---------- Create metrics 'on' the Resource in vrops representing the gateway
-    # arguments:
-    #          local object referring to the Resource in vrops on which the metric should be associated
-    #          metric name
-    #          unit = An SI Unit (work needed here)
-    #          sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
-    #          report_interfal = the interval between subsequent sends to the data center component. If sample > report values are queued
-    #          value = user defined function to obtain the next value from the device associated with this metric
-    cpu_utilization = vrops.create_metric(gateway, "CPU_Utilization", unit=None, sampling_interval_sec=7, report_interval_sec=30, value=read_cpu_utilization)
-
-    # call to start collecting values from the device or system and sending to the data center component
-    cpu_utilization.start_collecting()
-
-    cpu_procs = vrops.create_metric(gateway, "CPU_Process", unit=None, sampling_interval_sec=5, value=read_cpu_procs)
-    cpu_procs.start_collecting()
-
-    disk_busy_stats = vrops.create_metric(gateway, "Disk_Busy_Stats", unit=None, report_interval_sec=30, value=read_disk_busy_stats)
-    disk_busy_stats.start_collecting()
-
-    network_bits_recieved = vrops.create_metric(gateway, "Network_Bits_Recieved", unit=None, sampling_interval_sec=5, value=read_network_bits_recieved)
-    network_bits_recieved.start_collecting()
-
-    # Here we are showing how to create a device object, registering it in vrops, and setting properties on it
-    # Since there are no attached devices are as simulating one by considering RAM as separate from the gateway
-    # The agent makes possible many different data models
-    # arguments:
-    #        device name
-    #        Read or Write
-    #        another Resource in vrops of which the should be the child of a parent-child relationship among Resources
-    ram = RAM(config['Device1Name'], 'Read', gateway)
-    vrops.register(ram)
-    for item in config['Device1PropList']:
-     for key, value in item.items():
-         ram.set_properties(key, value)
-
-    # note that the location of this 'device' is different from the location of the gateway. It's not really different
-    # but just an example of how one might create a device different from the gateway
-
-    mem_free = vrops.create_metric(ram, "Memory_Free", unit=None, sampling_interval_sec=10, value=read_mem_free)
-    mem_free.start_collecting()
-
-    temp = TemperF1('TemperF1', 'Read', gateway)
-    vrops.register(temp)
-    tempMetric = vrops.create_metric(temp, 'Temperature C', unit=None, sampling_interval_sec=10, report_interval_sec=10, value=getTemp)
-    tempMetric.start_collecting()
-
     # Sending data to an alternate data center component (e.g. data lake for analytics)
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
-    graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
-    content_metric = graphite.create_metric(gateway, config['GraphiteMetric'], report_interval_sec=15, value=simulated_device)
+    graphite = Graphite(Socket(sampleProp.GraphiteIP, sampleProp.GraphitePort))
+    content_metric = graphite.create_metric(gateway, sampleProp.GraphiteMetric, sampling_interval_sec=15, aggregation_size=1, sampling_function=simulated_device)
     content_metric.start_collecting()

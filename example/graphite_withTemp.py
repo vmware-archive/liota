@@ -30,55 +30,44 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+# some standard metrics for Linux systems
+from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
+from liota.boards import gateway
+from liota.boards.gateway_dk300 import Dk300
+from liota.dcc.graphite_dcc import Graphite
+from liota.dcc.vrops import Vrops
+from liota.things.ram import RAM
+from liota.transports.socket_connection import Socket
+from liota.transports.web_socket import WebSocket
+import random
 
-from setuptools import setup, find_packages
+from liota.things.TemperF1 import TemperF1
+from temper import TemperHandler
 
-# Get the long description from the README file
-with open('README.rst') as f:
-    long_description = f.read()
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
 
-setup(
-    name='liota',
-    version='1.0',
-    packages=find_packages(exclude=["*.json", "*.txt"]),
-    description='IoT Agent',
-    long_description=long_description,
 
-    # The project's main homepage.
-    url='https://github.com/vmware/liota',
-    author='The Python Packaging Authority',
-    author_email='vkohli@vmware.com',
+#---------------------------------------------------------------------------
 
-    # License
-    license='BSD',
-    platforms=['Linux'],
 
-    # Classifiers
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Operating System :: POSIX :: Linux',
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7',
-        # TO DO: Check for other python versions
-        # 'Programming Language :: Python :: 3',
-        # 'Programming Language :: Python :: 3.3',
-        # 'Programming Language :: Python :: 3.4',
-        # 'Programming Language :: Python :: 3.5',
-    ],
+def getTemp():
+    th = TemperHandler()
+    devs = th.get_devices()
+    t = devs[0].get_temperatures()
+    return  t[0]['temperature_c']
 
-    keywords='iot liota agent',
+#--------------------------------------------------------------------------
 
-    # Installation requirement
-    install_requires=['websocket-client', 'linux_metrics', 'netifaces'],
+if __name__ == '__main__':
 
-    # 'data_file'(conf_files) at custom location
-    data_files=[('/etc/liota/example', ['example/graphite_simulated.py',
-                'example/vrops_graphite_dk300_sample.py',
-                'example/graphite_withTemp.py',
-                'example/sampleProp.conf']),
-                ('/etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
-                ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
-                ('/var/log/liota', [])]
-      )
+    gateway = Dk300(config['Gateway1Name'])
+
+    # Sending data to an alternate data center component (e.g. data lake for analytics)
+    # Graphite is a data center component
+    # Socket is the transport which the agent uses to connect to the graphite instance
+    graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
+    tempMetric = graphite.create_metric(gateway, 'Temperature C', unit=None, sampling_interval_sec=10, aggregation_size=1, sampling_function=getTemp)
+    tempMetric.start_collecting()
+

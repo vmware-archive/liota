@@ -1,29 +1,35 @@
 
 # LIOTA
-Liota (Little IoT Agent) is open source offering for the IoT application developers. Liota is been generalized to interact with any
-data-center component, over any transport, and on any IoT gateway. It is easy-to-use and provides enterprise-quality modules for
-interacting with IoT Solutions.
+Little IoT Agent (liota) is an open source offering for IoT solution developers and resides primarily on IoT gateways.
+Liota has been generalized to allow, via modules,
+interaction with any data-center component, over any transport, and for any IoT gateway. It is easy-to-use and provides
+enterprise-quality modules for interacting with IoT Solutions.
 
 ## Design
-The primary liota design goal is simplicity, ease of use, easy install, and easy modification. Secondary design goals are generality,
-modularity, and enterprise-level.
+The primary liota design goals are simplicity, ease of use, easy install, and easy modification. Secondary design goals are
+generality, modularity, and enterprise-level quality.
 
-The basic layers of liota:
+# The Basic Layers of Liota
 
-## Gateway layer
-It is the base layer of liota that provides abstraction for the supported hardware gateways, their unique i/o
-architecture, and any unique OS features. Sub-modules are created for the hardware gateways belonging to the same family like the x86
-/Intel Galileo and Arduino development platforms that have, more or less, the same i/o architecture. The gateway is defined using the
-following parameters make, model, and the current OS version installed on them. The functions provided by this layer are used to
-configure i/o endpoints, read data from endpoints connected to sensors, or pass commands to the endpoints of connected actuators. The
-gateway layer has a sub-layer termed as “Things”, which allows users to create representative objects in liota for devices that will
-be connected to the gateway, e.g., temperature sensor connected to an Intel DK-300 gateway.
+## Board Layer
+The board layer is the base layer of liota and provides an abstraction for IoT gateway hardware. Items one might put in here
+are unique i/o architecture, communication physical interfaces, and any other features particular to the system board.
+
+## Gateway Layer
+The gateway layer is a sub-module of board and abstracts both the system board and the operating system.
+The gateway is defined using the following parameters make, model, and the current OS version installed on them. The functions
+provided by this layer are used to configure i/o endpoints, read data from endpoints connected to sensors, or pass commands
+to the endpoints of connected actuators as well as any unique OS features.
+
+## Things Layer
+This layer (after the 'Things' in Internet-of-Things') allows developers to create representative objects in liota for devices that will
+be connected to the gateway, e.g., as USB temperature sensor connected to the gateway.
 
 ## Transformer Layer
-This layer defines the base structure for creating representations of metrics and super-metrics in liota. Metric is a class that
-abstracts and represents the stream of values collected from attached sensors. A super-metric is a functional composition of one or
-more metrics. A super-metric is usually defined whenever more than one metric is required to define the behavior of the environment as
-in case of vROps (vRealize Operations). Within the definition of metrics we support SI units are in order to provide units-based
+This layer defines the base structure for creating representations of metrics in liota. A metric is the term for a stream of
+numeric values. Metric is a class that
+abstracts and represents this stream of values collected from, typically, attached sensors but can be collected from anywhere.
+Within the definition of metrics we support SI units are in order to provide units-based
 typing for values collected from a sensor. This meta-data can be passed to the data-center component in a format defined by that
 component.
 
@@ -42,12 +48,12 @@ or a traditional socket endpoint.
 This layer takes care of supporting DCC’s, which can be hosted anywhere; on-prem, public or private cloud. It is potentially the most
 important and complex layers of liota. It provides flexibility to developers for choosing the data-center components they need and
 using API’s provided by liota. With help of this layer developers may build custom solutions. The layer implements basic API’s and
-encapsulates them into unified common API’s required to send data to various DCC’s. Graphite5 and vROps (vRealize Operations) are
+encapsulates them into unified common API’s required to send data to various DCC’s. Graphite and vROps (vRealize Operations) are
 currently the data-center components supported by the first version of liota. New DCC’s can easily be integrated in this layer as it
 follows a plug in-plug out design.
 
-Liota – Sample Code Below is a sample code developed using liota for the Intel DK-3006 IoT gateway. A temp metric is defined and its
-values are collected from a USB-temperature sensor connected to the USB-1 port of the DK-300. The metric values
+Liota – Sample Code Below is a sample code developed using liota for the a representative IoT gateway. A temp metric is defined and its
+values are collected from a USB-temperature sensor connected to the USB-1 port of the gateway. The metric values
 are streamed to vROps;
 
 ```python
@@ -81,7 +87,7 @@ Toward the goal of ubiquity for liota we plan to include the following enhanceme
 * Support for popular IoT ingestion engines
 * Language bindings apart from Python, starting with C, C++, Java and Lua
 
-## Installation
+# Installation and Testing
 In general, liota can be installed with:
 ```bash
   $ pip install liota
@@ -89,23 +95,57 @@ In general, liota can be installed with:
 
 It requires a Python 2.7 environment already installed.
 
+
+## Liota.conf
+Right now there is only one item in the liota.conf, where to find a file called logging.json which holds the
+dafault initialization parameters for logging. When initialing, liota looks in the current
+working directory, '.', the user's home directory '~', a LIOTA_CONF environment variable, and
+finally the default location for every install, /etc/liota/conf for liota.conf.
+
+Here is the default, v0.7, liota.conf file
+
+```bash
+[log_cfg]
+json_path = /etc/liota/conf/logging.json
+```
+Feel free to modify liota.conf and loggin.json as appropriate for your testing.
+
+
 ## Examples
 Post-installation the sample codes for publishing the data to DCC can be found at following location;
 ```bash
   /etc/liota/examples
 ```
-In order to run the sample code, please enter the required details in sampleProp.py and start the agent in the following way;
+
+Please look through the example code noting especially the files sampleProp.conf and vrops_graphite_dk300_sample.py
+
+Then as an initial test you could bring up an instance of Graphite using the docker instructions (found here),
+
+```web
+https://github.com/hopsoft/docker-graphite-statsd
+```
+set the appropriate values in sampleProp.conf,
 ```bash
-  $ nohup python vrops_graphite_dk300_sample.py &
+GraphiteMetric = <a dot separated string> "Mymetric.foo.bar.random:
+GraphiteIP = <The IP address of the graphit instance you just brought up>
+GraphitePort = <typically 2003> # You can test easily be sending directily to carbon
+```
+
+and execute
+```bash
+  $ nohup python graphite_simulated.py &
 ```
 
 ## Log Location
 
-The log generated during Liota operation can be found at following location;
+The default log generated during Liota operation can be found at following location;
 
 ```bash
   /etc/var/log
 ```
+If the above directory is not available or is not writeable modify the log location in the file
+logging.json (find it as described above)
+
 ## Contributing to Liota
 
 Want to hack on Liota and add your own DCC component? Awesome!

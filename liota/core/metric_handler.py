@@ -192,7 +192,7 @@ def initialize():
 
 class Metric(object):
 
-        def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sample_function, data_center_component):
+        def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sampling_function, data_center_component):
             self.data_center_component = data_center_component
             self.gw = gw
             self.details = details
@@ -200,7 +200,7 @@ class Metric(object):
             self.sampling_interval_sec = sampling_interval_sec
             self.aggregation_size = aggregation_size
             self.current_aggregation_size = 0
-            self.sample_function = sample_function
+            self.sampling_function = sampling_function
             self.values = []
 
         def __str__(self, *args, **kwargs):
@@ -240,11 +240,11 @@ class Metric(object):
 
         def collect(self):
             log.debug("Collecting values for the resource {0} {1}".format(self.details, self.gw.res_name))
-            self.args_required = len(inspect.getargspec(self.sample_function)[0])
+            self.args_required = len(inspect.getargspec(self.sampling_function)[0])
             if self.args_required is not 0:
-                self.cal_value = self.sample_function(1)
+                self.cal_value = self.sampling_function(1)
             else:
-                self.cal_value = self.sample_function()
+                self.cal_value = self.sampling_function()
             log.info("{0} Sample Value: {1}".format(self.details, self.cal_value))
             log.debug("Size of the list {0}".format(len(self.values)))
             self.write_map_values(self.cal_value)
