@@ -136,15 +136,24 @@ and execute
   $ nohup python graphite_simulated.py &
 ```
 
+If you would like to test against an instance of vRealize Operations Manager please send
+an email to us at:
+
+```web
+rialto@vmware.com
+```
+and we'll work with you to get one set up and help with the necessary values in the properties file.
+
 ## Log Location
 
-The default log generated during Liota operation can be found at following location;
+The default location for log files generated during Liota operation can be found at following
+location;
 
 ```bash
   /etc/var/log
 ```
 If the above directory is not available or is not writeable modify the log location in the file
-logging.json (find it as described above)
+logging.json (find it as described above in the section on liota.conf)
 
 ## Contributing to Liota
 
