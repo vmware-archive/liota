@@ -239,7 +239,7 @@ class Metric(object):
             return self.current_aggregation_size >= self.aggregation_size
 
         def collect(self):
-            log.debug("Collecting values for the resource {0} {1}".format(self.details, self.gw.res_name))
+            log.debug("Collecting values for the resource {0} ".format(self.details))
             self.args_required = len(inspect.getargspec(self.sampling_function)[0])
             if self.args_required is not 0:
                 self.cal_value = self.sampling_function(1)
@@ -251,7 +251,7 @@ class Metric(object):
             self.current_aggregation_size = self.current_aggregation_size + 1
 
         def send_data(self):
-            log.info("Publishing values {0} for the resource {1} {2}".format(self.values, self.details, self.gw.res_name))
+            log.info("Publishing values {0} for the resource {1} ".format(self.values, self.details))
             if not self.values:
                 # No values measured since last report_data
                 return True

@@ -75,18 +75,16 @@ def simulated_device():
     return random.randint(0, 20)
 
 #---------------------------------------------------------------------------
-
-
-
-
+# In this example, we demonstrate how gateway health and som simluated data 
+# can be directed to two data center components (vrops and graphite) using Liota.
+# The program illustrates the ease of use Liota brings to IoT application developers.
 
 if __name__ == '__main__':
 
-    # create a data center object, vROps in this case, using a secure websocket as a transport layer
+    # create a data center object, vROps in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
-    # UID/PASS login for now. TOKEN-BASED authentication will be ready this week.
-    # Note this is a secure websocket
-    vrops = Vrops(config['vROpsUID'], config['vROpsPass'], WebSocket(url=config['WebSocketUrl'], secure="secure"))
+    # UID/PASS login for now.
+    vrops = Vrops(config['vROpsUID'], config['vROpsPass'], WebSocket(url=config['WebSocketUrl']))
 
     # create a gateway object encapsulating the particulars of a gateway/board
     # argument is the name of this gateway

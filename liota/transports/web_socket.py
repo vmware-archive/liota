@@ -44,11 +44,8 @@ class WebSocket(TransportLayer):
     """ WebSocket class implementation
 
     """
-    def __init__(self, url, secure):
-        if secure is "secure":
-            self.url = 'wss://' + url
-        else:
-            self.url = 'ws://' + url
+    def __init__(self, url):
+        self.url = url
         TransportLayer.__init__(self)
 
     def connect_soc(self):
@@ -66,7 +63,6 @@ class WebSocket(TransportLayer):
             self.ws = None
             self.ws = create_connection(host, enable_multithread=True,
               sslopt={"cert_reqs": ssl.CERT_NONE})
-#               header=["Authorization: Bearer dummyToken"])
       else:
          self.ws = None
          for filename in os.listdir(CERTDIR):
@@ -75,7 +71,6 @@ class WebSocket(TransportLayer):
                   self.ws = create_connection(host, enable_multithread=True,
                      sslopt={"cert_reqs": ssl.CERT_REQUIRED, "ca_certs": CERTDIR + "/" + filename})
                   break
-#               except CertificateError, ssl.SSLError:
                except ssl.SSLError:
                   pass
          if self.ws is None:
@@ -115,7 +110,6 @@ class WebSocket(TransportLayer):
               while attempts < 4:
                   try:
                       log.info("Exception while sending data, applying retry logic.")
-#                       self.close()
                       self.connect_soc()
                       log.info("Created New Websocket")
                       log.info("TX Sending message {0}".format(complete_message))

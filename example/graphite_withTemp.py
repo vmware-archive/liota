@@ -30,18 +30,11 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-# some standard metrics for Linux systems
-from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
 from liota.boards import gateway
 from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.graphite_dcc import Graphite
-from liota.dcc.vrops import Vrops
-from liota.things.ram import RAM
 from liota.transports.socket_connection import Socket
-from liota.transports.web_socket import WebSocket
-import random
 
-from liota.things.TemperF1 import TemperF1
 from temper import TemperHandler
 
 # getting values from conf file
@@ -59,6 +52,9 @@ def getTemp():
     return  t[0]['temperature_c']
 
 #--------------------------------------------------------------------------
+# In this example, we demonstrate how data from a simulated device generating 
+# random numbers can be directed to graphite data center component using Liota.
+# The program illustrates the ease of use Liota brings to IoT application developers.
 
 if __name__ == '__main__':
 
