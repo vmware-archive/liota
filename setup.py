@@ -71,7 +71,7 @@ setup(
     keywords='iot liota agent',
 
     # Installation requirement
-    install_requires=['websocket-client', 'linux_metrics', 'netifaces'],
+    install_requires=['websocket-client', 'linux_metrics'],
 
     # 'data_file'(conf_files) at custom location
     data_files=[('/etc/liota/example', ['example/graphite_simulated.py',

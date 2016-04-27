@@ -32,9 +32,7 @@
 
 from liota.boards.gateway import Gateway
 from liota.boards.handlers import ObjectConfig
-from liota.utilities import utility
-from liota.utilities.utility import getUTCmillis
-from liota.utilities.utility import get_linux_version, systemUUID
+from liota.utilities.utility import systemUUID
 
 
 class RAM(Gateway):

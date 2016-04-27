@@ -37,6 +37,7 @@ import uuid
 import hashlib
 import logging
 import random
+import uuid
 
 """ Utility functions required for initialization of various objects
 
@@ -52,50 +53,21 @@ class systemUUID:
         if systemUUID.__UUID == '':
             self._set_system_uuid()
 
-    # We decided to explicitly look for interfaces rather than use uuid.getnode() so that
-    #    we could support IoT gateways with potentially and only weird interfaces sooner than getnode or netifaces might
+    # Using uuid.getnode() in order to get the mac address. If all attempts to obtain the hardware address fail, this function returns a random 48-bit number
+    # with its eighth bit set to 1 as recommended in RFC 4122. A check on the 8th bit is done in order to figure out if random MAC Address generation is required or not.
     def _getMacAddrIfaceHash(self):
-        netifacesExists = ''
-        try:
-            import netifaces
-            netifacesExists = True
-        except:
-            netifacesExists = False
-            log.info('netifaces is not installed, if it were, it would be better')
-        mac = '00:00:00:00:00:00'
-        if netifacesExists:
-            for ifaceName in netifaces.interfaces():
-                if netifaces.AF_LINK in netifaces.ifaddresses(ifaceName):
-                    mac = netifaces.ifaddresses(ifaceName)[netifaces.AF_LINK][0]['addr']
-                    m = hashlib.md5()
-                    m.update(mac)
-                    m.update(ifaceName)
-                    macHash = m.hexdigest()
-                    log.info('mac address for interface ' + ifaceName + ' mac=' + str(mac))
-                    break
-        else:
-            if platform.system() == 'Linux':  # netifaces does not exist and this is a Linux variant
-                for ifaceName in ['eth0', 'eth1', 'wlan0']:
-                    try:
-                        mac = open('/sys/class/net/' + ifaceName + '/address').readline()
-                        log.info('mac address for interface ' + ifaceName + ' mac=' + str(mac))
-                        break
-                    except:
-                        continue
-        if mac == '00:00:00:00:00:00':
-            log.warn(
-                'could not find a mac address, an unlikely potential exists for uuid collisions with liota instances on other IoT gateways')
+        mac = uuid.getnode()
+        if (mac >> 40)%2:
+            log.warn( 'could not find a mac address, an unlikely potential exists for uuid collisions with liota instances on other IoT gateways')
             # generate a 48-bit random integer from this seed
             # always returns the same random integer
             # however in get_uuid below a unique uuid for each resource name will be created
             # this allows us not to have to store any uuid on the persistent storage yet
             # create a unique system uuid
             random.seed(1234567)
-            mac = str(random.randint(0, 281474976710655))
-            ifaceName = 'foobar' #not set above
+            mac = random.randint(0, 281474976710655)
         m = hashlib.md5()
-        m.update(mac)
-        m.update(ifaceName)
+        m.update(str(mac))
         self.macHash = m.hexdigest()
         return self.macHash
 

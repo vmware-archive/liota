@@ -32,17 +32,15 @@
 
 from liota.boards.gateway import Gateway
 from liota.boards.handlers import ObjectConfig
-from liota.utilities import utility
-from liota.utilities.utility import getUTCmillis
-from liota.utilities.utility import get_linux_version, get_uuid
+from liota.utilities.utility import systemUUID
 
 
 class Device(Gateway):
     """ This class defines the Devices by re-using the Gateway class
 
     """
-    def __init__(self, label, type, parent):
-        Gateway.__init__(self, '', '', '', get_uuid(label), label, None, parent, type, "Device")
+    def __init__(self, label, type, parent, resource_kind="Device"):
+        Gateway.__init__(self, '', '', '', systemUUID().get_uuid(label), label, None, parent, type, resource_kind)
 
     def _configure_pins(self):
         pass
