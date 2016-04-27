@@ -30,56 +30,42 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+import Queue
+import random
+import time
+import thread
+from liota.boards import gateway
+from liota.dcc.graphite_dcc import Graphite
+from liota.transports.socket_connection import Socket
 
-from setuptools import setup, find_packages
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
 
-# Get the long description from the README file
-with open('README.md') as f:
-    long_description = f.read()
+comms_channel = Queue.Queue() # channel between device and a udm used for a metric
 
-setup(
-    name='liota',
-    version='1.0',
-    packages=find_packages(exclude=["*.json", "*.txt"]),
-    description='IoT Agent',
-    long_description=long_description,
+#simulates a device putting data into a comms channel at random intervals
+def simulated_event_device(write_channel):
+    while(True):
+        time.sleep(random.randint(1,10))
+        write_channel.put(random.randint(1,300))
 
-    # The project's main homepage.
-    url='https://github.com/vmware/liota',
-    author='The Python Packaging Authority',
-    author_email='vkohli@vmware.com',
+# starting the simulated device
+thread.start_new_thread(simulated_event_device, (comms_channel,))
 
-    # License
-    license='BSD',
-    platforms=['Linux'],
+def udm1():
+    return comms_channel.get(block=True)
 
-    # Classifiers
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Operating System :: POSIX :: Linux',
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7',
-        # TO DO: Check for other python versions
-        # 'Programming Language :: Python :: 3',
-        # 'Programming Language :: Python :: 3.3',
-        # 'Programming Language :: Python :: 3.4',
-        # 'Programming Language :: Python :: 3.5',
-    ],
+#---------------------------------------------------------------------------
+# In this example, we demonstrate how an event stream of data can be directed to graphite
+# data center component using Liota by setting sampling_interval_sec parameter to zero.
 
-    keywords='iot liota agent',
+if __name__ == '__main__':
 
-    # Installation requirement
-    install_requires=['websocket-client', 'linux_metrics', 'netifaces'],
+    # Sending data to a data center component
+    # Graphite is a data center component
+    # Socket is the transport which the agent uses to connect to the graphite instance
+    graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
+    content_metric = graphite.create_metric(gateway, 'event', unit=None, sampling_interval_sec=0, aggregation_size=1, sampling_function=udm1)
+    content_metric.start_collecting()
 
-    # 'data_file'(conf_files) at custom location
-    data_files=[('/etc/liota/example', ['example/graphite_simulated.py',
-                'example/vrops_graphite_dk300_sample.py',
-                'example/graphite_withTemp.py',
-                'example/graphite_event_based.py',
-                'example/sampleProp.conf']),
-                ('/etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
-                ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
-                ('/var/log/liota', [])]
-      )
