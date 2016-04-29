@@ -52,11 +52,12 @@ encapsulates them into unified common API’s required to send data to various D
 currently the data-center components supported by the first version of liota. New DCC’s can easily be integrated in this layer as it
 follows a plug in-plug out design.
 
-Liota – Sample Code Below is a sample code developed using liota for the a representative IoT gateway. A temp metric is defined and its
-values are collected from a USB-temperature sensor connected to the USB-1 port of the gateway. The metric values
-are streamed to vROps;
+Liota – Sample Code Below is a sample code developed using liota for a representative IoT gateway. A temperature
+metric is defined and its values are collected from a USB-temperature sensor connected to the USB-1 port of the gateway. 
+The metric values are streamed to vROps;
 
 ```python
+<<<<<<< HEAD
   import liota.boards.Dk300
   import liota.things.USB-Temp
   import liota.DCCs.Vrops
@@ -74,6 +75,24 @@ are streamed to vROps;
   temperature = vrops.create_metric(temp,'Room Temperature', SI.Celsius, sampling_interval=10)
   # Publishing value to DCC component
   temperature.start_collecting()
+=======
+from liota.boards.gateway_de5000 import DellEdge5000
+from liota.things.USB-Temp import USB-Temp
+from liota.dcc.vrops import Vrops
+from liota.transports.web_socket import WebSocket
+# DCC Component
+vROps vrops = Vrops(vrops_login, vrops_pwd, WebSocket(URL "secure"))
+# GW creation
+gw = DellEdge5000("Demo Gateway")
+# Device definition
+temp = USB-Temp(parent=gw, 'Temp', READ, usb-1)
+# Register the Gateway and associated device vrops.register(gw)
+# Property creation on Gateway gw.set_properties("Location", "Palo Alto Prom:E")
+# Creating Metric
+temperature = vrops.create_metric(temp,'Room Temperature', SI.Celsius, sampling_interval=10)
+# Publishing value to DCC component
+temperature.start_collecting()
+>>>>>>> Update README.md
 ```
 
 
