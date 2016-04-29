@@ -1,0 +1,2 @@
+websocket-client==0.37.0
+linux-metrics==0.1.4
