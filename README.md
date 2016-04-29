@@ -146,7 +146,7 @@ https://github.com/hopsoft/docker-graphite-statsd
 set the appropriate values in sampleProp.conf,
 ```bash
 GraphiteMetric = <a dot separated string> "Mymetric.foo.bar.random"
-GraphiteIP = <The IP address of the graphit instance you just brought up>
+GraphiteIP = <The IP address of the graphite instance you just brought up>
 GraphitePort = <typically 2003> # You can test easily be sending directily to carbon
 ```
 
