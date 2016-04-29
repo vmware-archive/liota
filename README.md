@@ -65,7 +65,7 @@ are streamed to vROps;
   # DCC Component
   vROps vrops = Vrops(vrops_login, vrops_pwd, WebSocket(URL "secure"))
   # GW creation
-  gw = Dk300("Demo Gateway", uuid=get_mac_addr())
+  gw = Dk300("Demo Gateway")
   # Device definition
   temp = USB-Temp(parent=gw, 'Temp', READ, usb-1)
   # Register the Gateway and associated device vrops.register(gw)
@@ -105,7 +105,7 @@ finally the default location for every install, /etc/liota/conf for liota.conf.
 Here is the default, v0.7, liota.conf file
 
 ```bash
-[log_cfg]
+[LOG_CFG]
 json_path = /etc/liota/conf/logging.json
 ```
 Feel free to modify liota.conf and loggin.json as appropriate for your testing.

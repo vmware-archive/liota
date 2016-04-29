@@ -32,6 +32,12 @@
 
 
 from setuptools import setup, find_packages
+import pip
+from pip.req import parse_requirements
+requirements = [
+    str(requirement.req)
+    for requirement in parse_requirements('requirements.txt', session=pip.download.PipSession())
+]
 
 # Get the long description from the README file
 with open('README.md') as f:
@@ -39,7 +45,7 @@ with open('README.md') as f:
 
 setup(
     name='liota',
-    version='1.0',
+    version='0.1',
     packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
@@ -71,7 +77,7 @@ setup(
     keywords='iot liota agent',
 
     # Installation requirement
-    install_requires=['websocket-client', 'linux_metrics'],
+    install_requires=requirements,
 
     # 'data_file'(conf_files) at custom location
     data_files=[('/etc/liota/example', ['example/graphite_simulated.py',
