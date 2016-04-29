@@ -30,57 +30,34 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+from liota.dcc.helix_protocol import getUTCmillis
+from liota.utilities.utility import get_linux_version, systemUUID
 
-from setuptools import setup, find_packages
+from gateway import Gateway
+from handlers import ObjectConfig
 
-# Get the long description from the README file
-with open('README.md') as f:
-    long_description = f.read()
 
-setup(
-    name='liota',
-    version='1.0',
-    packages=find_packages(exclude=["*.json", "*.txt"]),
-    description='IoT Agent',
-    long_description=long_description,
+class DellEdge5000(Gateway):
+    """ Basic implementation of DellEdge5000 Object
 
-    # The project's main homepage.
-    url='https://github.com/vmware/liota',
-    author='The Python Packaging Authority',
-    author_email='vkohli@vmware.com',
+    """
 
-    # License
-    license='BSD',
-    platforms=['Linux'],
+    def __init__(self, label):
+        Gateway.__init__(self, 'Dell', 'Edge-5000', get_linux_version(), systemUUID().get_uuid(label), label, None, None, None, "HelixGateway")
 
-    # Classifiers
-    classifiers=[
-        'Development Status :: 3 - Alpha',
-        'Intended Audience :: Developers',
-        'Topic :: Software Development :: Libraries :: Python Modules',
-        'Operating System :: POSIX :: Linux',
-        'License :: OSI Approved :: BSD License',
-        'Programming Language :: Python :: 2.7',
-        # TO DO: Check for other python versions
-        # 'Programming Language :: Python :: 3',
-        # 'Programming Language :: Python :: 3.3',
-        # 'Programming Language :: Python :: 3.4',
-        # 'Programming Language :: Python :: 3.5',
-    ],
+    def _configure_pins(self):
+        pass
 
-    keywords='iot liota agent',
+    def _initialize_gateway(self):
+        # Initialize the Gateway Object
+        return ObjectConfig(identifier=self.identifier, name=self.res_name, res_kind=self.res_kind, template=self.res_kind, uuid=self.res_uuid , property_key_value_map=self.property_key_value_map)
 
-    # Installation requirement
-    install_requires=['websocket-client', 'linux_metrics'],
+    def _report_data(self, msg_id, statkey, timestamps, values):
+        # Post data onto cloud_provider solution
+        return Gateway._report_data(self, msg_id, statkey, timestamps, values)
 
-    # 'data_file'(conf_files) at custom location
-    data_files=[('/etc/liota/example', ['example/graphite_simulated.py',
-                'example/vrops_graphite_dk300_sample.py',
-                'example/vrops_graphite_DellEdge5K_sample.py',
-                'example/graphite_withTemp.py',
-                'example/graphite_event_based.py',
-                'example/sampleProp.conf']),
-                ('/etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
-                ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
-                ('/var/log/liota', [])]
-      )
+    def _create_relationship(self, msg_id, child):
+        pass
+
+    def set_properties(self, key, value):
+        Gateway.set_properties(self, key, value)
