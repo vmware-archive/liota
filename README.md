@@ -80,7 +80,7 @@ temperature.start_collecting()
 Toward the goal of ubiquity for liota we plan to include the following enhancements:
 * Full support for SI Units specification (possibly with enhancements specifically for IoT)
 * Full support for IEEE 1451, Electronic Transducer Data Sheets
-* Support for MQTT8 and CoAP9 as transports
+* Support for MQTT and CoAP as transports
 * A mechanism for IoT gateways to create planet-wide unique identifiers (possibly based on the blockchain mechanism)
 * Support for an actions framework for gateway-defined actions initiate either locally or by data-center components
 * Support for popular IoT ingestion engines
