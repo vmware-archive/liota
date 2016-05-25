@@ -45,7 +45,7 @@ with open('README.md') as f:
 
 setup(
     name='liota',
-    version='0.1',
+    version='0.1.1',
     packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
@@ -90,3 +90,4 @@ setup(
                 ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
                 ('/var/log/liota', [])]
       )
+
