@@ -139,7 +139,7 @@ If you would like to test against an instance of vRealize Operations Manager ple
 an email to us at:
 
 ```web
-rialto@vmware.com
+liota@vmware.com
 ```
 and we'll work with you to get one set up and help with the necessary values in the properties file.
 
