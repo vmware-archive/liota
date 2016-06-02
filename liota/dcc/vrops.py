@@ -118,7 +118,6 @@ class Vrops(DataCenterComponent):
             if gw.parent is not None:
                 self.init_relations(gw)
                 log.info("Relationship Created")
-            log.info("Gateway".format(gw))
             return vrops_res
 
     def connect_soc(self, protocol, url, user_name, password):
