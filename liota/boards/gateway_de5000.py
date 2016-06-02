@@ -58,6 +58,3 @@ class DellEdge5000(Gateway):
 
     def _create_relationship(self, msg_id, child):
         pass
-
-    def set_properties(self, key, value):
-        Gateway.set_properties(self, key, value)

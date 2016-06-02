@@ -53,5 +53,4 @@ class DataCenterComponent:
         pass
 
     def create_metric(self, gw, details, unit, sampling_function, sampling_interval_sec=10, aggregation_size=6):
-        return Metric(gw, details, unit, sampling_interval_sec, aggregation_size, sampling_function, self)
-
+        return Metric(gw.resource, details, unit, sampling_interval_sec, aggregation_size, sampling_function, self)

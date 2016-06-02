@@ -65,13 +65,12 @@ class Vrops(DataCenterComponent):
                 json_msg = json.loads(msg)
                 self.proto.on_receive(json.loads(msg))
                 log.debug("Processed msg: {0}".format(json_msg["type"]))
-                if (json_msg["type"] == "connection_verified"):
+                if json_msg["type"] == "connection_verified":
                     log.info("Verified")
                     exit()
             except Exception:
                 raise
                 log.exception("Error received on connecting to DCC instance. Please verify the credentials and try again.")
-
 
         thread = threading.Thread(target=self.con.run)
         self.con.on_receive = on_receive_safe
@@ -85,6 +84,7 @@ class Vrops(DataCenterComponent):
 
         """
         if gw.res_uuid == None:
+            vrops_res = self.VropsResource(gw)
             log.info("Creating resource")
             log.info("Resource Name: {0}".format(gw.res_name))
             def on_receive_safe(msg):
@@ -94,11 +94,12 @@ class Vrops(DataCenterComponent):
                        json_msg = json.loads(msg)
                        self.proto.on_receive(json.loads(msg))
                        log.debug("Processed msg: {0}".format(json_msg["type"]))
-                       if (json_msg["type"] == "create_or_find_resource_response") :
+                       if json_msg["type"] == "create_or_find_resource_response" :
                            if json_msg["body"]["uuid"] != "null":
                                log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
                                gw.res_uuid = json_msg["body"]["uuid"]
                                time.sleep(5)
+                               vrops_res.registered = True
                                exit()
                            else:
                                log.info("Waiting for resource creation")
@@ -117,6 +118,7 @@ class Vrops(DataCenterComponent):
             if gw.parent is not None:
                 self.init_relations(gw)
                 log.info("Relationship Created")
+            return vrops_res
 
     def connect_soc(self, protocol, url, user_name, password):
         pass
@@ -152,3 +154,26 @@ class Vrops(DataCenterComponent):
          }
       }
 
+    def properties(self, msg_id, res_uuid, res_kind, timestamp, key, value):
+        msg = {
+            "transationID": msg_id,
+            "type": "add_properties",
+            "uuid": res_uuid,
+            "body": {
+                "kind": res_kind,
+                "timestamp": timestamp,
+                "property_data": []
+            }
+        }
+        msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
+        return msg
+
+    def set_properties(self, key, value, registered_gw):
+        log.info("Properties defined for resource {0}".format(registered_gw.resource.res_name))
+        self.con.send(self.properties(self.con.next_id(), registered_gw.resource.res_uuid, registered_gw.resource.res_kind, getUTCmillis(), key, value))
+
+    class VropsResource:
+
+        def __init__(self, resource, registered=False):
+            self.resource = resource
+            self.registered = registered

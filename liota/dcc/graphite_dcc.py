@@ -54,3 +54,12 @@ class Graphite(DataCenterComponent):
     def subscribe(self):
         pass
 
+    def register(self, gw):
+        graphite_res = self.GraphiteGateway(gw, True)
+        return graphite_res
+
+    class GraphiteGateway:
+        def __init__(self, gw, registered=False):
+            self.resource = gw
+            self.registered = registered
+

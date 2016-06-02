@@ -70,8 +70,6 @@ class Gateway:
     def _initialize_gateway(self):
         pass
 
-
-
     @abstractmethod
     def _report_data(self, msg_id, statkey, timestamps, values):
         return {
@@ -94,23 +92,3 @@ class Gateway:
             "child": self.res_uuid
          }
       }
-
-    def properties(self, msg_id, res_uuid, res_kind, timestamp, key, value):
-      msg = {
-         "transationID": msg_id,
-         "type": "add_properties",
-         "uuid": res_uuid,
-         "body": {
-            "kind": res_kind,
-            "timestamp": timestamp,
-            "property_data": []
-         }
-    }
-      msg["body"]["property_data"].append({"propertyKey" : key, "propertyValue" : value})
-      return msg
-
-    # TO DO: This might move at a later stage in order to generalize Gateway creation
-    @abstractmethod
-    def set_properties(self, key, value):
-        log.info("Properties defined for resource {0}".format(self.res_name))
-        self.con.send(self.properties(self.con.next_id(), self.res_uuid, self.res_kind, getUTCmillis(), key, value))
