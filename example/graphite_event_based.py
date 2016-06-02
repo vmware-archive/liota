@@ -34,7 +34,7 @@ import Queue
 import random
 import time
 import thread
-from liota.boards import gateway
+from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.graphite_dcc import Graphite
 from liota.transports.socket_connection import Socket
 
@@ -61,11 +61,13 @@ def udm1():
 # data center component using Liota by setting sampling_interval_sec parameter to zero.
 
 if __name__ == '__main__':
+    gateway = Dk300(config['Gateway1Name'])
 
     # Sending data to a data center component
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
     graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
-    content_metric = graphite.create_metric(gateway, 'event', unit=None, sampling_interval_sec=0, aggregation_size=1, sampling_function=udm1)
+    graphite_gateway = graphite.register(gateway)
+    content_metric = graphite.create_metric(graphite_gateway, 'event', unit=None, sampling_interval_sec=0, aggregation_size=1, sampling_function=udm1)
     content_metric.start_collecting()
 

@@ -30,7 +30,6 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.boards import gateway
 from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.graphite_dcc import Graphite
 from liota.transports.socket_connection import Socket
@@ -64,6 +63,7 @@ if __name__ == '__main__':
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
     graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
-    tempMetric = graphite.create_metric(gateway, 'Temperature C', unit=None, sampling_interval_sec=10, aggregation_size=1, sampling_function=getTemp)
+    graphite_gateway = graphite.register(gateway)
+    tempMetric = graphite.create_metric(graphite_gateway, 'Temperature C', unit=None, sampling_interval_sec=10, aggregation_size=1, sampling_function=getTemp)
     tempMetric.start_collecting()
 

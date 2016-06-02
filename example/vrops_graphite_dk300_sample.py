@@ -31,7 +31,6 @@
 # ----------------------------------------------------------------------------#
 
 from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
-from liota.boards import gateway
 from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.graphite_dcc import Graphite
 from liota.dcc.vrops import Vrops

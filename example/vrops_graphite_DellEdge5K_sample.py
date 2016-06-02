@@ -31,7 +31,6 @@
 # ----------------------------------------------------------------------------#
 
 from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
-from liota.boards import gateway
 from liota.boards.gateway_de5000 import DellEdge5000
 from liota.dcc.graphite_dcc import Graphite
 from liota.dcc.vrops import Vrops
@@ -151,6 +150,7 @@ if __name__ == '__main__':
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
     graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
-    content_metric = graphite.create_metric(gateway, config['GraphiteMetric'], unit=None, sampling_interval_sec=10, aggregation_size=2, sampling_function=simulated_device)
+    graphite_gateway = graphite.register(gateway)
+    content_metric = graphite.create_metric(graphite_gateway, config['GraphiteMetric'], unit=None, sampling_interval_sec=10, aggregation_size=2, sampling_function=simulated_device)
     content_metric.start_collecting()
 
