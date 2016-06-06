@@ -30,7 +30,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-
+import os
 from setuptools import setup, find_packages
 import pip
 from pip.req import parse_requirements
@@ -45,10 +45,11 @@ with open('README.md') as f:
 
 setup(
     name='liota',
-    version='0.1.1',
+    version='0.1.2',
     packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
+    # include_package_data=True
 
     # The project's main homepage.
     url='https://github.com/vmware/liota',
@@ -80,15 +81,15 @@ setup(
     install_requires=requirements,
 
     # 'data_file'(conf_files) at custom location
-    data_files=[('/etc/liota/example', ['example/graphite_simulated.py',
+    data_files=[(os.path.abspath(os.sep) + '/../etc/liota/example', ['example/graphite_simulated.py',
                 'example/vrops_graphite_dk300_sample.py',
                 'example/vrops_graphite_DellEdge5K_sample.py',
                 'example/vrops_simulated.py',
                 'example/graphite_withTemp.py',
                 'example/graphite_event_based.py',
                 'example/sampleProp.conf']),
-                ('/etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
-                ('/etc/liota/', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
-                ('/var/log/liota', [])]
+                (os.path.abspath(os.sep) + '/../etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
+                (os.path.abspath(os.sep) + '/../etc/liota', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
+                (os.path.abspath(os.sep) + '/../var/log/liota', [])]
       )
 
