@@ -83,6 +83,7 @@ setup(
     data_files=[('/etc/liota/example', ['example/graphite_simulated.py',
                 'example/vrops_graphite_dk300_sample.py',
                 'example/vrops_graphite_DellEdge5K_sample.py',
+                'example/vrops_simulated.py',
                 'example/graphite_withTemp.py',
                 'example/graphite_event_based.py',
                 'example/sampleProp.conf']),
