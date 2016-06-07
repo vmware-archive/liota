@@ -91,7 +91,7 @@ Toward the goal of ubiquity for liota we plan to include the following enhanceme
 # Installation and Testing
 In general, liota can be installed with:
 ```bash
-  $ pip install liota
+  $ sudo pip install liota
 ```
 
 It requires a Python 2.7 environment already installed.
@@ -134,7 +134,7 @@ GraphitePort = <typically 2003> # You can test easily be sending directily to ca
 
 and execute
 ```bash
-  $ nohup python graphite_simulated.py &
+  $ sudo nohup python graphite_simulated.py &
 ```
 
 If you would like to test against an instance of vRealize Operations Manager please send
@@ -151,7 +151,7 @@ The default location for log files generated during Liota operation can be found
 location;
 
 ```bash
-  /etc/var/log
+  /var/log/liota
 ```
 If the above directory is not available or is not writeable modify the log location in the file
 logging.json (find it as described above in the section on liota.conf)
