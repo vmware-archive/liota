@@ -67,8 +67,10 @@ vROps vrops = Vrops(vrops_login, vrops_pwd, WebSocket(URL "secure"))
 gw = DellEdge5000("Demo Gateway")
 # Device definition
 temp = USB-Temp(parent=gw, 'Temp', READ, usb-1)
-# Register the Gateway and associated device vrops.register(gw)
-# Property creation on Gateway gw.set_properties("Location", "Palo Alto Prom:E")
+# Register the Gateway and associated device 
+vrops.register(gw)
+# Property creation on Gateway 
+gw.set_properties("Location", "Palo Alto Prom:E")
 # Creating Metric
 temperature = vrops.create_metric(temp,'Room Temperature', SI.Celsius, sampling_interval=10)
 # Publishing value to DCC component
