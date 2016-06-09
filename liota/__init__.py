@@ -35,7 +35,7 @@ import json
 import logging
 import logging.config
 import os
-import time
+import errno
 import ConfigParser
 from utilities.utility import systemUUID, findLiotaConfigFullPath
 
@@ -45,9 +45,14 @@ def setup_logging(default_level=logging.WARNING):
 
     """
     log = logging.getLogger(__name__)
+    config = ConfigParser.RawConfigParser()
+    try:
+        log_path = config.get('LOG_Path', 'log_path')
+    except ConfigParser.ParsingError, err:
+        print 'Could not parse:', err
+    mkdir_log(log_path)
     fullPath = findLiotaConfigFullPath().get_liota_fullpath()
     if fullPath != '':
-          config = ConfigParser.RawConfigParser()
           try:
               if config.read(fullPath) != []:
                   # now use json file for logging settings
@@ -71,12 +76,18 @@ def setup_logging(default_level=logging.WARNING):
     else:
           # missing config file
           logging.basicConfig(level=default_level)
-          log.warn('liota.conf missing, created default logger with level = ' + str(default_level))        
+          log.warn('liota.conf missing, created default logger with level = ' + str(default_level))
+
+
+def mkdir_log(path):
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError as exc:  # Python >2.5
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else:
+                raise
 
 setup_logging()
 systemUUID()
-
-
-
-
-
