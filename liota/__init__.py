@@ -45,10 +45,14 @@ def setup_logging(default_level=logging.WARNING):
 
     """
     log = logging.getLogger(__name__)
-    mkdir_log("/var/log/liota")
+    config = ConfigParser.RawConfigParser()
+    try:
+        log_path = config.get('LOG_Path', 'log_path')
+    except ConfigParser.ParsingError, err:
+        print 'Could not parse:', err
+    mkdir_log(log_path)
     fullPath = findLiotaConfigFullPath().get_liota_fullpath()
     if fullPath != '':
-          config = ConfigParser.RawConfigParser()
           try:
               if config.read(fullPath) != []:
                   # now use json file for logging settings
@@ -87,8 +91,3 @@ def mkdir_log(path):
 
 setup_logging()
 systemUUID()
-
-
-
-
-
