@@ -44,7 +44,7 @@ quantity = ureg.Quantity
 
 
 # ---------------------------------------------------------------------------
-# Below we showcase how easily SI.Units can be used in the code with help of
+# Below we showcase how easily SI units can be used in the code with help of
 # Pint library which is part of Liota and how easily conversion of the units
 # can be done such as Celsius to Fahrenheit or Kelvin as shown below with
 # help of this library.
@@ -58,20 +58,20 @@ def getTemp():
 
 
 def getTempDegC():
-    tempDegC = getTemp()
-    return tempDegC.magnitude
+    temp_degC = getTemp()
+    return temp_degC.magnitude
 
 
 def getTempDegF():
     temp = getTemp()
-    tempDegF = temp.to('degF')
-    return tempDegF.magnitude
+    temp_degF = temp.to('degF')
+    return temp_degF.magnitude
 
 
-def getTempDegK():
+def getTempKelvin():
     temp = getTemp()
-    tempDegK = temp.to('kelvin')
-    return tempDegK.magnitude
+    temp_Kelvin = temp.to('kelvin')
+    return temp_Kelvin.magnitude
 
 
 # --------------------------------------------------------------------------
@@ -94,6 +94,6 @@ if __name__ == '__main__':
     tempMetricDegF = graphite.create_metric(graphite_gateway, 'temperature.degF', unit=ureg.degF, sampling_interval_sec=62,
                                             aggregation_size=1, sampling_function=getTempDegF)
     tempMetricDegF.start_collecting()
-    tempMetricDegK = graphite.create_metric(graphite_gateway, 'temperature.Kelvin', unit=ureg.kelvin, sampling_interval_sec=125,
-                                            aggregation_size=1, sampling_function=getTempDegK)
-    tempMetricDegK.start_collecting()
+    tempMetricKelvin = graphite.create_metric(graphite_gateway, 'temperature.Kelvin', unit=ureg.kelvin, sampling_interval_sec=125,
+                                              aggregation_size=1, sampling_function=getTempKelvin)
+    tempMetricKelvin.start_collecting()
