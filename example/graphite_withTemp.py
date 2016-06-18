@@ -33,24 +33,48 @@
 from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.graphite_dcc import Graphite
 from liota.transports.socket_connection import Socket
-
-from temper import TemperHandler
+from pint import UnitRegistry
+from temperusb import TemperHandler
 
 # getting values from conf file
 config = {}
 execfile('sampleProp.conf', config)
+ureg = UnitRegistry()
+quantity = ureg.Quantity
 
 
-#---------------------------------------------------------------------------
-
+# ---------------------------------------------------------------------------
+# Below we showcase how easily SI.Units can be used in the code with help of
+# Pint library which is part of Liota and how easily conversion of the units
+# can be done such as Celsius to Fahrenheit or Kelvin as shown below with
+# help of this library.
 
 def getTemp():
     th = TemperHandler()
     devs = th.get_devices()
     t = devs[0].get_temperatures()
-    return  t[0]['temperature_c']
+    temp = quantity(t[0]['temperature_c'], ureg.degC)
+    return temp
 
-#--------------------------------------------------------------------------
+
+def getTempDegC():
+    tempDegC = getTemp()
+    return tempDegC.magnitude
+
+
+def getTempDegF():
+    temp = getTemp()
+    tempDegF = temp.to('degF')
+    return tempDegF.magnitude
+
+
+def getTempDegK():
+    temp = getTemp()
+    tempDegK = temp.to('kelvin')
+    return tempDegK.magnitude
+
+
+# --------------------------------------------------------------------------
 # In this example, we demonstrate how data from a simulated device generating 
 # random numbers can be directed to graphite data center component using Liota.
 # The program illustrates the ease of use Liota brings to IoT application developers.
@@ -64,6 +88,12 @@ if __name__ == '__main__':
     # Socket is the transport which the agent uses to connect to the graphite instance
     graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
     graphite_gateway = graphite.register(gateway)
-    tempMetric = graphite.create_metric(graphite_gateway, 'Temperature C', unit=None, sampling_interval_sec=10, aggregation_size=1, sampling_function=getTemp)
-    tempMetric.start_collecting()
-
+    tempMetricDegC = graphite.create_metric(graphite_gateway, 'temperature.degC', unit=ureg.degC, sampling_interval_sec=33,
+                                            aggregation_size=1, sampling_function=getTempDegC)
+    tempMetricDegC.start_collecting()
+    tempMetricDegF = graphite.create_metric(graphite_gateway, 'temperature.degF', unit=ureg.degF, sampling_interval_sec=62,
+                                            aggregation_size=1, sampling_function=getTempDegF)
+    tempMetricDegF.start_collecting()
+    tempMetricDegK = graphite.create_metric(graphite_gateway, 'temperature.Kelvin', unit=ureg.kelvin, sampling_interval_sec=125,
+                                            aggregation_size=1, sampling_function=getTempDegK)
+    tempMetricDegK.start_collecting()
