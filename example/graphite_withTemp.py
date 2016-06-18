@@ -70,12 +70,12 @@ def getTempDegF():
 
 def getTempKelvin():
     temp = getTemp()
-    temp_Kelvin = temp.to('kelvin')
-    return temp_Kelvin.magnitude
+    temp_kelvin = temp.to('kelvin')
+    return temp_kelvin.magnitude
 
 
 # --------------------------------------------------------------------------
-# In this example, we demonstrate how data from a simulated device generating 
+# In this example, we demonstrate how data from a simulated device generating
 # random numbers can be directed to graphite data center component using Liota.
 # The program illustrates the ease of use Liota brings to IoT application developers.
 
@@ -88,12 +88,12 @@ if __name__ == '__main__':
     # Socket is the transport which the agent uses to connect to the graphite instance
     graphite = Graphite(Socket(config['GraphiteIP'], config['GraphitePort']))
     graphite_gateway = graphite.register(gateway)
-    tempMetricDegC = graphite.create_metric(graphite_gateway, 'temperature.degC', unit=ureg.degC, sampling_interval_sec=33,
-                                            aggregation_size=1, sampling_function=getTempDegC)
-    tempMetricDegC.start_collecting()
-    tempMetricDegF = graphite.create_metric(graphite_gateway, 'temperature.degF', unit=ureg.degF, sampling_interval_sec=62,
-                                            aggregation_size=1, sampling_function=getTempDegF)
-    tempMetricDegF.start_collecting()
-    tempMetricKelvin = graphite.create_metric(graphite_gateway, 'temperature.Kelvin', unit=ureg.kelvin, sampling_interval_sec=125,
-                                              aggregation_size=1, sampling_function=getTempKelvin)
-    tempMetricKelvin.start_collecting()
+    temp_metric_degC = graphite.create_metric(graphite_gateway, 'temperature.degC', unit=ureg.degC, sampling_interval_sec=33,
+                                              aggregation_size=1, sampling_function=getTempDegC)
+    temp_metric_degC.start_collecting()
+    temp_metric_degF = graphite.create_metric(graphite_gateway, 'temperature.degF', unit=ureg.degF, sampling_interval_sec=62,
+                                              aggregation_size=1, sampling_function=getTempDegF)
+    temp_metric_degF.start_collecting()
+    temp_metric_kelvin = graphite.create_metric(graphite_gateway, 'temperature.kelvin', unit=ureg.kelvin, sampling_interval_sec=125,
+                                                aggregation_size=1, sampling_function=getTempKelvin)
+    temp_metric_kelvin.start_collecting()
