@@ -120,7 +120,7 @@ Feel free to modify liota.conf and loggin.json as appropriate for your testing.
 ## Examples
 Post-installation the sample codes for publishing the data to DCC can be found at following location;
 ```bash
-  /etc/liota/examples
+  /etc/liota/example
 ```
 
 Please look through the example code noting especially the files sampleProp.conf and vrops_graphite_dk300_sample.py
