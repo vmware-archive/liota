@@ -46,17 +46,13 @@ def setup_logging(default_level=logging.WARNING):
     """
     log = logging.getLogger(__name__)
     config = ConfigParser.RawConfigParser()
-    try:
-        log_path = config.get('LOG_Path', 'log_path')
-    except ConfigParser.ParsingError, err:
-        print 'Could not parse:', err
-    mkdir_log(log_path)
     fullPath = findLiotaConfigFullPath().get_liota_fullpath()
     if fullPath != '':
           try:
               if config.read(fullPath) != []:
                   # now use json file for logging settings
                   try:
+                      log_path = config.get('LOG_PATH', 'log_path')
                       log_cfg = config.get('LOG_CFG', 'json_path')
                   except ConfigParser.ParsingError, err:
                       print 'Could not parse:', err
@@ -64,6 +60,7 @@ def setup_logging(default_level=logging.WARNING):
                   raise IOError('Cannot open configuration file ' + fullPath)
           except IOError, err:
               print 'Could not open:', err
+          mkdir_log(log_path)
           if os.path.exists(log_cfg):
               with open(log_cfg, 'rt') as f:
                   config = json.load(f)
