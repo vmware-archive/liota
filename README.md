@@ -77,10 +77,15 @@ temperature = vrops.create_metric(temp,'Room Temperature', SI.Celsius, sampling_
 temperature.start_collecting()
 ```
 
+## SI Units
+Liota supports SI units and the conversion of the units with help of Pint library which is included in liota package to provide
+developers the capability to use SI units in their code. We have also included the example [graphite_withTemp.py] (https://github.com/vmware/liota/blob/master/example/graphite_withTemp.py)
+which uses the library to convert temperature value from Celsius to Fahrenheit and Kelvin. More details on the usage of the Pint library
+and conversion of units can be found at this [link] (https://pint.readthedocs.io/en/0.7.2/index.html).
 
 ## Liota – Future Enhancements
 Toward the goal of ubiquity for liota we plan to include the following enhancements:
-* Full support for SI Units specification (possibly with enhancements specifically for IoT)
+* Enhancements for SI Units support in liota specifically for IoT
 * Full support for IEEE 1451, Electronic Transducer Data Sheets
 * Support for MQTT and CoAP as transports
 * A mechanism for IoT gateways to create planet-wide unique identifiers (possibly based on the blockchain mechanism)
@@ -115,16 +120,13 @@ Feel free to modify liota.conf and loggin.json as appropriate for your testing.
 ## Examples
 Post-installation the sample codes for publishing the data to DCC can be found at following location;
 ```bash
-  /etc/liota/examples
+  /etc/liota/example
 ```
 
 Please look through the example code noting especially the files sampleProp.conf and vrops_graphite_dk300_sample.py
 
-Then as an initial test you could bring up an instance of Graphite using the docker instructions (found here),
+Then as an initial test you could bring up an instance of Graphite using the docker instructions found at this [link] (https://github.com/hopsoft/docker-graphite-statsd).
 
-```web
-https://github.com/hopsoft/docker-graphite-statsd
-```
 set the appropriate values in sampleProp.conf,
 ```bash
 GraphiteMetric = <a dot separated string> "Mymetric.foo.bar.random"
