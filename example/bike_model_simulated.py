@@ -7,7 +7,6 @@ import pint
 class BikeModelSimulated:
     def __init__(self, wheel=26, m_bike=20, m_rider=80, m_load=0, interval=5):
         self.slope = 0.0            # rad
-        self.slope_delta = 0.0      # rad / sec
         self.radius_wheel = wheel   # inch
         self.weight_bike  = m_bike  # kg
         self.weight_rider = m_rider # kg
@@ -28,16 +27,11 @@ class BikeModelSimulated:
             # Sleep until next cycle
             time.sleep(self.interval)
 
-            # Change slope_delta slightly and update slope
-            self.slope_delta += min(
-                    max(random.uniform(-0.001, 0.001), -0.01),
-                    0.01
-                )
+            # Change slope
             self.slope = min(
-                    max(self.slope + min(
-                                max(self.slope_delta * self.interval, -0.2),
-                                0.2
-                            ), -math.pi / 16
+                    max(self.slope + \
+                    		random.uniform(-0.01, 0.01) * self.interval,
+                    		-math.pi / 16
                         ), math.pi / 16
                 )
 
