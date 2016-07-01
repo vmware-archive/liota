@@ -100,7 +100,7 @@ def get_temperature(c1, c2, c3, rx):
             c1 + \
             c2 * math.log(rx / ureg.ohm) + \
             c3 * math.log(rx / ureg.ohm) ** 3
-        )
+        ) * ureg.kelvin
     return temper
 
 def get_thermistor_temperature():

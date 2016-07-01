@@ -5,7 +5,7 @@ import random
 import pint
 
 class ThermistorModelSimulated:
-    def __init__(self, u=5.0, r0=3000, interval=5):
+    def __init__(self, u=5.0, r0=3000, interval=5, ureg=None):
         self.u = u                  # Total voltage
         self.r0 = r0                # Reference resistor
         self.ux = self.u / 2        # Initial voltage on thermistor
@@ -13,7 +13,11 @@ class ThermistorModelSimulated:
         self.c2 = 2.37e-4
         self.c3 = 9.90e-8
         self.interval = interval
-        self.ureg = pint.UnitRegistry()
+        self.ureg = None
+        if isinstance(ureg, pint.UnitRegistry):
+            self.ureg = ureg
+        else:
+            self.ureg = pint.UnitRegistry()
 
     def run(self):
         self.th = threading.Thread(target=self.simulate)

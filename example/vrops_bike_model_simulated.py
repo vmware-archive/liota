@@ -30,10 +30,10 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
+# from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
 from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.vrops import Vrops
-from liota.things.ram import RAM
+# from liota.things.ram import RAM
 from liota.things.function import Function
 from liota.transports.web_socket import WebSocket
 import random
@@ -53,27 +53,28 @@ execfile('sampleProp.conf', config)
 # usage of these shown below in main
 # semantics are that on each call the function returns the next available value
 # from the device or system associated to the metric.
-def read_cpu_procs():
-    return cpu_stat.procs_running()
+# def read_cpu_procs():
+#     return cpu_stat.procs_running()
 
-def read_cpu_utilization(sample_duration_sec=1):
-    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
-    return round((100 - cpu_pcts['idle']), 2)
+# def read_cpu_utilization(sample_duration_sec=1):
+#     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
+#     return round((100 - cpu_pcts['idle']), 2)
 
-def read_disk_busy_stats(sample_duration_sec=1):
-    return round(disk_stat.disk_busy('sda', sample_duration_sec), 4)
+# def read_disk_busy_stats(sample_duration_sec=1):
+#     return round(disk_stat.disk_busy('sda', sample_duration_sec), 4)
 
-def read_mem_free():
-    return round((mem_stat.mem_stats()[3]) / (1048576), 3)
+# def read_mem_free():
+#     return round((mem_stat.mem_stats()[3]) / (1048576), 3)
 
-def read_network_bits_recieved():
-    return round((net_stat.rx_tx_bits('eth0')[0]) / (8192), 2)
+# def read_network_bits_recieved():
+#     return round((net_stat.rx_tx_bits('eth0')[0]) / (8192), 2)
 
-def simulated_device():
-    return random.randint(0, 20)
+# def simulated_device():
+#     return random.randint(0, 20)
 
 import time
 import math
+import pint
 
 def static_vars(**kwargs):
     def decorate(func):
@@ -84,9 +85,9 @@ def static_vars(**kwargs):
 
 from bike_model_simulated import BikeModelSimulated
 
-bike_model = BikeModelSimulated()
+ureg = pint.UnitRegistry()
+bike_model = BikeModelSimulated(ureg=ureg)
 bike_model.run()
-ureg = bike_model.ureg
 
 @ureg.check(ureg.rpm, ureg.m)
 def get_speed(revolution, radius):
@@ -192,19 +193,19 @@ if __name__ == '__main__':
         #          sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
         #          report_interfal = the interval between subsequent sends to the data center component. If sample > report values are queued
         #          value = user defined function to obtain the next value from the device associated with this metric
-        cpu_utilization = vrops.create_metric(vrops_gateway, "CPU_Utilization", unit=None, sampling_interval_sec=50, aggregation_size=2, sampling_function=read_cpu_utilization)
+        # cpu_utilization = vrops.create_metric(vrops_gateway, "CPU_Utilization", unit=None, sampling_interval_sec=50, aggregation_size=2, sampling_function=read_cpu_utilization)
 
         # call to start collecting values from the device or system and sending to the data center component
-        cpu_utilization.start_collecting()
+        # cpu_utilization.start_collecting()
 
-        cpu_procs = vrops.create_metric(vrops_gateway, "CPU_Process", unit=None, sampling_interval_sec=6, sampling_function=read_cpu_procs)
-        cpu_procs.start_collecting()
+        # cpu_procs = vrops.create_metric(vrops_gateway, "CPU_Process", unit=None, sampling_interval_sec=6, sampling_function=read_cpu_procs)
+        # cpu_procs.start_collecting()
 
-        disk_busy_stats = vrops.create_metric(vrops_gateway, "Disk_Busy_Stats", unit=None, aggregation_size=6, sampling_function=read_disk_busy_stats)
-        disk_busy_stats.start_collecting()
+        # disk_busy_stats = vrops.create_metric(vrops_gateway, "Disk_Busy_Stats", unit=None, aggregation_size=6, sampling_function=read_disk_busy_stats)
+        # disk_busy_stats.start_collecting()
 
-        network_bits_recieved = vrops.create_metric(vrops_gateway, "Network_Bits_Recieved", unit=None, sampling_interval_sec=5, sampling_function=read_network_bits_recieved)
-        network_bits_recieved.start_collecting()
+        # network_bits_recieved = vrops.create_metric(vrops_gateway, "Network_Bits_Recieved", unit=None, sampling_interval_sec=5, sampling_function=read_network_bits_recieved)
+        # network_bits_recieved.start_collecting()
     else:
         print "vROPS resource not registered successfully"
 
@@ -215,18 +216,18 @@ if __name__ == '__main__':
     #        device name
     #        Read or Write
     #        another Resource in vrops of which the should be the child of a parent-child relationship among Resources
-    ram = RAM(config['Device1Name'], 'Read', gateway)
-    vrops_device = vrops.register(ram)
+    # ram = RAM(config['Device1Name'], 'Read', gateway)
+    # vrops_device = vrops.register(ram)
     # note that the location of this 'device' is different from the location of the gateway. It's not really different
     # but just an example of how one might create a device different from the gateway
-    if vrops_device.registered:
-        for item in config['Device1PropList']:
-            for key, value in item.items():
-                vrops.set_properties(key, value, vrops_device)
-        mem_free = vrops.create_metric(vrops_device, "Memory_Free", unit=None, sampling_interval_sec=10, sampling_function=read_mem_free)
-        mem_free.start_collecting()
-    else:
-        print "vROPS resource not registered successfully"
+    # if vrops_device.registered:
+    #     for item in config['Device1PropList']:
+    #         for key, value in item.items():
+    #             vrops.set_properties(key, value, vrops_device)
+    #     mem_free = vrops.create_metric(vrops_device, "Memory_Free", unit=None, sampling_interval_sec=10, sampling_function=read_mem_free)
+    #     mem_free.start_collecting()
+    # else:
+    #     print "vROPS resource not registered successfully"
 
     bike = Function("Bike Model", 'Read', gateway)
     vrops_bike = vrops.register(bike)

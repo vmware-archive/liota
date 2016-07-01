@@ -5,7 +5,9 @@ import math
 import pint
 
 class BikeModelSimulated:
-    def __init__(self, wheel=26, m_bike=20, m_rider=80, m_load=0, interval=5):
+    def __init__(self,
+            wheel=26, m_bike=20, m_rider=80, m_load=0, interval=5,
+            ureg=None):
         self.slope = 0.0            # rad
         self.radius_wheel = wheel   # inch
         self.weight_bike  = m_bike  # kg
@@ -14,7 +16,11 @@ class BikeModelSimulated:
         self.revolution = 0.0       # rpm
         self.area = 1.0             # m ** 2
         self.interval = interval
-        self.ureg = pint.UnitRegistry()
+        self.ureg = None
+        if isinstance(ureg, pint.UnitRegistry):
+            self.ureg = ureg
+        else:
+            self.ureg = pint.UnitRegistry()
         self.time_last = None
 
     def run(self):
@@ -30,8 +36,8 @@ class BikeModelSimulated:
             # Change slope
             self.slope = min(
                     max(self.slope + \
-                    		random.uniform(-0.01, 0.01) * self.interval,
-                    		-math.pi / 16
+                            random.uniform(-0.01, 0.01) * self.interval,
+                            -math.pi / 16
                         ), math.pi / 16
                 )
 
