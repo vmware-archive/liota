@@ -153,7 +153,7 @@ class Vrops(DataCenterComponent):
          }
       }
 
-    def properties(self, msg_id, res_uuid, res_kind, timestamp, properties_list):
+    def properties(self, msg_id, res_uuid, res_kind, timestamp, properties):
         msg = {
             "transationID": msg_id,
             "type": "add_properties",
@@ -164,13 +164,13 @@ class Vrops(DataCenterComponent):
                 "property_data": []
             }
         }
-        for property_dict in properties_list: 
-            msg["body"]["property_data"].append({"propertyKey": property_dict.keys()[0], "propertyValue":  property_dict.values()[0]})
+        for key, value in properties.items(): 
+            msg["body"]["property_data"].append({"propertyKey": key, "propertyValue":  value})
         return msg
 
-    def set_properties(self, registered_gw, properties_list):
+    def set_properties(self, registered_gw, properties):
         log.info("Properties defined for resource {0}".format(registered_gw.resource.res_name))
-        self.con.send(self.properties(self.con.next_id(), registered_gw.resource.res_uuid, registered_gw.resource.res_kind, getUTCmillis(), properties_list))
+        self.con.send(self.properties(self.con.next_id(), registered_gw.resource.res_uuid, registered_gw.resource.res_kind, getUTCmillis(), properties))
 
     class VropsResource:
 
