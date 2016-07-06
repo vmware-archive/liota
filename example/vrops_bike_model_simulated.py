@@ -103,7 +103,7 @@ def get_bike_speed():
     speed = get_speed(
             bike_model.get_revolution(),
             bike_model.get_radius_wheel()
-        )
+        ).to(ureg.m / ureg.sec)
     return speed.magnitude
 
 #---------------------------------------------------------------------------
@@ -140,7 +140,7 @@ def get_bike_power():
             speed
         ).to(ureg.watt)
     power = power_acceleration + power_gravity + power_resistance
-    return power.magnitude
+    return power.to(ureg.watt).magnitude
 
 #---------------------------------------------------------------------------
 # In this example, we demonstrate how simulated data can be directed to vROps,
