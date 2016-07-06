@@ -28,6 +28,10 @@ class BikeModelSimulated:
         self.th.daemon = True
         self.th.start()
 
+    #-----------------------------------------------------------------------
+    # This method randomly changes some state variables in the model every a
+    # few seconds (as is defined as interval).
+
     def simulate(self):
         while True:
             # Sleep until next cycle
@@ -59,6 +63,11 @@ class BikeModelSimulated:
                     self.weight_load = random.randrange(0, 50)
                     self.time_last = t
 
+    #-----------------------------------------------------------------------
+    # These methods are used to access the state of the simulated physical
+    # object. A typical caller is the sampling method for a metric in a Liota
+    # application.
+
     def get_slope(self):
         return self.ureg.rad * self.slope
 
@@ -80,6 +89,7 @@ class BikeModelSimulated:
     def get_area(self):
         return self.ureg.m ** 2 * self.area
 
+# testing code
 def main():
     bike = BikeModelSimulated()
     bike.run()

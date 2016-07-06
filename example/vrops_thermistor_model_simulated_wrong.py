@@ -30,10 +30,8 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-# from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
 from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.vrops import Vrops
-# from liota.things.ram import RAM
 from liota.things.function import Function
 from liota.transports.web_socket import WebSocket
 import random
@@ -41,36 +39,6 @@ import random
 # getting values from conf file
 config = {}
 execfile('sampleProp.conf', config)
-
-# some standard metrics for Linux systems
-# agent classes for different IoT gateways
-# agent classes for different data center components
-# agent classes for different kinds of of devices, 'Things', connected to the gw
-# we are showing here how to create a representation for a Thing in vROps but
-# using the notion of RAM (because we have no connected devies yet)
-# agent classes for different kinds of layer 4/5 connections from agent to DCC
-# -------User defined functions for getting the next value for a metric --------
-# usage of these shown below in main
-# semantics are that on each call the function returns the next available value
-# from the device or system associated to the metric.
-# def read_cpu_procs():
-#     return cpu_stat.procs_running()
-
-# def read_cpu_utilization(sample_duration_sec=1):
-#     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
-#     return round((100 - cpu_pcts['idle']), 2)
-
-# def read_disk_busy_stats(sample_duration_sec=1):
-#     return round(disk_stat.disk_busy('sda', sample_duration_sec), 4)
-
-# def read_mem_free():
-#     return round((mem_stat.mem_stats()[3]) / (1048576), 3)
-
-# def read_network_bits_recieved():
-#     return round((net_stat.rx_tx_bits('eth0')[0]) / (8192), 2)
-
-# def simulated_device():
-#     return random.randint(0, 20)
 
 import time
 import math
@@ -85,9 +53,18 @@ def static_vars(**kwargs):
 
 from thermistor_model_simulated import ThermistorModelSimulated
 
+# create a pint unit registry
 ureg = pint.UnitRegistry()
+
+# initialize and run the physical model (simulated device)
 thermistor_model = ThermistorModelSimulated(ureg=ureg)
 thermistor_model.run()
+
+#---------------------------------------------------------------------------
+# The following functions operate on physical variables represented in
+# pint objects, and returns a pint object, too.
+# Decorators provided by the pint library are used to check the dimensions of
+# arguments passed to the functions.
 
 @ureg.check(ureg.volt, ureg.ohm, ureg.volt)
 def get_rx(u, r0, ux):
@@ -100,8 +77,15 @@ def get_temperature(c1, c2, c3, rx):
             c1 + \
             c2 * math.log(rx / ureg.ohm) + \
             c3 * math.log(rx / ureg.ohm) ** 3
-        ) * ureg.kelvin
+        ) * ureg.kelvin # the results are already in Kelvin, so this is wrong
     return temper
+
+#---------------------------------------------------------------------------
+# This is a sampling method, which queries the physical model, and calls the
+# physical functions to calculate a desired variable.
+# In this specific case, it gets the coefficients, voltages, and reference
+# resistance from the thermistor simulator, and calls the methods defined
+# above to get the temperature.
 
 def get_thermistor_temperature():
     temper = get_temperature(
@@ -117,9 +101,8 @@ def get_thermistor_temperature():
     return temper.magnitude
 
 #---------------------------------------------------------------------------
-# In this example, we demonstrate how gateway health and some simluated data 
-# can be directed to vrops, VMware's data center component using Liota.
-# The program illustrates the ease of use Liota brings to IoT application developers.
+# In this example, we demonstrate how simulated data can be directed to vROps,
+# VMware's data center component using Liota.
 
 if __name__ == '__main__':
 
@@ -143,50 +126,10 @@ if __name__ == '__main__':
         for item in config['Gateway1PropList']:
             for key, value in item.items():
                 vrops.set_properties(key, value, vrops_gateway)
-        # ---------- Create metrics 'on' the Resource in vrops representing the gateway
-        # arguments:
-        #          local object referring to the Resource in vrops on which the metric should be associated
-        #          metric name
-        #          unit = An SI Unit (work needed here)
-        #          sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
-        #          report_interfal = the interval between subsequent sends to the data center component. If sample > report values are queued
-        #          value = user defined function to obtain the next value from the device associated with this metric
-        # cpu_utilization = vrops.create_metric(vrops_gateway, "CPU_Utilization", unit=None, sampling_interval_sec=50, aggregation_size=2, sampling_function=read_cpu_utilization)
-
-        # call to start collecting values from the device or system and sending to the data center component
-        # cpu_utilization.start_collecting()
-
-        # cpu_procs = vrops.create_metric(vrops_gateway, "CPU_Process", unit=None, sampling_interval_sec=6, sampling_function=read_cpu_procs)
-        # cpu_procs.start_collecting()
-
-        # disk_busy_stats = vrops.create_metric(vrops_gateway, "Disk_Busy_Stats", unit=None, aggregation_size=6, sampling_function=read_disk_busy_stats)
-        # disk_busy_stats.start_collecting()
-
-        # network_bits_recieved = vrops.create_metric(vrops_gateway, "Network_Bits_Recieved", unit=None, sampling_interval_sec=5, sampling_function=read_network_bits_recieved)
-        # network_bits_recieved.start_collecting()
     else:
         print "vROPS resource not registered successfully"
 
-    # Here we are showing how to create a device object, registering it in vrops, and setting properties on it
-    # Since there are no attached devices are as simulating one by considering RAM as separate from the gateway
-    # The agent makes possible many different data models
-    # arguments:
-    #        device name
-    #        Read or Write
-    #        another Resource in vrops of which the should be the child of a parent-child relationship among Resources
-    # ram = RAM(config['Device1Name'], 'Read', gateway)
-    # vrops_device = vrops.register(ram)
-    # note that the location of this 'device' is different from the location of the gateway. It's not really different
-    # but just an example of how one might create a device different from the gateway
-    # if vrops_device.registered:
-    #     for item in config['Device1PropList']:
-    #         for key, value in item.items():
-    #             vrops.set_properties(key, value, vrops_device)
-    #     mem_free = vrops.create_metric(vrops_device, "Memory_Free", unit=None, sampling_interval_sec=10, sampling_function=read_mem_free)
-    #     mem_free.start_collecting()
-    # else:
-    #     print "vROPS resource not registered successfully"
-
+    # create the device object and register it on vROps
     thermistor = Function("Thermistor Model", 'Read', gateway)
     vrops_thermistor = vrops.register(thermistor)
     if vrops_thermistor.registered:
@@ -199,8 +142,4 @@ if __name__ == '__main__':
         thermistor_temper.start_collecting()
     else:
         print "vROPS resource not registered successfully"
-
-    # Debug
-    # while True:
-    #     time.sleep(5)
 

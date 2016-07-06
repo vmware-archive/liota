@@ -1,7 +1,6 @@
 import threading
 import time
 import random
-# import math
 import pint
 
 class ThermistorModelSimulated:
@@ -24,6 +23,10 @@ class ThermistorModelSimulated:
         self.th.daemon = True
         self.th.start()
 
+    #-----------------------------------------------------------------------
+    # This method randomly changes some state variables in the model every a
+    # few seconds (as is defined as interval).
+
     def simulate(self):
         while True:
             # Sleep until next cycle
@@ -36,6 +39,11 @@ class ThermistorModelSimulated:
                             1.5
                         ),  3.5
                 )
+
+    #-----------------------------------------------------------------------
+    # These methods are used to access the state of the simulated physical
+    # object. A typical caller is the sampling method for a metric in a Liota
+    # application.
 
     def get_u(self):
         return self.ureg.volt * self.u
@@ -55,6 +63,7 @@ class ThermistorModelSimulated:
     def get_c3(self):
         return self.c3 / self.ureg.kelvin
 
+# testing code
 def main():
     thermistor = ThermistorModelSimulated()
     thermistor.run()
