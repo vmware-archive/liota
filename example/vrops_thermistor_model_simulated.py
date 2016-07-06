@@ -137,7 +137,7 @@ if __name__ == '__main__':
             for key, value in item.items():
                 vrops.set_properties(key, value, vrops_thermistor)
         thermistor_temper = vrops.create_metric(vrops_thermistor, "Temperature",
-                unit=None, sampling_interval_sec=5,
+                unit=ureg.degC, sampling_interval_sec=5,
                 sampling_function=get_thermistor_temperature)
         thermistor_temper.start_collecting()
     else:

@@ -104,7 +104,7 @@ def get_bike_speed():
             bike_model.get_revolution(),
             bike_model.get_radius_wheel()
         )
-    return float(speed / (ureg.m / ureg.s))
+    return speed.magnitude
 
 #---------------------------------------------------------------------------
 # This is a more complex sampling method, which queries the physical model.
@@ -140,7 +140,7 @@ def get_bike_power():
             speed
         ).to(ureg.watt)
     power = power_acceleration + power_gravity + power_resistance
-    return float(power / ureg.watt)
+    return power.magnitude
 
 #---------------------------------------------------------------------------
 # In this example, we demonstrate how simulated data can be directed to vROps,
@@ -179,11 +179,11 @@ if __name__ == '__main__':
             for key, value in item.items():
                 vrops.set_properties(key, value, vrops_bike)
         bike_speed = vrops.create_metric(vrops_bike, "Speed",
-                unit=None, sampling_interval_sec=5,
+                unit=(ureg.m / ureg.sec), sampling_interval_sec=5,
                 sampling_function=get_bike_speed)
         bike_speed.start_collecting()
         bike_speed = vrops.create_metric(vrops_bike, "Power",
-                unit=None, sampling_interval_sec=5,
+                unit=ureg.watt, sampling_interval_sec=5,
                 sampling_function=get_bike_power)
         bike_speed.start_collecting()
     else:
