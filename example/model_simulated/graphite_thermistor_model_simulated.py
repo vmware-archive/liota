@@ -77,6 +77,22 @@ def get_temperature(c1, c2, c3, rx):
             c2 * math.log(rx / ureg.ohm) + \
             c3 * math.log(rx / ureg.ohm) ** 3
         )
+
+    #-----------------------------------------------------------------------
+    # Here commented is a counter example, showing how a dimension mismatch
+    # can be prevented using pint.
+    # Since in the correct one above, the unit of temper is 
+    # already Kelvin, if we multiply it by ureg.kelvin, the unit of the
+    # returned values will become ureg.kelvin ** 2, which will consequently 
+    # throw an exception in succeeding method calls.
+
+
+    # temper = 1 / ( \
+    #         c1 + \
+    #         c2 * math.log(rx / ureg.ohm) + \
+    #         c3 * math.log(rx / ureg.ohm) ** 3
+    #     ) * ureg.kelvin
+
     return temper
 
 #---------------------------------------------------------------------------
