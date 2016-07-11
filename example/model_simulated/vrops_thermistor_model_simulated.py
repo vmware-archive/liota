@@ -32,13 +32,13 @@
 
 from liota.boards.gateway_dk300 import Dk300
 from liota.dcc.vrops import Vrops
-from liota.things.function import Function
+from liota.things.device import Device
 from liota.transports.web_socket import WebSocket
 import random
 
 # getting values from conf file
 config = {}
-execfile('sampleProp.conf', config)
+execfile('../sampleProp.conf', config)
 
 import time
 import math
@@ -146,7 +146,7 @@ if __name__ == '__main__':
         print "vROPS resource not registered successfully"
 
     # create the device object and register it on vROps
-    thermistor = Function("Thermistor Model", 'Read', gateway)
+    thermistor = Device("Thermistor Model", 'Read', gateway)
     vrops_thermistor = vrops.register(thermistor)
     if vrops_thermistor.registered:
         for item in config['Device1PropList']:

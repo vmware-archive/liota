@@ -37,7 +37,7 @@ import random
 
 # getting values from conf file
 config = {}
-execfile('sampleProp.conf', config)
+execfile('../sampleProp.conf', config)
 
 import time
 import math
