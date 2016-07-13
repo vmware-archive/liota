@@ -96,10 +96,8 @@ if __name__ == '__main__':
     if vrops_gateway.registered:
         # these call set properties on the Resource representing the gateway in the vrops instance
         # properties are a key:value store
-        # arguments are (key, value)
-        for item in config['Gateway1PropList']:
-            for key, value in item.items():
-                vrops.set_properties(key, value, vrops_gateway)
+        vrops.set_properties(vrops_gateway, config['Gateway1PropList'])
+
         # ---------- Create metrics 'on' the Resource in vrops representing the gateway
         # arguments:
         #          local object referring to the Resource in vrops on which the metric should be associated
@@ -137,9 +135,8 @@ if __name__ == '__main__':
     if vrops_device.registered:
         # note that the location of this 'device' is different from the location of the gateway. It's not really different
         # but just an example of how one might create a device different from the gateway
-        for item in config['Device1PropList']:
-            for key, value in item.items():
-                vrops.set_properties(key, value, vrops_device)
+        vrops.set_properties(vrops_device, config['Device1PropList'])
+
         mem_free = vrops.create_metric(vrops_device, "Memory_Free", unit=None, sampling_interval_sec=10, sampling_function=read_mem_free)
         mem_free.start_collecting()
     else:
