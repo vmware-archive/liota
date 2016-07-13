@@ -98,7 +98,6 @@ class Vrops(DataCenterComponent):
                            if json_msg["body"]["uuid"] != "null":
                                log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
                                gw.res_uuid = json_msg["body"]["uuid"]
-                               time.sleep(5)
                                vrops_res.registered = True
                                exit()
                            else:
@@ -154,7 +153,7 @@ class Vrops(DataCenterComponent):
          }
       }
 
-    def properties(self, msg_id, res_uuid, res_kind, timestamp, key, value):
+    def properties(self, msg_id, res_uuid, res_kind, timestamp, properties):
         msg = {
             "transationID": msg_id,
             "type": "add_properties",
@@ -165,12 +164,13 @@ class Vrops(DataCenterComponent):
                 "property_data": []
             }
         }
-        msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
+        for key, value in properties.items(): 
+            msg["body"]["property_data"].append({"propertyKey": key, "propertyValue":  value})
         return msg
 
-    def set_properties(self, key, value, registered_gw):
+    def set_properties(self, registered_gw, properties):
         log.info("Properties defined for resource {0}".format(registered_gw.resource.res_name))
-        self.con.send(self.properties(self.con.next_id(), registered_gw.resource.res_uuid, registered_gw.resource.res_kind, getUTCmillis(), key, value))
+        self.con.send(self.properties(self.con.next_id(), registered_gw.resource.res_uuid, registered_gw.resource.res_kind, getUTCmillis(), properties))
 
     class VropsResource:
 
