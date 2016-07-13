@@ -139,9 +139,7 @@ if __name__ == '__main__':
         # these call set properties on the Resource representing the gateway in the vrops instance
         # properties are a key:value store
         # arguments are (key, value)
-        for item in config['Gateway1PropList']:
-            for key, value in item.items():
-                vrops.set_properties(key, value, vrops_gateway)
+        vrops.set_properties(vrops_gateway, config['Gateway1PropList'])
     else:
         print "vROPS resource not registered successfully"
 
@@ -149,9 +147,8 @@ if __name__ == '__main__':
     thermistor = Device("Thermistor Model", 'Read', gateway)
     vrops_thermistor = vrops.register(thermistor)
     if vrops_thermistor.registered:
-        for item in config['Device1PropList']:
-            for key, value in item.items():
-                vrops.set_properties(key, value, vrops_thermistor)
+        vrops.set_properties(vrops_thermistor, config['Device1PropList'])
+        
         thermistor_temper = vrops.create_metric(vrops_thermistor, "Temperature",
                 unit=ureg.degC, sampling_interval_sec=5,
                 sampling_function=get_thermistor_temperature)

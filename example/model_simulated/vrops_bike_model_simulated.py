@@ -165,9 +165,7 @@ if __name__ == '__main__':
         # these call set properties on the Resource representing the gateway in the vrops instance
         # properties are a key:value store
         # arguments are (key, value)
-        for item in config['Gateway1PropList']:
-            for key, value in item.items():
-                vrops.set_properties(key, value, vrops_gateway)
+        vrops.set_properties(vrops_gateway, config['Gateway1PropList'])
     else:
         print "vROPS resource not registered successfully"
 
@@ -175,9 +173,8 @@ if __name__ == '__main__':
     bike = Device("Bike Model", 'Read', gateway)
     vrops_bike = vrops.register(bike)
     if vrops_bike.registered:
-        for item in config['Device1PropList']:
-            for key, value in item.items():
-                vrops.set_properties(key, value, vrops_bike)
+        vrops.set_properties(vrops_bike, config['Device1PropList'])
+        
         bike_speed = vrops.create_metric(vrops_bike, "Speed",
                 unit=(ureg.m / ureg.sec), sampling_interval_sec=5,
                 sampling_function=get_bike_speed)
