@@ -55,6 +55,7 @@ class Mqtt(TransportLayer):
         self.client.on_message = self.on_message
         self.client.on_publish = self.on_publish
         self.client.on_subscribe = self.on_subscribe
+        self.connect_soc()
         TransportLayer.__init__(self)
 
     def connect_soc(self):
