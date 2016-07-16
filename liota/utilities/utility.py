@@ -133,7 +133,7 @@ class findLiotaConfigFullPath:
             else:
                 continue
         if findLiotaConfigFullPath.__fullPathLiotaConfig == '':
-            print 'liota.conf not found'
+            log.error('liota.conf file not found')
 
     def get_liota_fullpath(self):
         return findLiotaConfigFullPath.__fullPathLiotaConfig

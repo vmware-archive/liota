@@ -55,11 +55,11 @@ def setup_logging(default_level=logging.WARNING):
                       log_path = config.get('LOG_PATH', 'log_path')
                       log_cfg = config.get('LOG_CFG', 'json_path')
                   except ConfigParser.ParsingError, err:
-                      print 'Could not parse:', err
+                      log.error('Could not parse log config file')
               else:
                   raise IOError('Cannot open configuration file ' + fullPath)
           except IOError, err:
-              print 'Could not open:', err
+              log.error('Could not open log config file')
           mkdir_log(log_path)
           if os.path.exists(log_cfg):
               with open(log_cfg, 'rt') as f:
@@ -69,11 +69,10 @@ def setup_logging(default_level=logging.WARNING):
           else:
               # missing logging.json file 
               logging.basicConfig(level=default_level)
-              log.warn('logging.json missing,created default logger with level = ' + str(default_level))
+              log.warn('logging.json file missing,created default logger with level = ' + str(default_level))
     else:
           # missing config file
-          logging.basicConfig(level=default_level)
-          log.warn('liota.conf missing, created default logger with level = ' + str(default_level))
+          log.warn('liota.conf file missing')
 
 
 def mkdir_log(path):

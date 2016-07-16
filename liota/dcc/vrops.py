@@ -132,11 +132,14 @@ class Vrops(DataCenterComponent):
                                 with open(uuid_path, 'w') as configfile:
                                     uuid_config.write(configfile)
                             except ConfigParser.ParsingError, err:
-                                print 'Could not parse:', err
+                                log.error('Could not open log config file')
                         else:
-                            raise IOError('Cannot open configuration file ' + fullPath)
+                            raise IOError('Could not open config file ' + fullPath)
                     except IOError, err:
-                        print 'Could not open:', err
+                        log.error('Could not open log config file')
+                else:
+                    # missing config file
+                    log.warn('liota.conf file missing')
             return vrops_res
 
     def connect_soc(self, protocol, url, user_name, password):
