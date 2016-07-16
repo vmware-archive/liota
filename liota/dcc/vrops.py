@@ -137,7 +137,6 @@ class Vrops(DataCenterComponent):
                             raise IOError('Cannot open configuration file ' + fullPath)
                     except IOError, err:
                         print 'Could not open:', err
-
             return vrops_res
 
     def connect_soc(self, protocol, url, user_name, password):
