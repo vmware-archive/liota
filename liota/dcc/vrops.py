@@ -135,8 +135,8 @@ class Vrops(DataCenterComponent):
                                 print 'Could not parse:', err
                         else:
                             raise IOError('Cannot open configuration file ' + fullPath)
-                    except ConfigParser.ParsingError, err:
-                        print 'Could not parse:', err
+                    except IOError, err:
+                        print 'Could not open:', err
 
             return vrops_res
 
