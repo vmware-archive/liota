@@ -44,7 +44,7 @@ import ConfigParser
 from liota.dcc.dcc_base import DataCenterComponent
 from helix_protocol import HelixProtocol
 from liota.core.metric_handler import Metric
-from liota.utilities.utility import getUTCmillis, findLiotaConfigFullPath
+from liota.utilities.utility import getUTCmillis, LiotaConfigPath
 
 
 log = logging.getLogger(__name__)
@@ -120,7 +120,7 @@ class Vrops(DataCenterComponent):
                 log.info("Relationship Created")
             if gw.res_kind is 'HelixGateway':
                 config = ConfigParser.RawConfigParser()
-                fullPath = findLiotaConfigFullPath().get_liota_fullpath()
+                fullPath = LiotaConfigPath().get_liota_fullpath()
                 if fullPath != '':
                     try:
                         if config.read(fullPath) != []:
@@ -132,11 +132,11 @@ class Vrops(DataCenterComponent):
                                 with open(uuid_path, 'w') as configfile:
                                     uuid_config.write(configfile)
                             except ConfigParser.ParsingError, err:
-                                log.error('Could not open log config file')
+                                log.error('Could not open config file')
                         else:
                             raise IOError('Could not open config file ' + fullPath)
                     except IOError, err:
-                        log.error('Could not open log config file')
+                        log.error('Could not open config file')
                 else:
                     # missing config file
                     log.warn('liota.conf file missing')

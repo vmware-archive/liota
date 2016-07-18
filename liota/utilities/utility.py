@@ -105,12 +105,12 @@ def getUTCmillis():
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
 
-class findLiotaConfigFullPath:
-    __fullPathLiotaConfig = ''
+class LiotaConfigPath:
+    path_liota_config = ''
     syswide_path = '/etc/liota/conf/'
 
     def __init__(self):
-        if findLiotaConfigFullPath.__fullPathLiotaConfig == '':
+        if LiotaConfigPath.path_liota_config == '':
             self._find_path()
 
     def _find_path(self):
@@ -123,17 +123,17 @@ class findLiotaConfigFullPath:
         """
 
         for loc in os.curdir, os.path.expanduser("~"), os.environ.get(
-                "LIOTA_CONF"), findLiotaConfigFullPath.syswide_path:
+                "LIOTA_CONF"), LiotaConfigPath.syswide_path:
             if loc is None:
                 continue
             path = os.path.join(loc, 'liota.conf')
             if os.path.exists(path):
-                findLiotaConfigFullPath.__fullPathLiotaConfig = path
+                LiotaConfigPath.path_liota_config = path
                 break
             else:
                 continue
-        if findLiotaConfigFullPath.__fullPathLiotaConfig == '':
+        if LiotaConfigPath.path_liota_config == '':
             log.error('liota.conf file not found')
 
     def get_liota_fullpath(self):
-        return findLiotaConfigFullPath.__fullPathLiotaConfig
+        return LiotaConfigPath.path_liota_config

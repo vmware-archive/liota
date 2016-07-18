@@ -37,7 +37,7 @@ import logging.config
 import os
 import errno
 import ConfigParser
-from utilities.utility import systemUUID, findLiotaConfigFullPath
+from utilities.utility import systemUUID, LiotaConfigPath
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -46,7 +46,7 @@ def setup_logging(default_level=logging.WARNING):
     """
     log = logging.getLogger(__name__)
     config = ConfigParser.RawConfigParser()
-    fullPath = findLiotaConfigFullPath().get_liota_fullpath()
+    fullPath = LiotaConfigPath().get_liota_fullpath()
     if fullPath != '':
           try:
               if config.read(fullPath) != []:
