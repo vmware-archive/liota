@@ -179,10 +179,10 @@ if __name__ == '__main__':
                 unit=(ureg.m / ureg.sec), sampling_interval_sec=5,
                 sampling_function=get_bike_speed)
         bike_speed.start_collecting()
-        bike_speed = vrops.create_metric(vrops_bike, "Power",
+        bike_power = vrops.create_metric(vrops_bike, "Power",
                 unit=ureg.watt, sampling_interval_sec=5,
                 sampling_function=get_bike_power)
-        bike_speed.start_collecting()
+        bike_power.start_collecting()
     else:
         print "vROPS resource not registered successfully"
 
