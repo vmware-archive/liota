@@ -39,7 +39,7 @@ class TransportLayer:
     __metaclass__ = ABCMeta
 
     def __init__(self):
-        self.connect_soc()
+        pass
 
     @abstractmethod
     def send(self, message):

@@ -46,6 +46,7 @@ class WebSocket(TransportLayer):
     """
     def __init__(self, url):
         self.url = url
+        self.connect_soc()
         TransportLayer.__init__(self)
 
     def connect_soc(self):
