@@ -39,11 +39,12 @@ from socket import timeout
 import sys
 import threading
 from time import timezone
+import ConfigParser
 
 from liota.dcc.dcc_base import DataCenterComponent
 from helix_protocol import HelixProtocol
 from liota.core.metric_handler import Metric
-from liota.utilities.utility import getUTCmillis
+from liota.utilities.utility import getUTCmillis, LiotaConfigPath
 from liota.utilities.si_unit import parse_unit
 
 
@@ -118,6 +119,28 @@ class Vrops(DataCenterComponent):
             if gw.parent is not None:
                 self.init_relations(gw)
                 log.info("Relationship Created")
+            if gw.res_kind is 'HelixGateway':
+                config = ConfigParser.RawConfigParser()
+                fullPath = LiotaConfigPath().get_liota_fullpath()
+                if fullPath != '':
+                    try:
+                        if config.read(fullPath) != []:
+                            try:
+                                uuid_path = config.get('UUID_PATH', 'uuid_path')
+                                uuid_config = ConfigParser.RawConfigParser()
+                                uuid_config.add_section('GATEWAY')
+                                uuid_config.set('GATEWAY', gw.res_name, gw.res_uuid)
+                                with open(uuid_path, 'w') as configfile:
+                                    uuid_config.write(configfile)
+                            except ConfigParser.ParsingError, err:
+                                log.error('Could not open config file')
+                        else:
+                            raise IOError('Could not open config file ' + fullPath)
+                    except IOError, err:
+                        log.error('Could not open config file')
+                else:
+                    # missing config file
+                    log.warn('liota.conf file missing')
             return vrops_res
 
     def connect_soc(self, protocol, url, user_name, password):
