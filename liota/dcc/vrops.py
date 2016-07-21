@@ -51,7 +51,7 @@ from liota.utilities.si_unit import parse_unit
 log = logging.getLogger(__name__)
 
 class Vrops(DataCenterComponent):
-    """ The implementation of vROPS cloud provider soultion
+    """ The implementation of vROPS cloud provider solution
 
     """
     def __init__(self, username, password, con):

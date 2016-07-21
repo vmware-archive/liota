@@ -33,32 +33,64 @@
 import re
 import pint
 import pint.errors
-import si.units
-import si.prefixes
 
-prefixes_short = si.units.SIUnit.all_prefixes
-prefixes_long = map(
-        lambda pf: si.prefixes.prefix_from_value(
-                getattr(si.prefixes, pf),
-                short=False
-            ),
-        prefixes_short
-    )
+#---------------------------------------------------------------------------
+# SI prefixes, according to standard documents
+# http://www.bipm.org/en/measurement-units/
+
+prefixes = {
+        10.0:       "deca",     0.1:        "deci",
+        100.0:      "hecto",    0.01:       "centi",
+        1000.0:     "kilo",     0.001:      "milli",
+        1e+6:       "mega",     1e-6:       "micro",
+        1e+9:       "giga",     1e-9:       "nano",
+        1e+12:      "tera",     1e-12:      "pico",
+        1e+15:      "peta",     1e-15:      "femto",
+        1e+18:      "exa",      1e-18:      "atto",
+        1e+21:      "zetta",    1e-21:      "zepto",
+        1e+24:      "yotta",    1e-24:      "yocto"
+    }
+prefixes_long = prefixes.values()
+
+#---------------------------------------------------------------------------
+# These are regular expression objects we use to convert pint strings to
+# standard SI unit names.
+# May need to be changed if pint strings are changed in a pint update
+
 re_prefixes = "(" + "|".join(prefixes_long) + ")"
 re_prefixed = "^" + re_prefixes + "([^\s]+)$"
 cr_prefixed = re.compile(re_prefixed)
+
+# Compiled regular expression objects for batch replacements
 cr_replaces = {
-        re.compile("meter"): "metre",
-        re.compile("degC"): "degree Celsius",
-        re.compile("\*\*\s2"): "squared",
-        re.compile("\*\*\s3"): "cubed",
-        re.compile("\*\*\s4"): "to the fourth power",
-        re.compile("\s\*\s"): " ",
+        re.compile(r"\bmeter\b"): "metre",
+        re.compile(r"\bdegC\b"): "degree Celsius",
+        re.compile(r"Bq\b"): "becquerel",
+        re.compile(r"Gy\b"): "gray",
+        re.compile(r"\*\*\s2\b"): "squared",
+        re.compile(r"\*\*\s3\b"): "cubed",
+        re.compile(r"\*\*\s4\b"): "to the fourth power",
+        re.compile(r"\b1\s\/\s(meter|metre)"): r"reciprocal \1",
+        re.compile(r"\s\*\s"): " "
     }
+cr_patches = {
+		re.compile(r"metre\ssquared"): "square metre",
+		re.compile(r"metre\scubed"): "cubic metre",
+		re.compile(r"(kelvin|degree\sCelsius)\skilogram"): r"kilogram \1",
+		re.compile(r"(kelvin|degree\sCelsius)\smetre"): r"metre \1",
+		re.compile(r"(kelvin|degree\sCelsius)\smole"): r"mole \1",
+		re.compile(r"metre\snewton"): "newton metre"
+	}
 
 # Find prefix with provided multiplier and return its full name
 def _get_prefix(multiplier):
-    return si.prefixes.prefix_from_value(multiplier, short=False)
+    return prefixes[multiplier]
+
+#---------------------------------------------------------------------------
+# Here we defined an error that is raised when we cannot parse user defined
+# unit for whatever reason.
+# Currently, possible reasons include using non-SI unit, having prefix on a
+# squared or cubed unit, and having unsupported power of unit.
 
 class UnsupportedUnitError(ValueError):
     """
@@ -73,7 +105,10 @@ class UnsupportedUnitError(ValueError):
         mess = "'{0}' is not a supported unit"
         return mess.format(self.unit_specs)
 
-# Return name of unit according to SI specs, or return None if unit is None
+#---------------------------------------------------------------------------
+# This method returns name of unit according to SI specs,
+# or return None if provided unit reference is None.
+
 def _get_unit_name(unit):
     if unit is None:
         return None
@@ -87,14 +122,27 @@ def _get_unit_name(unit):
         ts = cr.sub(rp, ts)
 
     # Detect higher powers and throw exception
+    if re.compile("\*\*\s\-?\d").search(ts) is not None:
+        raise UnsupportedUnitError(unit)
+
+    # Detect numbers and throw exception
     if re.compile("\d").search(ts) is not None:
-    	raise UnsupportedUnitError(unit)
+        raise UnsupportedUnitError(unit)    
 
     # Additional and advanced replacements
-    ts = re.compile("\s\/\s").sub(" per ", ts, count=1)
-    ts = re.compile("\s\/\s").sub(" ", ts, count=1)
+    ts = re.compile(r"\s\/\s").sub(" per ", ts, count=1)
+    ts = re.compile(r"\s\/\s").sub(" ", ts, count=1)
+
+    # Apply name patches
+    for cr, rp in cr_patches.items():
+        ts = cr.sub(rp, ts)
 
     return ts
+
+#---------------------------------------------------------------------------
+# This is primary method that should be imported in vROps DCC, or any future
+# DCC that has or requires unit support, in order to parse unit parameter
+# passed through create_metric call.
 
 def parse_unit(unit):
     pf = None
@@ -125,49 +173,77 @@ def parse_unit(unit):
         try:
             pf = _get_prefix(tn[0])
             un = tn[1]
-            if re.compile("\s").search(str(un)) is not None:
-            	raise UnsupportedUnitError(unit)
-        except IndexError:
+            # if re.compile("\s").search(str(un)) is not None:
+            if re.compile("\d").search(str(un)) is not None:
+                raise UnsupportedUnitError(unit)
+        except KeyError:
             raise UnsupportedUnitError(unit)
 
     # Return prefix and unit strings
     return (pf, _get_unit_name(un))
 
+#---------------------------------------------------------------------------
+# These are units defined in tables from standard documents.
+# Table 1 include seven base units.
+# Table 2-4 include examples of derived units.
+# We want to make sure all units defined in these tables are parsed as they 
+# are specified in standard documents.
+# For derived units not in these tables, we deliver out best effort.
+
+units_table_1 = lambda ureg: [
+        ureg.m,     ureg.kg,    ureg.s,     ureg.A,     ureg.K,
+        ureg.mol,   ureg.cd
+    ]
+units_table_2 = lambda ureg: [
+        ureg.m ** 2,            ureg.m ** 3,
+        ureg.m / ureg.s,        ureg.m / ureg.s ** 2,
+        ureg.m ** -1,
+        ureg.kg / ureg.m ** 3,  ureg.kg / ureg.m ** 2,
+        ureg.m ** 3 / ureg.kg,
+        ureg.A / ureg.m ** 2,   ureg.A / ureg.m,
+        ureg.mol / ureg.m ** 3, ureg.kg / ureg.m ** 3,
+        ureg.cd / ureg.m ** 2,
+        ureg.dimensionless,     ureg.dimensionless
+    ]
+units_table_3 = lambda ureg: [
+        ureg.rad,   ureg.sr,    ureg.Hz,    ureg.N,     ureg.Pa,
+        ureg.J,     ureg.W,     ureg.C,     ureg.V,     ureg.F,
+        ureg.ohm,   ureg.S,     ureg.Wb,    ureg.T,     ureg.H,
+        ureg.degC,  ureg.lm,    ureg.lx,    ureg.Bq,    ureg.Gy,
+        ureg.Sv,
+        ureg.mol / ureg.s # katal (kat) is not supported by pint at this time
+    ]
+units_table_4 = lambda ureg: [
+        ureg.Pa * ureg.s,
+        ureg.N * ureg.m,        ureg.N / ureg.m,
+        ureg.rad / ureg.s,      ureg.rad / ureg.s ** 2,
+        ureg.W / ureg.m ** 2,
+        ureg.J / ureg.K,        ureg.J / (ureg.kg * ureg.K),
+        ureg.J / ureg.kg,       ureg.W / (ureg.m * ureg.K),
+        ureg.J / ureg.m ** 3,
+        ureg.V / ureg.m,        ureg.C / ureg.m ** 3,
+        ureg.C / ureg.m ** 2,   ureg.C / ureg.m ** 2,
+        ureg.F / ureg.m,        ureg.H / ureg.m,
+        ureg.J / ureg.mol,      ureg.J / (ureg.mol * ureg.K),
+        ureg.C / ureg.kg,       ureg.Gy / ureg.s,
+        ureg.W / ureg.sr,       ureg.W / (ureg.m ** 2 * ureg.sr),
+        (ureg.mol / ureg.s) / ureg.m ** 3
+    ]
+unit_tables = lambda ureg: [
+        units_table_1(ureg),
+        units_table_2(ureg),
+        units_table_3(ureg),
+        units_table_4(ureg)
+    ]
+
+
 # Testing code
 def main():
     ureg = pint.UnitRegistry()
-
-    pint_units = []
-    pint_units.append(ureg.m / ureg.m)
-    pint_units.append(ureg.rad)
-    pint_units.append(ureg.deg)
-    pint_units.append(ureg.um)
-    pint_units.append(ureg.feet)
-    pint_units.append(ureg.mg)
-    pint_units.append(ureg.degC)
-    pint_units.append(ureg.degF)
-    pint_units.append(ureg.acre)
-    pint_units.append(ureg.m ** 2)
-    pint_units.append(ureg.L)
-    pint_units.append(ureg.m / ureg.s)
-    pint_units.append(ureg.m / ureg.s ** 2)
-    pint_units.append(ureg.newton)
-    pint_units.append(ureg.kg * ureg.m / ureg.s ** 2)
-    pint_units.append(ureg.J / ureg.kg / ureg.K)
-    pint_units.append(ureg.pascal)
-    pint_units.append(ureg.kV)
-    pint_units.append(ureg.megaohm)
-    pint_units.append(ureg.uF)
-
     print_split = "-" * 76
 
-    print print_split
-    print "\033[1m%32s    %s\033[0m" % (
-            "String (Pint)",
-            "Name and Prefix"
-        )
-    print print_split
-    for un in pint_units:
+    # Base units and examples of derived units defined in SI standard documents
+    def parse_unit_with_color(un):
         pf = "\033[1;36mnull\033[0m"
         qn = None
         try:
@@ -184,9 +260,65 @@ def main():
                 nn = qn[1]
             else:
                 nn = "\033[1;36mnull\033[0m"
-        print "\033[1m%32s\033[0m    %s, %s" % (un, nn, pf)
+        return (pf, nn)
+
+    for j in range(0, 4):
+        print print_split
+        print "  \033[1;36mTable %d\033[0m" % (j + 1)
+        print print_split
+        for un in unit_tables(ureg)[j]:
+            pf, nn = parse_unit_with_color(un)
+            print "  \033[1m%s\033[0m - %s, %s" % (un, pf, nn)
+    
     print print_split
-    # print "All supported prefixes: {0}".format(prefixes_long)
+    print "  \033[1;33mSupported Prefixes\033[0m"
+    print print_split
+    for multiplier, pf in sorted(prefixes.items()):
+        print "  \033[1m%s\033[0m = %.2e" % (pf, multiplier)
+
+    units_prefixed = [
+            ureg.km,    ureg.dm,    ureg.cm,    ureg.mm,    ureg.um,
+            ureg.nm,    ureg.fm,    ureg.pm,
+            ureg.kg,    ureg.g,     ureg.mg,    ureg.ug,
+            ureg.ms,    ureg.us,    ureg.ns,    ureg.fs,
+            ureg.mA,    ureg.uA,    ureg.mmol,
+            ureg.GHz,   ureg.MHz,   ureg.kHz,
+            ureg.MPa,   ureg.kPa,   ureg.hPa,
+            ureg.kJ,    ureg.MW,    ureg.kW,    ureg.mW,
+            ureg.MV,    ureg.kV,    ureg.mV,
+            ureg.uF,    ureg.nF,    ureg.pF,
+            ureg.Mohm,  ureg.kohm,
+        ]
+
+    print print_split
+    print "  \033[1;33mPrefixed Units\033[0m"
+    print print_split
+    for un in units_prefixed:
+        pf, nn = parse_unit_with_color(un)
+        print "  \033[1m%s\033[0m - %s, %s" % (un, pf, nn)
+
+    units_invalid = [
+            ureg.deg,   ureg.ft,    ureg.inch,  ureg.yard,  ureg.mile,
+            ureg.degF,
+            ureg.acre,
+            ureg.km ** 2,           ureg.dm ** 2,
+            ureg.L,
+            ureg.dm ** 3,           ureg.cm ** 2,
+            ureg.kph,
+            ureg.km / ureg.s,
+            ureg.um / ureg.ms,
+            ureg.kWh,
+            ureg.s ** -1,           ureg.kg ** -1
+        ]
+
+    print print_split
+    print "  \033[1;31mInvalid Units\033[0m"
+    print print_split
+    for un in units_invalid:
+        pf, nn = parse_unit_with_color(un)
+        print "  \033[1m%s\033[0m - %s, %s" % (un, pf, nn)
+
+    print print_split
 
 if __name__ == "__main__":
     main()
