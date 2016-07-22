@@ -84,7 +84,7 @@ class systemUUID:
 
     def _get_system_uuid(self):
         if systemUUID.__UUID == '':
-            self.set_system_uuid()
+            self._set_system_uuid()
         return systemUUID.__UUID
 
 
