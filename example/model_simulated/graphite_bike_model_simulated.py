@@ -159,8 +159,8 @@ if __name__ == '__main__':
             unit=(ureg.m / ureg.sec), sampling_interval_sec=5,
             sampling_function=get_bike_speed)
     bike_speed.start_collecting()
-    bike_speed = graphite.create_metric(graphite_gateway, "model.bike.power",
+    bike_power = graphite.create_metric(graphite_gateway, "model.bike.power",
             unit=ureg.watt, sampling_interval_sec=5,
             sampling_function=get_bike_power)
-    bike_speed.start_collecting()
+    bike_power.start_collecting()
 
