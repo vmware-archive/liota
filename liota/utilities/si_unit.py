@@ -57,12 +57,12 @@ prefixes_long = prefixes.values()
 # standard SI unit names.
 # May need to be changed if pint strings are changed in a pint update
 
-re_prefixes = "(" + "|".join(prefixes_long) + ")"
-re_prefixed = "^" + re_prefixes + "([^\s]+)$"
-cr_prefixed = re.compile(re_prefixed)
+re_str_prefixes = "(" + "|".join(prefixes_long) + ")"
+re_str_prefixed = "^" + re_str_prefixes + "([^\s]+)$"
+re_obj_prefixed = re.compile(re_str_prefixed)
 
 # Compiled regular expression objects for batch replacements
-cr_replaces = {
+re_obj_replaces = {
         re.compile(r"\bmeter\b"): "metre",
         re.compile(r"\bdegC\b"): "degree Celsius",
         re.compile(r"Bq\b"): "becquerel",
@@ -73,14 +73,14 @@ cr_replaces = {
         re.compile(r"\b1\s\/\s(meter|metre)"): r"reciprocal \1",
         re.compile(r"\s\*\s"): " "
     }
-cr_patches = {
-		re.compile(r"metre\ssquared"): "square metre",
-		re.compile(r"metre\scubed"): "cubic metre",
-		re.compile(r"(kelvin|degree\sCelsius)\skilogram"): r"kilogram \1",
-		re.compile(r"(kelvin|degree\sCelsius)\smetre"): r"metre \1",
-		re.compile(r"(kelvin|degree\sCelsius)\smole"): r"mole \1",
-		re.compile(r"metre\snewton"): "newton metre"
-	}
+re_obj_patches = {
+        re.compile(r"metre\ssquared"): "square metre",
+        re.compile(r"metre\scubed"): "cubic metre",
+        re.compile(r"(kelvin|degree\sCelsius)\skilogram"): r"kilogram \1",
+        re.compile(r"(kelvin|degree\sCelsius)\smetre"): r"metre \1",
+        re.compile(r"(kelvin|degree\sCelsius)\smole"): r"mole \1",
+        re.compile(r"metre\snewton"): "newton metre"
+    }
 
 # Find prefix with provided multiplier and return its full name
 def _get_prefix(multiplier):
@@ -114,30 +114,30 @@ def _get_unit_name(unit):
         return None
 
     # Get string of unit from pint
-    ts = str(unit)
+    str_temp = str(unit)
 
-    if(ts == "dimensionless"):
+    if(str_temp == "dimensionless"):
         return None
-    for cr, rp in cr_replaces.items():
-        ts = cr.sub(rp, ts)
+    for re_obj, repl in re_obj_replaces.items():
+        str_temp = re_obj.sub(repl, str_temp)
 
     # Detect higher powers and throw exception
-    if re.compile("\*\*\s\-?\d").search(ts) is not None:
+    if re.compile("\*\*\s\-?\d").search(str_temp) is not None:
         raise UnsupportedUnitError(unit)
 
     # Detect numbers and throw exception
-    if re.compile("\d").search(ts) is not None:
+    if re.compile("\d").search(str_temp) is not None:
         raise UnsupportedUnitError(unit)    
 
-    # Additional and advanced replacements
-    ts = re.compile(r"\s\/\s").sub(" per ", ts, count=1)
-    ts = re.compile(r"\s\/\s").sub(" ", ts, count=1)
+    # Additional and advanced replacemenstr_temp
+    str_temp = re.compile(r"\s\/\s").sub(" per ", str_temp, count=1)
+    str_temp = re.compile(r"\s\/\s").sub(" ", str_temp, count=1)
 
     # Apply name patches
-    for cr, rp in cr_patches.items():
-        ts = cr.sub(rp, ts)
+    for re_obj, repl in re_obj_patches.items():
+        str_temp = re_obj.sub(repl, str_temp)
 
-    return ts
+    return str_temp
 
 #---------------------------------------------------------------------------
 # This is primary method that should be imported in vROps DCC, or any future
@@ -145,42 +145,42 @@ def _get_unit_name(unit):
 # passed through create_metric call.
 
 def parse_unit(unit):
-    pf = None
-    un = None
+    str_prefix = None
+    obj_unit = None
     if unit is None:
-        return (pf, _get_unit_name(un))
+        return (str_prefix, _get_unit_name(obj_unit))
     ureg = unit._REGISTRY
 
     # We require developers to use MKS base units
     assert ureg.default_system == "mks"
 
     # Attempt to extract prefix using string matching
-    re_match = cr_prefixed.search(str(unit))
+    re_match = re_obj_prefixed.search(str(unit))
     if re_match is not None:
-        ut = getattr(ureg, re_match.group(2))
-        tn = ureg.get_base_units(ut)
-        if tn[0] == 1:
-            pf = re_match.group(1)
-            un = ut
-            return (pf, _get_unit_name(un))
+        obj_unit_temp = getattr(ureg, re_match.group(2))
+        tuple_base = ureg.get_base_units(obj_unit_temp)
+        if tuple_base[0] == 1:
+            str_prefix = re_match.group(1)
+            obj_unit = obj_unit_temp
+            return (str_prefix, _get_unit_name(obj_unit))
 
     # Attempt to extract prefix using base unit conversion
-    tn = ureg.get_base_units(unit)
-    if tn[0] == 1: # Base unit, or simple combination of several base units
-        if tn[1] != ureg.dimensionless:
-            un = unit
+    tuple_base = ureg.get_base_units(unit)
+    if tuple_base[0] == 1: # Base unit, or simple combo of several base units
+        if tuple_base[1] != ureg.dimensionless:
+            obj_unit = unit
     else: # Prefixed unit, or non-SI unit
         try:
-            pf = _get_prefix(tn[0])
-            un = tn[1]
-            # if re.compile("\s").search(str(un)) is not None:
-            if re.compile("\d").search(str(un)) is not None:
+            str_prefix = _get_prefix(tuple_base[0])
+            obj_unit = tuple_base[1]
+            # if re.compile("\s").search(str(obj_unit)) is not None:
+            if re.compile("\d").search(str(obj_unit)) is not None:
                 raise UnsupportedUnitError(unit)
         except KeyError:
             raise UnsupportedUnitError(unit)
 
     # Return prefix and unit strings
-    return (pf, _get_unit_name(un))
+    return (str_prefix, _get_unit_name(obj_unit))
 
 #---------------------------------------------------------------------------
 # These are units defined in tables from standard documents.
@@ -242,39 +242,49 @@ def main():
     ureg = pint.UnitRegistry()
     print_split = "-" * 76
 
+    # Color strings for terminal
+    c_bold =   lambda str:  "\033[1m"  + str + "\033[0m"
+    c_red =    lambda str:  "\033[31m" + str + "\033[0m"
+    c_yellow = lambda str:  "\033[33m" + str + "\033[0m"
+    c_cyan =   lambda str:  "\033[36m" + str + "\033[0m"
+
     # Base units and examples of derived units defined in SI standard documents
-    def parse_unit_with_color(un):
-        pf = "\033[1;36mnull\033[0m"
-        qn = None
+    def parse_unit_with_color(obj_unit):
+        str_prefix = c_bold(c_cyan("null"))
+        tuple_parsed_unit = None
         try:
-            qn = parse_unit(un)
+            tuple_parsed_unit = parse_unit(obj_unit)
         except UnsupportedUnitError as ex:
             # print ex
-            pf = "\033[1;31minvalid\033[0m" 
-        if qn is not None:
-            if qn[0] is not None:
-                pf = "\033[1;33m" + qn[0] + "\033[0m"
-        nn = "\033[1;31minvalid\033[0m"
-        if qn is not None:
-            if qn[1] is not None:
-                nn = qn[1]
+            str_prefix = c_bold(c_red("invalid"))
+        if tuple_parsed_unit is not None:
+            if tuple_parsed_unit[0] is not None:
+                str_prefix = c_bold(c_yellow(tuple_parsed_unit[0]))
+        str_unit_name = c_bold(c_red("invalid"))
+        if tuple_parsed_unit is not None:
+            if tuple_parsed_unit[1] is not None:
+                str_unit_name = tuple_parsed_unit[1]
             else:
-                nn = "\033[1;36mnull\033[0m"
-        return (pf, nn)
+                str_unit_name = c_bold(c_cyan("null"))
+        return (str_prefix, str_unit_name)
 
     for j in range(0, 4):
         print print_split
-        print "  \033[1;36mTable %d\033[0m" % (j + 1)
+        print "  " + c_bold(c_cyan("Table %d")) % (j + 1)
         print print_split
-        for un in unit_tables(ureg)[j]:
-            pf, nn = parse_unit_with_color(un)
-            print "  \033[1m%s\033[0m - %s, %s" % (un, pf, nn)
+        for obj_unit in unit_tables(ureg)[j]:
+            str_prefix, str_unit_name = parse_unit_with_color(obj_unit)
+            print "  " + (c_bold("%s") + " - %s, %s") % (
+                    obj_unit,
+                    str_prefix,
+                    str_unit_name
+                )
     
     print print_split
-    print "  \033[1;33mSupported Prefixes\033[0m"
+    print "  " + c_bold(c_yellow("Supported Prefixes"))
     print print_split
-    for multiplier, pf in sorted(prefixes.items()):
-        print "  \033[1m%s\033[0m = %.2e" % (pf, multiplier)
+    for multiplier, str_prefix in sorted(prefixes.items()):
+        print "  " + (c_bold("%s") + " = %.2e") % (str_prefix, multiplier)
 
     units_prefixed = [
             ureg.km,    ureg.dm,    ureg.cm,    ureg.mm,    ureg.um,
@@ -291,11 +301,15 @@ def main():
         ]
 
     print print_split
-    print "  \033[1;33mPrefixed Units\033[0m"
+    print "  " + c_bold(c_yellow("Prefixed Units"))
     print print_split
-    for un in units_prefixed:
-        pf, nn = parse_unit_with_color(un)
-        print "  \033[1m%s\033[0m - %s, %s" % (un, pf, nn)
+    for obj_unit in units_prefixed:
+        str_prefix, str_unit_name = parse_unit_with_color(obj_unit)
+        print "  " + (c_bold("%s") + " - %s, %s") % (
+                obj_unit,
+                str_prefix,
+                str_unit_name
+            )
 
     units_invalid = [
             ureg.deg,   ureg.ft,    ureg.inch,  ureg.yard,  ureg.mile,
@@ -312,11 +326,15 @@ def main():
         ]
 
     print print_split
-    print "  \033[1;31mInvalid Units\033[0m"
+    print "  " + c_bold(c_red("Invalid Units"))
     print print_split
-    for un in units_invalid:
-        pf, nn = parse_unit_with_color(un)
-        print "  \033[1m%s\033[0m - %s, %s" % (un, pf, nn)
+    for obj_unit in units_invalid:
+        str_prefix, str_unit_name = parse_unit_with_color(obj_unit)
+        print "  " + (c_bold("%s") + " - %s, %s") % (
+                obj_unit,
+                str_prefix,
+                str_unit_name
+            )
 
     print print_split
 
