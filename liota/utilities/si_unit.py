@@ -173,7 +173,6 @@ def parse_unit(unit):
         try:
             str_prefix = _get_prefix(tuple_base[0])
             obj_unit = tuple_base[1]
-            # if re.compile("\s").search(str(obj_unit)) is not None:
             if re.compile("\d").search(str(obj_unit)) is not None:
                 raise UnsupportedUnitError(unit)
         except KeyError:
