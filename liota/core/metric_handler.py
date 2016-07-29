@@ -242,7 +242,10 @@ class Metric(object):
             log.debug("Collecting values for the resource {0} ".format(self.details))
             self.args_required = len(inspect.getargspec(self.sampling_function)[0])
             if self.args_required is not 0:
-                self.cal_value = self.sampling_function(1)
+                if inspect.ismethod(self.sampling_function) and self.args_required is 1:
+                    self.cal_value = self.sampling_function()
+                else:
+                    self.cal_value = self.sampling_function(1)
             else:
                 self.cal_value = self.sampling_function()
             log.info("{0} Sample Value: {1}".format(self.details, self.cal_value))
