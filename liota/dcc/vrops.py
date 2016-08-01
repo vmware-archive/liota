@@ -45,12 +45,13 @@ from liota.dcc.dcc_base import DataCenterComponent
 from helix_protocol import HelixProtocol
 from liota.core.metric_handler import Metric
 from liota.utilities.utility import getUTCmillis, LiotaConfigPath
+from liota.utilities.si_unit import parse_unit
 
 
 log = logging.getLogger(__name__)
 
 class Vrops(DataCenterComponent):
-    """ The implementation of vROPS cloud provider soultion
+    """ The implementation of vROPS cloud provider solution
 
     """
     def __init__(self, username, password, con):
@@ -155,26 +156,25 @@ class Vrops(DataCenterComponent):
         self.con.send(message)
 
     def init_relations(self, gw):
-      """ This function initializes all relations between gateway and it's children.
-          It is called after each object's UUID is received.
+        """ This function initializes all relations between gateway and it's children.
+            It is called after each object's UUID is received.
 
-          Parameters:
-          - obj: The object that has just obtained an UUID
-
-      """
-      self.con.send(gw._create_relationship(self.con.next_id(), gw.parent))
+            Parameters:
+            - obj: The object that has just obtained an UUID
+        """
+        self.con.send(gw._create_relationship(self.con.next_id(), gw.parent))
 
 
     def registration(self, msg_id, res_id, res_name, res_kind):
-      return {
-         "transactionID": msg_id,
-         "type": "create_or_find_resource_request",
-         "body": {
-            "kind": res_kind,
-            "id": res_id,
-            "name": res_name
-         }
-      }
+        return {
+            "transactionID": msg_id,
+            "type": "create_or_find_resource_request",
+            "body": {
+                "kind": res_kind,
+                "id": res_id,
+                "name": res_name
+            }
+        }
 
     def properties(self, msg_id, res_uuid, res_kind, timestamp, properties):
         msg = {
@@ -200,3 +200,17 @@ class Vrops(DataCenterComponent):
         def __init__(self, resource, registered=False):
             self.resource = resource
             self.registered = registered
+
+    def publish_unit(self, registered_gw, metric_name, unit):
+        str_prefix, str_unit_name = parse_unit(unit)
+        if not isinstance(str_prefix, basestring):
+            str_prefix = ""
+        if not isinstance(str_unit_name, basestring):
+            str_unit_name = ""
+        properties_added = {
+                metric_name + "_unit": str_unit_name,
+                metric_name + "_prefix": str_prefix
+            }
+        self.set_properties(registered_gw, properties_added)
+        log.info("Published metric unit with prefix to vROps")
+
