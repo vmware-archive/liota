@@ -52,9 +52,9 @@ class DataCenterComponent:
     def subscribe(self):
         pass
 
-    def create_metric(self, gw, details, unit, sampling_function, sampling_interval_sec=10, aggregation_size=6):
+    def create_metric(self, gw, details, unit, sampling_function, sampling_interval_sec=10, aggregation_size=6, messaging_attributes=None):
         self.publish_unit(gw, details, unit)
-        return Metric(gw.resource, details, unit, sampling_interval_sec, aggregation_size, sampling_function, self)
+        return Metric(gw.resource, details, unit, sampling_interval_sec, aggregation_size, sampling_function, self, messaging_attributes)
 
     def publish_unit(self, registered_gw, metric_name, unit):
         pass
