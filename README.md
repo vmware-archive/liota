@@ -104,7 +104,7 @@ It requires a Python 2.7 environment already installed.
 
 ## Liota.conf
 Right now there is only one item in the liota.conf, where to find a file called logging.json which holds the
-default initialization parameters for logging. When initialing, liota looks in the current
+default initialization parameters for logging. When initializing, liota looks in the current
 working directory, '.', the user's home directory '~', a LIOTA_CONF environment variable, and
 finally the default location for every install, /etc/liota/conf for liota.conf.
 
