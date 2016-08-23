@@ -128,8 +128,10 @@ class Vrops(DataCenterComponent):
                             try:
                                 uuid_path = config.get('UUID_PATH', 'uuid_path')
                                 uuid_config = ConfigParser.RawConfigParser()
+                                uuid_config.optionxform = str
                                 uuid_config.add_section('GATEWAY')
-                                uuid_config.set('GATEWAY', gw.res_name, gw.res_uuid)
+                                uuid_config.set('GATEWAY', 'uuid', gw.res_uuid)
+                                uuid_config.set('GATEWAY', 'name', gw.res_name)
                                 with open(uuid_path, 'w') as configfile:
                                     uuid_config.write(configfile)
                             except ConfigParser.ParsingError, err:
