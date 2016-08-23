@@ -155,6 +155,7 @@ class CollectionThread(Thread):
                 event_ds.put_and_notify(matric)
                 if matric.is_ready_to_send():
                     send_queue.put(matric)
+                    matric.reset_aggregation_size()
             except Exception as e:
                 log.error(e)
 
@@ -201,7 +202,7 @@ class Metric(object):
             self.aggregation_size = aggregation_size
             self.current_aggregation_size = 0
             self.sampling_function = sampling_function
-            self.values = []
+            self.values = Queue()
 
         def __str__(self, *args, **kwargs):
             return str(self.details) + ":" + str(self.next_run_time)
@@ -214,7 +215,7 @@ class Metric(object):
             return cmp(self.next_run_time, other.next_run_time)
 
         def write_full(self, t, v):
-            self.values.append((t, v))
+            self.values.put((t, v))
 
         def write_map_values(self, v):
             self.write_full(getUTCmillis(), v)
@@ -246,16 +247,17 @@ class Metric(object):
             else:
                 self.cal_value = self.sampling_function()
             log.info("{0} Sample Value: {1}".format(self.details, self.cal_value))
-            log.debug("Size of the list {0}".format(len(self.values)))
+            log.debug("Size of the queue {0}".format(self.values.qsize()))
             self.write_map_values(self.cal_value)
             self.current_aggregation_size = self.current_aggregation_size + 1
 
+        def reset_aggregation_size(self):
+            self.current_aggregation_size = 0
+
         def send_data(self):
-            log.info("Publishing values {0} for the resource {1} ".format(self.values, self.details))
+            log.info("Publishing values for the resource {0} ".format(self.details))
             if not self.values:
                 # No values measured since last report_data
                 return True
             self.data_center_component.publish(self)
-            self.values[:] = []
-            self.current_aggregation_size = 0
 
