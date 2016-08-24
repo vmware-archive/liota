@@ -151,21 +151,15 @@ class Vrops(DataCenterComponent):
     def subscribe(self):
         pass
 
-    def publish(self, metric):
-        met_cnt = metric.values.qsize()
-        if met_cnt == 0:
-            return
-        timestamps = []
-        values = []
-        for _ in range (met_cnt):
-            m = metric.values.get(block = True)
-            if m is not None:
-                timestamps.append(m[0])
-                values.append(m[1])
-        if timestamps == []:
-            return
-        message = metric.gw._report_data(self.con.next_id(), metric.details, timestamps, values)
-        log.info('publishing {0}'.format(message))
+    def publish(self, metric_details, metric_values):
+        timestamps = [t for t, _ in metric_values]
+        values = [v for _, v in metric_values]
+        message = metric.gw._report_data(
+                self.con.next_id(),
+                metric_details,
+                timestamps,
+                values
+            )
         self.con.send(message)
 
     def init_relations(self, gw):
