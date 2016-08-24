@@ -29,32 +29,3 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-
-from abc import ABCMeta, abstractmethod
-from liota.core.metric_handler import Metric
-
-
-class DataCenterComponent:
-    """ The base class in order to define the various functions
-        that are required for data center components
-
-    """
-    __metaclass__ = ABCMeta
-
-    def connect_soc(self, protocol, url, user_name, password):
-        pass
-
-    @abstractmethod
-    def publish(self, metric):
-        pass
-
-    @abstractmethod
-    def subscribe(self):
-        pass
-
-    def create_metric(self, gw, details, unit, sampling_function, sampling_interval_sec=10, aggregation_size=6, messaging_attributes=None):
-        self.publish_unit(gw, details, unit)
-        return Metric(gw.resource, details, unit, sampling_interval_sec, aggregation_size, sampling_function, self, messaging_attributes)
-
-    def publish_unit(self, registered_gw, metric_name, unit):
-        pass

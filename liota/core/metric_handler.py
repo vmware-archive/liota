@@ -192,7 +192,10 @@ def initialize():
 
 class Metric(object):
 
-        def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sampling_function, data_center_component):
+        def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sampling_function, data_center_component, messaging_attributes=None):
+            #  To hold protocol or platform specific MessagingAttributes
+            self.messaging_attributes = messaging_attributes
+
             self.data_center_component = data_center_component
             self.gw = gw
             self.details = details
@@ -258,4 +261,19 @@ class Metric(object):
             self.data_center_component.publish(self)
             self.values[:] = []
             self.current_aggregation_size = 0
+
+
+class MessagingAttributes(object):
+
+    """  A base class that holds common messaging attributes required by
+         MQTT and CoAP protocols to send and receive messages.
+
+         This will be passed as an argument to Metric Object.
+
+         Protocol or platform specific implementations must inherit from this class.
+    """
+
+    def __init__(self, qos):
+        #  QoS is common for MQTT and CoAP.
+        self.qos = qos
 
