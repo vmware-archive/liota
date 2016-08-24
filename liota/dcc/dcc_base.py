@@ -45,7 +45,7 @@ class DataCenterComponent:
         pass
 
     @abstractmethod
-    def publish(self, metric_details, metric_values):
+    def publish(self, metric):
         pass
 
     @abstractmethod

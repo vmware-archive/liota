@@ -255,19 +255,9 @@ class Metric(object):
             self.current_aggregation_size = 0
 
         def send_data(self):
-            log.info("Publishing values for the resource {0}".format(self.details))
-            if not isinstance(self.values, Queue):
-                return
-            met_cnt = self.values.qsize()
-            if met_cnt < 1:
-                return
-
-            metric_values = []
-            for _ in range(met_cnt):
-                metric_value_tuple = self.values.get()
-                if not metric_value_tuple is None:
-                    metric_values.append(metric_value_tuple)
-            if len(metric_values) < 1:
-                return
-            self.data_center_component.publish(self.details, metric_values)
+            log.info("Publishing values for the resource {0} ".format(self.details))
+            if not self.values:
+                # No values measured since last report_data
+                return True
+            self.data_center_component.publish(self)
 
