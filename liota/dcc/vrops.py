@@ -152,9 +152,20 @@ class Vrops(DataCenterComponent):
         pass
 
     def publish(self, metric):
-        timestamps = [t for t, _ in metric.values]
-        values = [v for _, v in metric.values]
+        met_cnt = metric.values.qsize()
+        if met_cnt == 0:
+            return
+        timestamps = []
+        values = []
+        for _ in range (met_cnt):
+            m = metric.values.get(block = True)
+            if m is not None:
+                timestamps.append(m[0])
+                values.append(m[1])
+        if timestamps == []:
+            return
         message = metric.gw._report_data(self.con.next_id(), metric.details, timestamps, values)
+        log.info('publishing {0}'.format(message))
         self.con.send(message)
 
     def init_relations(self, gw):
