@@ -193,71 +193,72 @@ def initialize():
 
 class Metric(object):
 
-    def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sampling_function, data_center_component):
-        self.data_center_component = data_center_component
-        self.gw = gw
-        self.details = details
-        self.unit = unit
-        self.sampling_interval_sec = sampling_interval_sec
-        self.aggregation_size = aggregation_size
-        self.current_aggregation_size = 0
-        self.sampling_function = sampling_function
-        self.values = Queue()
+        def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sampling_function, data_center_component):
+            self.data_center_component = data_center_component
+            self.gw = gw
+            self.details = details
+            self.unit = unit
+            self.sampling_interval_sec = sampling_interval_sec
+            self.aggregation_size = aggregation_size
+            self.current_aggregation_size = 0
+            self.sampling_function = sampling_function
+            self.values = []
 
-    def __str__(self, *args, **kwargs):
-        return str(self.details) + ":" + str(self.next_run_time)
+        def __str__(self, *args, **kwargs):
+            return str(self.details) + ":" + str(self.next_run_time)
 
-    def __cmp__(self, other):
-        if other == None:
-            return -1
-        if not isinstance(other, Metric):
-            return -1
-        return cmp(self.next_run_time, other.next_run_time)
+        def __cmp__(self, other):
+            if other == None:
+                return -1
+            if not isinstance(other, Metric):
+                return -1
+            return cmp(self.next_run_time, other.next_run_time)
 
-    def write_full(self, t, v):
-        self.values.put((t, v))
+        def write_full(self, t, v):
+            self.values.append((t, v))
 
-    def write_map_values(self, v):
-        self.write_full(getUTCmillis(), v)
+        def write_map_values(self, v):
+            self.write_full(getUTCmillis(), v)
 
-    def get_next_run_time(self):
-        return self.next_run_time
+        def get_next_run_time(self):
+            return self.next_run_time
 
-    def set_next_run_time(self):
-        self.next_run_time = self.next_run_time + (self.sampling_interval_sec * 1000)
-        log.info("Set next run time to:" + str(self.next_run_time))
+        def set_next_run_time(self):
+            self.next_run_time = self.next_run_time + (self.sampling_interval_sec * 1000)
+            log.info("Set next run time to:" + str(self.next_run_time))
 
-    def start_collecting(self):
-        # TODO: Add a check to ensure that start_collecting for a metric is called only once by the client code
-        initialize()
-        global event_ds
-        self.next_run_time = getUTCmillis() + (self.sampling_interval_sec * 1000)
-        event_ds.put_and_notify(self)
+        def start_collecting(self):
+            # TODO: Add a check to ensure that start_collecting for a metric is called only once by the client code
+            initialize()
+            global event_ds
+            self.next_run_time = getUTCmillis() + (self.sampling_interval_sec * 1000)
+            event_ds.put_and_notify(self)
 
-    def is_ready_to_send(self):
-        log.debug("self.current_aggregation_size:" + str(self.current_aggregation_size))
-        log.debug("self.aggregation_size:" + str(self.aggregation_size))
-        return self.current_aggregation_size >= self.aggregation_size
+        def is_ready_to_send(self):
+            log.debug("self.current_aggregation_size:" + str(self.current_aggregation_size))
+            log.debug("self.aggregation_size:" + str(self.aggregation_size))
+            return self.current_aggregation_size >= self.aggregation_size
 
-    def collect(self):
-        log.debug("Collecting values for the resource {0} ".format(self.details))
-        self.args_required = len(inspect.getargspec(self.sampling_function)[0])
-        if self.args_required is not 0:
-            self.cal_value = self.sampling_function(1)
-        else:
-            self.cal_value = self.sampling_function()
-        log.info("{0} Sample Value: {1}".format(self.details, self.cal_value))
-        log.debug("Size of the queue {0}".format(self.values.qsize()))
-        self.write_map_values(self.cal_value)
-        self.current_aggregation_size = self.current_aggregation_size + 1
+        def collect(self):
+            log.debug("Collecting values for the resource {0} ".format(self.details))
+            self.args_required = len(inspect.getargspec(self.sampling_function)[0])
+            if self.args_required is not 0:
+                if inspect.ismethod(self.sampling_function) and self.args_required is 1:
+                    self.cal_value = self.sampling_function()
+                else:
+                    self.cal_value = self.sampling_function(1)
+            else:
+                self.cal_value = self.sampling_function()
+            log.info("{0} Sample Value: {1}".format(self.details, self.cal_value))
+            log.debug("Size of the list {0}".format(len(self.values)))
+            self.write_map_values(self.cal_value)
+            self.current_aggregation_size = self.current_aggregation_size + 1
 
-    def reset_aggregation_size(self):
-        self.current_aggregation_size = 0
-
-    def send_data(self):
-        log.info("Publishing values for the resource {0} ".format(self.details))
-        if not self.values:
-            # No values measured since last report_data
-            return True
-        self.data_center_component.publish(self)
-
+        def send_data(self):
+            log.info("Publishing values {0} for the resource {1} ".format(self.values, self.details))
+            if not self.values:
+                # No values measured since last report_data
+                return True
+            self.data_center_component.publish(self)
+            self.values[:] = []
+            self.current_aggregation_size = 0
