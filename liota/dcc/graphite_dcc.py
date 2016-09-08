@@ -45,11 +45,21 @@ class Graphite(DataCenterComponent):
         pass
 
     def publish(self, metric):
-        if self.con is not None:
-            for t,v in metric.values:
-                message = '%s %s %d\n' % (metric.details , v, t/1000) # Graphite expects time in seconds, not milliseconds. Hence, dividing by 1000
-                log.info("Sending message: {0}".format(message))
-                self.con.send(message)
+        if self.con is None:
+            return
+        met_cnt = metric.values.qsize()
+        message = ''
+        if met_cnt == 0:
+            return
+        for _ in range (met_cnt):
+            v = metric.values.get(block = True)
+            if v is not None:
+                # Graphite expects time in seconds, not milliseconds. Hence, dividing by 1000
+                message += '%s %s %d\n' % (metric.details , v[1], v[0]/1000)
+        if message == '':
+            return
+        log.info("Sending message: {0}".format(message))
+        self.con.send(message)
 
     def subscribe(self):
         pass

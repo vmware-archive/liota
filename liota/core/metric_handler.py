@@ -155,6 +155,7 @@ class CollectionThread(Thread):
                 event_ds.put_and_notify(matric)
                 if matric.is_ready_to_send():
                     send_queue.put(matric)
+                    matric.reset_aggregation_size()
             except Exception as e:
                 log.error(e)
 
@@ -261,4 +262,3 @@ class Metric(object):
             self.data_center_component.publish(self)
             self.values[:] = []
             self.current_aggregation_size = 0
-
