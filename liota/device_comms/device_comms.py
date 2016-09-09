@@ -29,3 +29,38 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
+from abc import ABCMeta, abstractmethod
+
+
+class DeviceComms:
+
+    """
+    Abstract base class for all device communications.
+    """
+    __metaclass__ = ABCMeta
+
+    #-----------------------------------------------------------------------
+    # If a specific DeviceComms has parameters to establish connection, pass
+    # them to its constructor, not self._connect. Keep self._connect free of
+    # external arguments.
+    #
+    @abstractmethod
+    def __init__(self):
+        self._connect()
+
+    @abstractmethod
+    def _connect(self):
+        pass
+
+    @abstractmethod
+    def _disconnect(self):
+        pass
+
+    @abstractmethod
+    def send(self, message):
+        pass
+
+    @abstractmethod
+    def receive(self):
+        pass

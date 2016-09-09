@@ -40,16 +40,16 @@ from liota.lib.utilities.si_unit import *
 # This script also added some examples of prefixed units and invalid unit.
 # Invalid units are those we couldn't handle for now. DO NOT use them in
 # user applications.
-
+#
 def main():
     ureg = pint.UnitRegistry()
     print_split = "-" * 76
 
     # Color strings for terminal
-    c_bold =   lambda str:  "\033[1m"  + str + "\033[0m"
-    c_red =    lambda str:  "\033[31m" + str + "\033[0m"
+    c_bold = lambda str:  "\033[1m" + str + "\033[0m"
+    c_red = lambda str:  "\033[31m" + str + "\033[0m"
     c_yellow = lambda str:  "\033[33m" + str + "\033[0m"
-    c_cyan =   lambda str:  "\033[36m" + str + "\033[0m"
+    c_cyan = lambda str:  "\033[36m" + str + "\033[0m"
 
     # Base units and examples of derived units defined in SI standard documents
     def parse_unit_with_color(obj_unit):
@@ -78,11 +78,11 @@ def main():
         for obj_unit in unit_tables(ureg)[j]:
             str_prefix, str_unit_name = parse_unit_with_color(obj_unit)
             print "  " + (c_bold("%s") + " - %s, %s") % (
-                    obj_unit,
-                    str_prefix,
-                    str_unit_name
-                )
-    
+                obj_unit,
+                str_prefix,
+                str_unit_name
+            )
+
     print print_split
     print "  " + c_bold(c_yellow("Supported Prefixes"))
     print print_split
@@ -90,18 +90,18 @@ def main():
         print "  " + (c_bold("%s") + " = %.2e") % (str_prefix, multiplier)
 
     units_prefixed = [
-            ureg.km,    ureg.dm,    ureg.cm,    ureg.mm,    ureg.um,
-            ureg.nm,    ureg.fm,    ureg.pm,
-            ureg.kg,    ureg.g,     ureg.mg,    ureg.ug,
-            ureg.ms,    ureg.us,    ureg.ns,    ureg.fs,
-            ureg.mA,    ureg.uA,    ureg.mmol,
-            ureg.GHz,   ureg.MHz,   ureg.kHz,
-            ureg.MPa,   ureg.kPa,   ureg.hPa,
-            ureg.kJ,    ureg.MW,    ureg.kW,    ureg.mW,
-            ureg.MV,    ureg.kV,    ureg.mV,
-            ureg.uF,    ureg.nF,    ureg.pF,
-            ureg.Mohm,  ureg.kohm,
-        ]
+        ureg.km,    ureg.dm,    ureg.cm,    ureg.mm,    ureg.um,
+        ureg.nm,    ureg.fm,    ureg.pm,
+        ureg.kg,    ureg.g,     ureg.mg,    ureg.ug,
+        ureg.ms,    ureg.us,    ureg.ns,    ureg.fs,
+        ureg.mA,    ureg.uA,    ureg.mmol,
+        ureg.GHz,   ureg.MHz,   ureg.kHz,
+        ureg.MPa,   ureg.kPa,   ureg.hPa,
+        ureg.kJ,    ureg.MW,    ureg.kW,    ureg.mW,
+        ureg.MV,    ureg.kV,    ureg.mV,
+        ureg.uF,    ureg.nF,    ureg.pF,
+        ureg.Mohm,  ureg.kohm,
+    ]
 
     print print_split
     print "  " + c_bold(c_yellow("Prefixed Units"))
@@ -109,24 +109,24 @@ def main():
     for obj_unit in units_prefixed:
         str_prefix, str_unit_name = parse_unit_with_color(obj_unit)
         print "  " + (c_bold("%s") + " - %s, %s") % (
-                obj_unit,
-                str_prefix,
-                str_unit_name
-            )
+            obj_unit,
+            str_prefix,
+            str_unit_name
+        )
 
     units_invalid = [
-            ureg.deg,   ureg.ft,    ureg.inch,  ureg.yard,  ureg.mile,
-            ureg.degF,
-            ureg.acre,
-            ureg.km ** 2,           ureg.dm ** 2,
-            ureg.L,
-            ureg.dm ** 3,           ureg.cm ** 2,
-            ureg.kph,
-            ureg.km / ureg.s,
-            ureg.um / ureg.ms,
-            ureg.kWh,
-            ureg.s ** -1,           ureg.kg ** -1
-        ]
+        ureg.deg,   ureg.ft,    ureg.inch,  ureg.yard,  ureg.mile,
+        ureg.degF,
+        ureg.acre,
+        ureg.km ** 2,           ureg.dm ** 2,
+        ureg.L,
+        ureg.dm ** 3,           ureg.cm ** 2,
+        ureg.kph,
+        ureg.km / ureg.s,
+        ureg.um / ureg.ms,
+        ureg.kWh,
+        ureg.s ** -1,           ureg.kg ** -1
+    ]
 
     print print_split
     print "  " + c_bold(c_red("Invalid Units"))
@@ -134,12 +134,11 @@ def main():
     for obj_unit in units_invalid:
         str_prefix, str_unit_name = parse_unit_with_color(obj_unit)
         print "  " + (c_bold("%s") + " - %s, %s") % (
-                obj_unit,
-                str_prefix,
-                str_unit_name
-            )
+            obj_unit,
+            str_prefix,
+            str_unit_name
+        )
 
     print print_split
 
 main()
-

@@ -29,3 +29,31 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
+from abc import ABCMeta, abstractmethod
+from liota.entities.entity import Entity
+
+
+class Device(Entity):
+
+    """
+    Abstract base class for all devices (things).
+    """
+    __metaclass__ = ABCMeta
+
+    #-----------------------------------------------------------------------
+    # Constructor of Device is not made abstract, so developer can create a
+    # plain device if that device does not have any specific method/data.
+    #
+    # It is possible to instantiate this class if no abstract method exists,
+    # even if it has ABCMeta as its meta-class.
+    #
+    # Add @abstractmethod if this is not what we want.
+    #
+    def __init__(self, name, parent, entity_id, entity_type="Device"):
+        super(self.__class__, self).__init__(
+            name=name,
+            parent=parent,
+            entity_id=entity_id,
+            entity_type=entity_type
+        )

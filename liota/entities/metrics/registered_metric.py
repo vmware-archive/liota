@@ -29,3 +29,40 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
+from liota.entities.metrics.metric import Metric
+from Queue import Queue
+
+
+class RegisteredMetric():
+
+    def __init__(self, ref_metric, ref_dcc, reg_entity_id):
+        if not isinstance(ref_metric, Metric):
+            raise TypeError
+        super(self.__class__, self).__init__(
+            ref_entity=ref_metric,
+            ref_dcc=ref_dcc,
+            reg_entity_id=reg_entity_id
+        )
+        self.flag_alive = False
+        self._next_run_time = None
+
+        #-------------------------------------------------------------------
+        # Elements in this queue are (ts, v) pairs.
+        #
+        self.values = Queue()
+
+    def __str__(self, *args, **kwargs):
+        raise NotImplementedError  # TODO
+
+    def collect(self):
+        raise NotImplementedError  # TODO
+
+    def start_collecting(self):
+        self.flag_alive = True
+        raise NotImplementedError  # TODO
+
+    def stop_collecting(self):
+        self.flag_alive = False
+
+    # TODO: Add other auxiliary methods if needed, e.g. reset_aggregation_count

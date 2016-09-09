@@ -29,3 +29,20 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
+from liota.entities.entity import Entity
+from liota.dccs.dcc import DataCenterComponent
+
+
+class RegisteredEntity:
+
+    def __init__(self, ref_entity, ref_dcc, reg_entity_id):
+        if not isinstance(ref_entity, Entity) \
+                or not isinstance(ref_dcc, DataCenterComponent):
+            raise TypeError
+        self.ref_entity = ref_entity
+        self.ref_dcc = ref_dcc
+        self.reg_entity_id = reg_entity_id
+
+    def set_properties(properties):
+        self.ref_dcc.set_properties(self, properties)

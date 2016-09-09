@@ -29,3 +29,32 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
+import pint
+from liota.entities.entity import Entity
+
+
+class Metric(Entity):
+
+    def __init__(self, name, parent, entity_id, entity_type="Metric",
+                 unit=None,
+                 interval=60,
+                 aggregation_size=1,
+                 sampling_function=None
+                 ):
+        if not (unit is None or isinstance(unit, pint.unit.Unit)) \
+                or not (
+		            isinstance(interval, int) or isinstance(interval, float)
+		        ) \
+                or not isinstance(aggregation_size, int):
+            raise TypeError()
+        super(self.__class__, self).__init__(
+            name=name,
+            parent=parent,
+            entity_id=entity_id,
+            entity_type=entity_type
+        )
+        self.unit = unit
+        self.interval = interval
+        self.aggregation_size = aggregation_size
+        self.sampling_function = sampling_function

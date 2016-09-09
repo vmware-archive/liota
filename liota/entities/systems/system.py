@@ -29,3 +29,23 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
+from abc import ABCMeta, abstractmethod
+from liota.entities.entity import Entity
+
+
+class System(Entity):
+
+    """
+    Abstract base class for all systems (gateways).
+    """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def __init__(self, name, entity_id, entity_type="Helix IoT Gateway"):
+        super(self.__class__, self).__init__(
+            name=name,
+            parent=None,
+            entity_id=entity_id,
+            entity_type=entity_type
+        )

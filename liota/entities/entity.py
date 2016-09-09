@@ -29,3 +29,24 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
+from abc import ABCMeta, abstractmethod
+
+
+class Entity:
+
+    """
+    Abstract base class for all entities.
+    """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def __init__(self, name, parent, entity_id, entity_type):
+        if not isinstance(name, basestring) \
+                or not isinstance(entity_type, basestring) \
+                or not (parent is None or isinstance(parent, Entity)):
+            raise TypeError()
+        self.name = name
+        self.parent = parent
+        self.entity_id = entity_id
+        self.entity_type = entity_type
