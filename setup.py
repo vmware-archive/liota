@@ -30,61 +30,64 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
 import os
-
-from lib.utilities.utility import systemUUID, LiotaConfigPath
-
-
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
-
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError, err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError, err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' + str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+import pip
+from pip.req import parse_requirements
+from setuptools import setup, find_packages
 
 
-def mkdir_log(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
+requirements = [
+    str(requirement.req)
+    for requirement in parse_requirements('requirements.txt', session=pip.download.PipSession())
+]
 
-setup_logging()
-systemUUID()
+# Get the long description from the README file
+with open('README.md') as f:
+    long_description = f.read()
+
+setup(
+    name='liota',
+    version='0.1.3',
+    packages=find_packages(exclude=["*.json", "*.txt"]),
+    description='IoT Agent',
+    long_description=long_description,
+    # include_package_data=True
+
+    # The project's main homepage.
+    url='https://github.com/vmware/liota',
+    author='The Python Packaging Authority',
+    author_email='vkohli@vmware.com',
+
+    # License
+    license='BSD',
+    platforms=['Linux'],
+
+    # Classifiers
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'Topic :: Software Development :: Libraries :: Python Modules',
+        'Operating System :: POSIX :: Linux',
+        'License :: OSI Approved :: BSD License',
+        'Programming Language :: Python :: 2.7',
+        # TO DO: Check for other python versions
+        # 'Programming Language :: Python :: 3',
+        # 'Programming Language :: Python :: 3.3',
+        # 'Programming Language :: Python :: 3.4',
+        # 'Programming Language :: Python :: 3.5',
+    ],
+
+    keywords='iot liota agent',
+
+    # Installation requirement
+    install_requires=requirements,
+
+    # 'data_file'(conf_files) at custom location
+    data_files=[(os.path.abspath(os.sep) + '/../etc/liota/example', ['examples/simulated_system_graphite.py',
+                                                                     'examples/sampleProp.conf']),
+                (os.path.abspath(os.sep) + '/../etc/liota/conf',
+                 ['config/liota.conf', 'config/logging.json']),
+                (os.path.abspath(os.sep) + '/../etc/liota',
+                 ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
+                (os.path.abspath(os.sep) + '/../var/log/liota', [])]
+)

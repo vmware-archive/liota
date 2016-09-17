@@ -30,4 +30,177 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-# TODO: Implement this module
+from Queue import Queue, PriorityQueue, Full
+import heapq
+import logging
+from threading import Thread, Condition
+from time import time as _time
+
+from liota.lib.utilities.utility import getUTCmillis
+
+
+log = logging.getLogger(__name__)
+
+event_ds = None
+collect_queue = None
+send_queue = None
+event_checker_thread = None
+send_thread = None
+
+
+class EventsPriorityQueue(PriorityQueue):
+
+    def __init__(self):
+        PriorityQueue.__init__(self)
+        self.first_element_changed = Condition(self.mutex)
+
+    def put_and_notify(self, item, block=True, timeout=None):
+        log.info("Adding Event:" + str(item))
+        self.not_full.acquire()
+        try:
+            first_element_before_insertion = None
+            if self._qsize() > 0:
+                first_element_before_insertion = heapq.nsmallest(1, self.queue)[
+                    0]
+
+            if self.maxsize > 0:
+                if not block:
+                    if self._qsize() == self.maxsize:
+                        raise Full
+                elif timeout is None:
+                    while self._qsize() == self.maxsize:
+                        self.not_full.wait()
+                elif timeout < 0:
+                    raise ValueError("'timeout' must be a non-negative number")
+                else:
+                    endtime = _time() + timeout
+                    while self._qsize() == self.maxsize:
+                        remaining = endtime - _time()
+                        if remaining <= 0.0:
+                            raise Full
+                        self.not_full.wait(remaining)
+            self._put(item)
+            self.unfinished_tasks += 1
+            self.not_empty.notify()
+
+            first_element_after_insertion = heapq.nsmallest(1, self.queue)[0]
+            if first_element_before_insertion != first_element_after_insertion:
+                self.first_element_changed.notify()
+        finally:
+            self.not_full.release()
+
+    def get_next_element_when_ready(self):
+        self.first_element_changed.acquire()
+        try:
+            isNotReady = True
+            while isNotReady:
+                if self._qsize() > 0:
+                    first_element = heapq.nsmallest(1, self.queue)[0]
+                    timeout = (first_element.get_next_run_time() -
+                               getUTCmillis()) / 1000.0
+                    log.info(
+                        "Waiting on acquired first_element_changed LOCK for: " + str(timeout))
+                    self.first_element_changed.wait(timeout)
+                else:
+                    self.first_element_changed.wait()
+                    first_element = heapq.nsmallest(1, self.queue)[0]
+                if (first_element.get_next_run_time() - getUTCmillis()) <= 0:
+                    isNotReady = False
+                    first_element = self._get()
+            return first_element
+        finally:
+            self.first_element_changed.release()
+
+
+class EventCheckerThread(Thread):
+
+    def __init__(self):
+        Thread.__init__(self)
+        self.start()
+
+    def run(self):
+        log.info("Started EventCheckerThread")
+        global event_ds
+        global collect_queue
+        while True:
+            log.debug("Waiting for event...")
+            metric = event_ds.get_next_element_when_ready()
+            log.debug("Got event:" + str(metric))
+            collect_queue.put(metric)
+
+
+class SendThread(Thread):
+
+    def __init__(self):
+        Thread.__init__(self)
+        self.start()
+
+    def run(self):
+        log.info("Started SendThread")
+        global send_queue
+        while True:
+            log.info("Waiting to send...")
+            metric = send_queue.get()
+            log.info("Got item in send_queue:" + str(metric))
+            metric.send_data()
+
+
+class CollectionThread(Thread):
+
+    def __init__(self):
+        Thread.__init__(self)
+        self.daemon = True
+        self.start()
+
+    def run(self):
+        global event_ds
+        global collect_queue
+        global send_queue
+        while True:
+            metric = collect_queue.get()
+            log.info("Collecting stats for metric:" + str(metric))
+            try:
+                metric.collect()
+                metric.set_next_run_time()
+                event_ds.put_and_notify(metric)
+                if metric.is_ready_to_send():
+                    send_queue.put(metric)
+                    metric.reset_aggregation_size()
+            except Exception as e:
+                log.error(e)
+
+
+class CollectionThreadPool:
+
+    def __init__(self, num_threads):
+        log.info("Starting " + str(num_threads) + " for collection")
+        for _ in range(num_threads):
+            CollectionThread()
+
+is_initialization_done = False
+
+
+def initialize():
+    global is_initialization_done
+    if is_initialization_done:
+        log.debug("Initialization already done")
+        pass
+    else:
+        log.debug("Initializing.............")
+        global event_ds
+        if event_ds is None:
+            event_ds = EventsPriorityQueue()
+        global event_checker_thread
+        if event_checker_thread is None:
+            event_checker_thread = EventCheckerThread()
+        global collect_queue
+        if collect_queue is None:
+            collect_queue = Queue()
+        global send_queue
+        if send_queue is None:
+            send_queue = Queue()
+        global send_thread
+        if send_thread is None:
+            send_thread = SendThread()
+        pool = CollectionThreadPool(20)  # TODO: Make pool size configurable
+        is_initialization_done = True

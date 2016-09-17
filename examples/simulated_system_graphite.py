@@ -31,60 +31,42 @@
 # ----------------------------------------------------------------------------#
 
 import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
+import random
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath
-
-
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
-
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError, err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError, err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' + str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+from liota.dcc_comms.socket_comms import Socket
+from liota.dccs.graphite import Graphite
+from liota.entities.metrics.metric import Metric
+from liota.entities.systems.simulated_system import SimulatedSystem
 
 
-def mkdir_log(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
+# getting values from conf file
+config = ConfigParser.ConfigParser()
+config.readfp(open('sampleProp.conf'))
 
-setup_logging()
-systemUUID()
+# Random number generator, simulating random metric readings.
+
+
+def simulated_sampling_function():
+    return random.randint(0, 20)
+
+# ---------------------------------------------------------------------------
+# In this example, we demonstrate how data for a simulated metric generating
+# random numbers can be directed to graphite data center component using Liota.
+# The program illustrates the ease of use Liota brings to IoT application
+# developers.
+
+if __name__ == '__main__':
+
+    system = SimulatedSystem(config.get('DEFAULT', 'GatewayName'))
+
+    # Sending data to Graphite data center component
+    # Socket is the underlying transport used to connect to the Graphite
+    # instance
+    graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
+                               port=config.getint('GRAPHITE', 'Port')))
+    graphite_reg_system = graphite.register(system)
+    metric_name = config.get('DEFAULT', 'MetricName')
+    simulated_metric = Metric(name=metric_name, parent=system, entity_id=metric_name,
+                              interval=10, sampling_function=simulated_sampling_function)
+    reg_metric = graphite.register_metric(simulated_metric)
+    reg_metric.start_collecting()

@@ -30,8 +30,8 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.entities.entity import Entity
 from liota.dccs.dcc import DataCenterComponent
+from liota.entities.entity import Entity
 
 
 class RegisteredEntity:
@@ -44,5 +44,5 @@ class RegisteredEntity:
         self.ref_dcc = ref_dcc
         self.reg_entity_id = reg_entity_id
 
-    def set_properties(properties):
+    def set_properties(self, properties):
         self.ref_dcc.set_properties(self, properties)

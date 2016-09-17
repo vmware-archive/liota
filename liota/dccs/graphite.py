@@ -29,5 +29,54 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+import logging
 
-# TODO: Implement this module
+from liota.dccs.dcc import DataCenterComponent
+from liota.entities.metrics.registered_metric import RegisteredMetric
+from liota.entities.registered_entity import RegisteredEntity
+
+
+log = logging.getLogger(__name__)
+
+
+class Graphite(DataCenterComponent):
+
+    def __init__(self, comms):
+        DataCenterComponent.__init__(self, comms=comms)
+
+    def register(self, entity_obj):
+        DataCenterComponent.register(self, entity_obj)
+        return RegisteredEntity(entity_obj, self, None)
+
+    def register_metric(self, metric_obj):
+        DataCenterComponent.register_metric(self, metric_obj)
+        return RegisteredMetric(metric_obj, self, None)
+
+    def _create_relationship(self, entity_parent, entity_child):
+        pass
+
+    def _format_data(self, reg_metric):
+        met_cnt = reg_metric.values.qsize()
+        message = ''
+        if met_cnt == 0:
+            return
+        for _ in range(met_cnt):
+            v = reg_metric.values.get(block=True)
+            if v is not None:
+                # Graphite expects time in seconds, not milliseconds. Hence,
+                # dividing by 1000
+                message += '%s %s %d\n' % (reg_metric.ref_entity.name,
+                                           v[1], v[0] / 1000)
+        if message == '':
+            return
+        log.debug("Formatted message: {0}".format(message))
+        return message
+
+    def publish(self, reg_metric):
+        if not isinstance(reg_metric, RegisteredMetric):
+            raise TypeError
+        message = self._format_data(reg_metric)
+        self.comms.send(message)
+
+    def set_properties(self, reg_entity, properties):
+        raise NotImplementedError
