@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from abc import ABCMeta, abstractmethod
+
 from liota.entities.entity import Entity
 
 
@@ -42,10 +43,10 @@ class System(Entity):
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def __init__(self, name, entity_id, entity_type="Helix IoT Gateway"):
-        super(self.__class__, self).__init__(
-            name=name,
-            parent=None,
-            entity_id=entity_id,
-            entity_type=entity_type
-        )
+    def __init__(self, name, entity_id, entity_type="IoT System"):
+        Entity.__init__(self,
+                        name=name,
+                        parent=None,
+                        entity_id=entity_id,
+                        entity_type=entity_type
+                        )

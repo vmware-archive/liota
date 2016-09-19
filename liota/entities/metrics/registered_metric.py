@@ -30,39 +30,102 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.entities.metrics.metric import Metric
 from Queue import Queue
+import inspect
+import logging
+
+from liota.core import metric_handler
+from liota.entities.metrics.metric import Metric
+from liota.entities.registered_entity import RegisteredEntity
+from liota.lib.utilities.utility import getUTCmillis
 
 
-class RegisteredMetric():
+log = logging.getLogger(__name__)
+
+
+class RegisteredMetric(RegisteredEntity):
 
     def __init__(self, ref_metric, ref_dcc, reg_entity_id):
         if not isinstance(ref_metric, Metric):
             raise TypeError
-        super(self.__class__, self).__init__(
-            ref_entity=ref_metric,
-            ref_dcc=ref_dcc,
-            reg_entity_id=reg_entity_id
-        )
+        RegisteredEntity.__init__(self,
+                                  ref_entity=ref_metric,
+                                  ref_dcc=ref_dcc,
+                                  reg_entity_id=reg_entity_id
+                                  )
         self.flag_alive = False
         self._next_run_time = None
-
-        #-------------------------------------------------------------------
+        self.current_aggregation_size = 0
+        # -------------------------------------------------------------------
         # Elements in this queue are (ts, v) pairs.
         #
         self.values = Queue()
 
-    def __str__(self, *args, **kwargs):
-        raise NotImplementedError  # TODO
-
-    def collect(self):
-        raise NotImplementedError  # TODO
-
     def start_collecting(self):
         self.flag_alive = True
-        raise NotImplementedError  # TODO
+        # TODO: Add a check to ensure that start_collecting for a metric is
+        # called only once by the client code
+        metric_handler.initialize()
+        self._next_run_time = getUTCmillis() + (self.ref_entity.interval * 1000)
+        metric_handler.event_ds.put_and_notify(self)
 
     def stop_collecting(self):
         self.flag_alive = False
+        raise NotImplementedError
 
-    # TODO: Add other auxiliary methods if needed, e.g. reset_aggregation_count
+    def write_full(self, t, v):
+        self.values.put((t, v))
+
+    def write_map_values(self, v):
+        self.write_full(getUTCmillis(), v)
+
+    def get_next_run_time(self):
+        return self._next_run_time
+
+    def set_next_run_time(self):
+        self._next_run_time = self._next_run_time + \
+            (self.ref_entity.interval * 1000)
+        log.debug("Set next run time to:" + str(self._next_run_time))
+
+    def is_ready_to_send(self):
+        log.debug("self.current_aggregation_size:" +
+                  str(self.current_aggregation_size))
+        log.debug("self.aggregation_size:" +
+                  str(self.ref_entity.aggregation_size))
+        return self.current_aggregation_size >= self.ref_entity.aggregation_size
+
+    def collect(self):
+        log.debug("Collecting values for the resource {0} ".format(
+            self.ref_entity.name))
+        self.args_required = len(inspect.getargspec(
+            self.ref_entity.sampling_function)[0])
+        if self.args_required is not 0:
+            self.cal_value = self.ref_entity.sampling_function(1)
+        else:
+            self.cal_value = self.ref_entity.sampling_function()
+        log.info("{0} Sample Value: {1}".format(
+            self.ref_entity.name, self.cal_value))
+        log.debug("Size of the queue {0}".format(self.values.qsize()))
+        self.write_map_values(self.cal_value)
+        self.current_aggregation_size = self.current_aggregation_size + 1
+
+    def reset_aggregation_size(self):
+        self.current_aggregation_size = 0
+
+    def send_data(self):
+        log.info("Publishing values for the resource {0} ".format(
+            self.ref_entity.name))
+        if not self.values:
+            # No values measured since last report_data
+            return True
+        self.ref_dcc.publish(self)
+
+    def __str__(self, *args, **kwargs):
+        return str(self.ref_entity.name) + ":" + str(self._next_run_time)
+
+    def __cmp__(self, other):
+        if other is None:
+            return -1
+        if not isinstance(other, RegisteredMetric):
+            return -1
+        return cmp(self._next_run_time, other._next_run_time)

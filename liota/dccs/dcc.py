@@ -32,8 +32,8 @@
 
 from abc import ABCMeta, abstractmethod
 from liota.entities.entity import Entity
-from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.dcc_comms.dcc_comms import DCCComms
+from liota.entities.metrics.metric import Metric
 
 
 class DataCenterComponent:
@@ -49,7 +49,7 @@ class DataCenterComponent:
             raise TypeError
         self.comms = comms
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Implement this method in subclasses and do actual registration.
     #
     # This method should return a RegisteredEntity if successful, or raise
@@ -62,6 +62,11 @@ class DataCenterComponent:
             raise TypeError
 
     @abstractmethod
+    def register_metric(self, metric_obj):
+        if not isinstance(metric_obj, Metric):
+            raise TypeError
+
+    @abstractmethod
     def _create_relationship(self, entity_parent, entity_child):
         pass
 
@@ -70,8 +75,6 @@ class DataCenterComponent:
         pass
 
     def publish(self, reg_metric):
-        if not isinstance(reg_metric, RegisteredMetric):
-            raise TypeError
         message = self._format_data(reg_metric)
         self.comms.send(message)
 
