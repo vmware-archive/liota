@@ -73,11 +73,23 @@ class RegisteredMetric(RegisteredEntity):
         self.flag_alive = False
         raise NotImplementedError
 
-    def write_full(self, t, v):
-        self.values.put((t, v))
+#     def write_full(self, t, v):
+#         self.values.put((t, v))
+#
+#     def write_map_values(self, v):
+#         self.write_full(getUTCmillis(), v)
 
-    def write_map_values(self, v):
-        self.write_full(getUTCmillis(), v)
+    def add_collected_data(self, collected_data):
+        if isinstance(collected_data, list):
+            for data_sample in collected_data:
+                self.values.put(data_sample)
+            return len(collected_data)
+        elif isinstance(collected_data, tuple):
+            self.values.put(collected_data)
+            return 1
+        else:
+            self.values.put((getUTCmillis(), collected_data))
+            return 1
 
     def get_next_run_time(self):
         return self._next_run_time
@@ -100,14 +112,14 @@ class RegisteredMetric(RegisteredEntity):
         self.args_required = len(inspect.getargspec(
             self.ref_entity.sampling_function)[0])
         if self.args_required is not 0:
-            self.cal_value = self.ref_entity.sampling_function(1)
+            self.collected_data = self.ref_entity.sampling_function(1)
         else:
-            self.cal_value = self.ref_entity.sampling_function()
-        log.info("{0} Sample Value: {1}".format(
-            self.ref_entity.name, self.cal_value))
+            self.collected_data = self.ref_entity.sampling_function()
+        log.error("{0} Sample Value: {1}".format(
+            self.ref_entity.name, self.collected_data))
         log.debug("Size of the queue {0}".format(self.values.qsize()))
-        self.write_map_values(self.cal_value)
-        self.current_aggregation_size = self.current_aggregation_size + 1
+        no_of_values_added = self.add_collected_data(self.collected_data)
+        self.current_aggregation_size = self.current_aggregation_size + no_of_values_added
 
     def reset_aggregation_size(self):
         self.current_aggregation_size = 0

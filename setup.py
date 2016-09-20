@@ -84,6 +84,7 @@ setup(
 
     # 'data_file'(conf_files) at custom location
     data_files=[(os.path.abspath(os.sep) + '/../etc/liota/example', ['examples/simulated_system_graphite.py',
+                                                                     'examples/multi_metric_simulated_system_graphite.py',
                                                                      'examples/sampleProp.conf']),
                 (os.path.abspath(os.sep) + '/../etc/liota/conf',
                  ['config/liota.conf', 'config/logging.json']),
