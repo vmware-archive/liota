@@ -73,12 +73,6 @@ class RegisteredMetric(RegisteredEntity):
         self.flag_alive = False
         raise NotImplementedError
 
-#     def write_full(self, t, v):
-#         self.values.put((t, v))
-#
-#     def write_map_values(self, v):
-#         self.write_full(getUTCmillis(), v)
-
     def add_collected_data(self, collected_data):
         if isinstance(collected_data, list):
             for data_sample in collected_data:
