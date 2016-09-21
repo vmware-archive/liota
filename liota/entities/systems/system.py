@@ -44,7 +44,7 @@ class System(Entity):
 
     @abstractmethod
     def __init__(self, name, entity_id, entity_type="IoT System"):
-        Entity.__init__(self,
+        super(System, self).__init__(
                         name=name,
                         parent=None,
                         entity_id=entity_id,

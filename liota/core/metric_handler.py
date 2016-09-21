@@ -33,7 +33,7 @@
 from Queue import Queue, PriorityQueue, Full
 import heapq
 import logging
-from threading import Thread, Condition
+from threading import Thread, Condition, Lock
 from time import time as _time
 
 from liota.lib.utilities.utility import getUTCmillis
@@ -46,7 +46,7 @@ collect_queue = None
 send_queue = None
 event_checker_thread = None
 send_thread = None
-
+collect_thread_pool = None
 
 class EventsPriorityQueue(PriorityQueue):
 
@@ -96,15 +96,27 @@ class EventsPriorityQueue(PriorityQueue):
             while isNotReady:
                 if self._qsize() > 0:
                     first_element = heapq.nsmallest(1, self.queue)[0]
-                    timeout = (first_element.get_next_run_time() -
-                               getUTCmillis()) / 1000.0
-                    log.info(
-                        "Waiting on acquired first_element_changed LOCK for: " + str(timeout))
+                    if isinstance(first_element, SystemExit):
+                        first_element = self._get()
+                        break
+                    if not first_element.flag_alive:
+                        log.debug("Early termination of dead metric")
+                        first_element = self._get()
+                        break
+                    timeout = ( \
+                            first_element.get_next_run_time() - getUTCmillis() \
+                        ) / 1000.0
+                    log.info("Waiting on acquired first_element_changed LOCK " \
+                            + "for: %.2f" % timeout)
                     self.first_element_changed.wait(timeout)
                 else:
                     self.first_element_changed.wait()
                     first_element = heapq.nsmallest(1, self.queue)[0]
-                if (first_element.get_next_run_time() - getUTCmillis()) <= 0:
+                if isinstance(first_element, SystemExit):
+                    first_element = self._get()
+                    break
+                if (first_element.get_next_run_time() - getUTCmillis()) <= 0 \
+                        or not first_element.flag_alive:
                     isNotReady = False
                     first_element = self._get()
             return first_element
@@ -113,43 +125,56 @@ class EventsPriorityQueue(PriorityQueue):
 
 
 class EventCheckerThread(Thread):
-
-    def __init__(self):
-        Thread.__init__(self)
+    def __init__(self, name=None):
+        Thread.__init__(self, name=name)
+        self.flag_alive = True
         self.start()
 
     def run(self):
         log.info("Started EventCheckerThread")
         global event_ds
         global collect_queue
-        while True:
+        while self.flag_alive:
             log.debug("Waiting for event...")
             metric = event_ds.get_next_element_when_ready()
+            if isinstance(metric, SystemExit):
+                log.debug("Got exit signal")
+                break
             log.debug("Got event:" + str(metric))
+            if not metric.flag_alive:
+                log.debug("Discarded dead metric: %s" % str(metric))
+                continue
             collect_queue.put(metric)
-
+        log.info("Thread exits: %s" % str(self.name))
 
 class SendThread(Thread):
-
-    def __init__(self):
-        Thread.__init__(self)
+    def __init__(self, name=None):
+        Thread.__init__(self, name=name)
+        self.flag_alive = True
         self.start()
 
     def run(self):
         log.info("Started SendThread")
         global send_queue
-        while True:
+        while self.flag_alive:
             log.info("Waiting to send...")
             metric = send_queue.get()
-            log.info("Got item in send_queue:" + str(metric))
+            if isinstance(metric, SystemExit):
+                log.debug("Got exit signal")
+                break
+            log.info("Got item in send_queue: " + str(metric))
+            if not metric.flag_alive:
+                log.debug("Discarded dead metric: %s" % str(metric))
+                continue
             metric.send_data()
-
+        log.info("Thread exits: %s" % str(self.name))
 
 class CollectionThread(Thread):
-
-    def __init__(self):
-        Thread.__init__(self)
+    def __init__(self, worker_stat_lock, name=None):
+        Thread.__init__(self, name=name)
         self.daemon = True
+        self.working_obj = None
+        self._worker_stat_lock = worker_stat_lock
         self.start()
 
     def run(self):
@@ -158,9 +183,19 @@ class CollectionThread(Thread):
         global send_queue
         while True:
             metric = collect_queue.get()
-            log.info("Collecting stats for metric:" + str(metric))
+            log.info("Collecting stats for metric: " + str(metric))
             try:
+                if not metric.flag_alive:
+                    log.debug("Discarded dead metric: %s" % str(metric))
+                    continue
+                with self._worker_stat_lock:
+                    self.working_obj = metric
                 metric.collect()
+                with self._worker_stat_lock:
+                    self.working_obj = None
+                if not metric.flag_alive:
+                    log.debug("Discarded dead metric: %s" % str(metric))
+                    continue
                 metric.set_next_run_time()
                 event_ds.put_and_notify(metric)
                 if metric.is_ready_to_send():
@@ -174,9 +209,37 @@ class CollectionThread(Thread):
 class CollectionThreadPool:
 
     def __init__(self, num_threads):
+        self._num_threads = num_threads
+        self._pool = []
+        self._worker_stat_lock = Lock()
+
         log.info("Starting " + str(num_threads) + " for collection")
-        for _ in range(num_threads):
-            CollectionThread()
+        for j in range(num_threads):
+            self._pool.append(CollectionThread(
+                    self._worker_stat_lock,
+                    name="Collector-%d" % (j + 1)
+                ))
+
+    def get_num_threads(self):
+        return self._num_threads
+
+    def get_stats_working(self):
+        num_working = 0
+        num_alive = 0
+        num_all = 0
+        with self._worker_stat_lock:
+            for tref in self._pool:
+                if not isinstance(tref, Thread):
+                    continue
+                num_all += 1
+                if tref.isAlive():
+                    num_alive += 1
+                if not tref.working_obj is None:
+                    num_working += 1
+        return [num_working,
+                num_alive,
+                num_all,
+                self._num_threads]
 
 is_initialization_done = False
 
@@ -193,7 +256,7 @@ def initialize():
             event_ds = EventsPriorityQueue()
         global event_checker_thread
         if event_checker_thread is None:
-            event_checker_thread = EventCheckerThread()
+            event_checker_thread = EventCheckerThread(name="EventCheckerThread")
         global collect_queue
         if collect_queue is None:
             collect_queue = Queue()
@@ -202,6 +265,22 @@ def initialize():
             send_queue = Queue()
         global send_thread
         if send_thread is None:
-            send_thread = SendThread()
-        pool = CollectionThreadPool(20)  # TODO: Make pool size configurable
+            send_thread = SendThread(name="SendThread")
+        global collect_thread_pool
+        # TODO: Make pool size configurable
+        collect_thread_pool = CollectionThreadPool(30)
         is_initialization_done = True
+
+def terminate():
+    global event_checker_thread
+    if event_checker_thread:
+        event_checker_thread.flag_alive = False
+    global send_thread
+    if send_thread:
+        send_thread.flag_alive = False
+    global event_ds
+    if event_ds:
+        event_ds.put_and_notify(SystemExit(), timeout=0)
+    global send_queue
+    if send_queue:
+        send_queue.put(SystemExit())

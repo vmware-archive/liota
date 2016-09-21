@@ -42,13 +42,13 @@ class Metric(Entity):
                  aggregation_size=1,
                  sampling_function=None
                  ):
-        if not (unit is None or isinstance(unit, pint.unit.Unit)) \
+        if not (unit is None or isinstance(unit, pint.unit._Unit)) \
                 or not (
 		            isinstance(interval, int) or isinstance(interval, float)
 		        ) \
                 or not isinstance(aggregation_size, int):
             raise TypeError()
-        super(self.__class__, self).__init__(
+        super(Metric, self).__init__(
             name=name,
             parent=parent,
             entity_id=entity_id,
