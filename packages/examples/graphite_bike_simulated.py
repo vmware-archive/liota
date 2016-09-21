@@ -137,7 +137,6 @@ class PackageClass(LiotaPackage):
 
     def run(self, registry):
         from liota.entities.metrics.metric import Metric
-        import ConfigParser
 
         # Acquire resources from registry
         graphite = registry.get("graphite")
@@ -147,15 +146,10 @@ class PackageClass(LiotaPackage):
         ureg = bike_simulator.ureg
         self.create_udm(bike_model=bike_simulator)
 
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = ConfigParser.ConfigParser()
-        config.readfp(open(config_path + "/sampleProp.conf"))
-
         # Create metrics
         self.metrics = []
     
-        metric_name = config.get('BIKE_SIMULATOR', 'Metric1Name')
+        metric_name = "model.bike.speed"
         bike_speed = Metric(
                 name=metric_name,
                 parent=bike_simulator,
@@ -171,7 +165,7 @@ class PackageClass(LiotaPackage):
             reg_bike_speed.start_collecting()
             self.metrics.append(reg_bike_speed)
     
-        metric_name = config.get('BIKE_SIMULATOR', 'Metric2Name')
+        metric_name = "model.bike.power"
         bike_power = Metric(
                 name=metric_name,
                 parent=bike_simulator,

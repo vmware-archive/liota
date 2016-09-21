@@ -31,42 +31,45 @@
 # ----------------------------------------------------------------------------#
 
 import ConfigParser
-import random
-
+from linux_metrics import cpu_stat
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.systems.de5k_system import Dell5KSystem
 
-
 # getting values from conf file
 config = ConfigParser.ConfigParser()
 config.readfp(open('sampleProp.conf'))
 
-# Random number generator, simulating random metric readings.
-
-
-def simulated_sampling_function():
-    return random.randint(0, 20)
+def read_cpu_utilization(sample_duration_sec=1):
+    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
+    return round((100 - cpu_pcts['idle']), 2)
 
 # ---------------------------------------------------------------------------
-# In this example, we demonstrate how data for a simulated metric generating
-# random numbers can be directed to graphite data center component using Liota.
-# The program illustrates the ease of use Liota brings to IoT application
-# developers.
+# In this example, we demonstrate how a Dell5000 Gateway metric (e.g.,
+# CPU utilization) can be directed to graphite data center component
+# using Liota. The program illustrates the ease of use Liota brings
+# to IoT application developers.
 
 if __name__ == '__main__':
 
     system = Dell5KSystem(config.get('DEFAULT', 'GatewayName'))
 
     # Sending data to Graphite data center component
-    # Socket is the underlying transport used to connect to the Graphite
-    # instance
+    # Socket is the underlying transport used to connect to the Graphite instance
     graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
                                port=config.getint('GRAPHITE', 'Port')))
     graphite_reg_system = graphite.register(system)
-    metric_name = config.get('DEFAULT', 'MetricName')
-    simulated_metric = Metric(name=metric_name, parent=system, entity_id=metric_name,
-                              interval=10, sampling_function=simulated_sampling_function)
-    reg_metric = graphite.register_metric(simulated_metric)
-    reg_metric.start_collecting()
+
+    metric_name = "CPU_Utilization"
+    cpu_utilization = Metric(
+            name=metric_name,
+            parent=system,
+            entity_id=metric_name,
+            unit=None,
+            interval=10,
+            aggregation_size=2,
+            sampling_function=read_cpu_utilization
+        )
+    reg_cpu_utilization = graphite.register_metric(cpu_utilization)
+    reg_cpu_utilization.start_collecting()

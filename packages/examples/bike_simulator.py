@@ -52,7 +52,7 @@ class PackageClass(LiotaPackage):
         # create a pint unit registry
         ureg = pint.UnitRegistry()
         # initialize and run the physical model (simulated device)
-        bike_simulator = BikeSimulated(name=config.get('BIKE_SIMULATOR', 'DeviceName'),
+        bike_simulator = BikeSimulated(name=config.get('DEFAULT', 'DeviceName'),
             parent=system, ureg=ureg)
 
         registry.register("bike_simulator", bike_simulator)

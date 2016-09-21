@@ -108,7 +108,6 @@ class PackageClass(LiotaPackage):
 
     def run(self, registry):
         from liota.entities.metrics.metric import Metric
-        import ConfigParser
 
         # Acquire resources from registry
         graphite = registry.get("graphite")
@@ -118,14 +117,9 @@ class PackageClass(LiotaPackage):
         ureg = thermistor_simulator.ureg
         self.create_udm(thermistor_model=thermistor_simulator)
 
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = ConfigParser.ConfigParser()
-        config.readfp(open(config_path + "/sampleProp.conf"))
-
         # Create metrics
         self.metrics = []
-        metric_name = config.get('THERMISTOR_SIMULATOR', 'Metric1Name')
+        metric_name = "model.thermistor.temperature"
         thermistor_temper = Metric(
                 name=metric_name,
                 parent=thermistor_simulator,
@@ -136,7 +130,7 @@ class PackageClass(LiotaPackage):
             )
         reg_thermistor_temper = graphite.register_metric(thermistor_temper)
         if reg_thermistor_temper is None:
-            print "failed to register thermistor_temper to graphite instance"
+            print "failed to register thermistor_temperature to graphite instance"
         else:
             reg_thermistor_temper.start_collecting()
             self.metrics.append(reg_thermistor_temper)

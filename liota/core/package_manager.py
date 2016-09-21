@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     import liota.core.package_manager as actual_package_manager
     
-    log.debug("MainThread is waiting for interruption signal...")
+    log.debug("Package Manager is waiting for interruption signal...")
     try:
         while not isinstance(
                 actual_package_manager.package_thread,
@@ -63,9 +63,9 @@ if __name__ == "__main__":
     except (KeyboardInterrupt, SystemExit):
         pass
     finally:
-        if not actual_package_manager.package_message_queue is None:
+        if actual_package_manager.package_message_queue is not None:
             actual_package_manager.package_message_queue.put(["terminate"])
-    log.info("MainThread exits")
+    log.info("Exiting Package Manager")
     exit()
 
 is_package_manager_initialized = False
