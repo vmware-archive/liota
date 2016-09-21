@@ -31,34 +31,30 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
-import random
+import psutil
 
 dependencies = ["graphite"]
 
 #---------------------------------------------------------------------------
 # User defined methods
-def simulated_sampling_function():
-    return random.randint(0, 20)
-def read_cpu_procs():
-    from linux_metrics import cpu_stat
 
-    return cpu_stat.procs_running()
+def read_cpu_procs():
+    cnt = 0
+    procs = psutil.pids()
+    for i in procs[:]:
+        p = psutil.Process(i)
+        if p.status() == 'running':
+            cnt += 1
+    return cnt
 
 def read_cpu_utilization(sample_duration_sec=1):
-    from linux_metrics import cpu_stat
+    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
 
-    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
-    return round((100 - cpu_pcts['idle']), 2)
-
-def read_disk_busy_stats(sample_duration_sec=1):
-    from linux_metrics import disk_stat
-
-    return round(disk_stat.disk_busy('sda', sample_duration_sec), 4)
+def read_disk_busy_stats():
+    return round(psutil.disk_usage('/dev/disk1')[3], 2)
 
 def read_network_bits_received():
-    from linux_metrics import net_stat
-
-    return round((net_stat.rx_tx_bits('eth0')[0]) / (8192), 2)
+    return round((psutil.net_io_counters(pernic=True)["en0"][1] * 8) / (8192), 2)
 
 class PackageClass(LiotaPackage):
 
@@ -77,49 +73,45 @@ class PackageClass(LiotaPackage):
 
         # Create metrics
         self.metrics = []
-        metric_name = config.get('DEFAULT', 'Metric1Name')
+        metric_name = "CPU.Utilization"
         metric1 = Metric(name=metric_name, parent=system,
                 entity_id=metric_name,
                 unit=None, interval=5,
                 aggregation_size=1,
-                #sampling_function=read_cpu_utilization
-                sampling_function=simulated_sampling_function
+                sampling_function=read_cpu_utilization
             )
         reg_metric1 = graphite.register_metric(metric1)
         reg_metric1.start_collecting()
         self.metrics.append(reg_metric1)
         
-        metric_name = config.get('DEFAULT', 'Metric2Name')
+        metric_name = "CPU.Process"
         metric2 = Metric(name=metric_name, parent=system,
                 entity_id=metric_name,
                 unit=None, interval=5,
                 aggregation_size=1,
-                #sampling_function=read_cpu_utilization
-                sampling_function=simulated_sampling_function
+                sampling_function=read_cpu_procs
             )
         reg_metric2 = graphite.register_metric(metric2)
         reg_metric2.start_collecting()
         self.metrics.append(reg_metric2)
         
-        metric_name = config.get('DEFAULT', 'Metric3Name')
+        metric_name = "Disk.BusyStats"
         metric3 = Metric(name=metric_name, parent=system,
                 entity_id=metric_name,
                 unit=None, interval=5,
                 aggregation_size=1,
-                #sampling_function=read_cpu_utilization
-                sampling_function=simulated_sampling_function
+                sampling_function=read_disk_busy_stats
             )
         reg_metric3 = graphite.register_metric(metric3)
         reg_metric3.start_collecting()
         self.metrics.append(reg_metric3)
         
-        metric_name = config.get('DEFAULT', 'Metric4Name')
+        metric_name = "Network.BitsReceived"
         metric4 = Metric(name=metric_name, parent=system,
                 entity_id=metric_name,
                 unit=None, interval=5,
                 aggregation_size=1,
-                #sampling_function=read_cpu_utilization
-                sampling_function=simulated_sampling_function
+                sampling_function=read_network_bits_received
             )
         reg_metric4 = graphite.register_metric(metric4)
         reg_metric4.start_collecting()
