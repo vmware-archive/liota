@@ -52,7 +52,7 @@ class PackageClass(LiotaPackage):
         # create a pint unit registry
         ureg = pint.UnitRegistry()
         # initialize and run the physical model (simulated device)
-        thermistor_simulator = ThermistorSimulated(name=config.get('THERMISTOR_SIMULATOR', 'DeviceName'),
+        thermistor_simulator = ThermistorSimulated(name=config.get('DEFAULT', 'DeviceName'),
             parent=system, ureg=ureg)
 
         registry.register("thermistor_simulator", thermistor_simulator)
