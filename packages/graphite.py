@@ -30,15 +30,41 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.entities.systems.system import System
-from liota.lib.utilities.utility import systemUUID
+from liota.core.package_manager import LiotaPackage
 
+dependencies = ["systems/de5k/system"]
 
-class SimulatedSystem(System):
+class PackageClass(LiotaPackage):
+    """
+    This package creates a Graphite DCC object and registers system on
+    Graphite to acquire "registered system", i.e. graphite_system.
+    """
 
-    def __init__(self, name):
-        super(SimulatedSystem, self).__init__(
-                        name = name,
-                        entity_id = systemUUID().get_uuid(name),
-                        entity_type = "SimulatedSystem"
-                        )
+    def run(self, registry):
+        import ConfigParser, copy
+        from liota.dccs.graphite import Graphite
+        from liota.dcc_comms.socket_comms import Socket
+
+        # Acquire resources from registry
+        # Creating a copy of system object to keep original object "clean"
+        system = copy.copy(registry.get("system"))
+
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = ConfigParser.ConfigParser()
+        config.readfp(open(config_path + "/sampleProp.conf"))
+
+        # Initialize DCC object with transport
+        self.graphite = Graphite(
+                Socket(ip=config.get('GRAPHITE', 'IP'),
+                       port=config.getint('GRAPHITE', 'Port'))
+            )
+
+        # Register gateway
+        graphite_system = self.graphite.register(system)
+
+        registry.register("graphite", self.graphite)
+        registry.register("graphite_system", graphite_system)
+
+    def clean_up(self):
+        self.graphite.comms.sock.close()

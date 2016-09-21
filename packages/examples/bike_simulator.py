@@ -30,15 +30,32 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.entities.systems.system import System
-from liota.lib.utilities.utility import systemUUID
+from liota.core.package_manager import LiotaPackage
 
+dependencies = ["systems/de5k/system", "graphite"]
 
-class SimulatedSystem(System):
+class PackageClass(LiotaPackage):
 
-    def __init__(self, name):
-        super(SimulatedSystem, self).__init__(
-                        name = name,
-                        entity_id = systemUUID().get_uuid(name),
-                        entity_type = "SimulatedSystem"
-                        )
+    def run(self, registry):
+        from liota.entities.devices.bike_simulated import BikeSimulated
+        import ConfigParser, pint, copy
+
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = ConfigParser.ConfigParser()
+        config.readfp(open(config_path + "/sampleProp.conf"))
+
+        # Acquire resources from registry
+        # Creating a copy of system object to keep original object "clean"
+        system = copy.copy(registry.get("system"))
+
+        # create a pint unit registry
+        ureg = pint.UnitRegistry()
+        # initialize and run the physical model (simulated device)
+        bike_simulator = BikeSimulated(name=config.get('BIKE_SIMULATOR', 'DeviceName'),
+            parent=system, ureg=ureg)
+
+        registry.register("bike_simulator", bike_simulator)
+
+    def clean_up(self):
+        pass
