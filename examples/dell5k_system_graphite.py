@@ -31,7 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import ConfigParser
-from linux_metrics import cpu_stat
+import psutil
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
@@ -42,8 +42,7 @@ config = ConfigParser.ConfigParser()
 config.readfp(open('sampleProp.conf'))
 
 def read_cpu_utilization(sample_duration_sec=1):
-    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
-    return round((100 - cpu_pcts['idle']), 2)
+    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
 
 # ---------------------------------------------------------------------------
 # In this example, we demonstrate how a Dell5000 Gateway metric (e.g.,
@@ -61,7 +60,7 @@ if __name__ == '__main__':
                                port=config.getint('GRAPHITE', 'Port')))
     graphite_reg_system = graphite.register(system)
 
-    metric_name = "CPU_Utilization"
+    metric_name = config.get('DEFAULT', 'MetricName')
     cpu_utilization = Metric(
             name=metric_name,
             parent=system,
