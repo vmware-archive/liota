@@ -48,6 +48,7 @@ event_checker_thread = None
 send_thread = None
 collect_thread_pool = None
 
+
 class EventsPriorityQueue(PriorityQueue):
 
     def __init__(self):
@@ -103,11 +104,11 @@ class EventsPriorityQueue(PriorityQueue):
                         log.debug("Early termination of dead metric")
                         first_element = self._get()
                         break
-                    timeout = ( \
-                            first_element.get_next_run_time() - getUTCmillis() \
-                        ) / 1000.0
-                    log.info("Waiting on acquired first_element_changed LOCK " \
-                            + "for: %.2f" % timeout)
+                    timeout = (
+                        first_element.get_next_run_time() - getUTCmillis()
+                    ) / 1000.0
+                    log.info("Waiting on acquired first_element_changed LOCK "
+                             + "for: %.2f" % timeout)
                     self.first_element_changed.wait(timeout)
                 else:
                     self.first_element_changed.wait()
@@ -125,6 +126,7 @@ class EventsPriorityQueue(PriorityQueue):
 
 
 class EventCheckerThread(Thread):
+
     def __init__(self, name=None):
         Thread.__init__(self, name=name)
         self.flag_alive = True
@@ -147,7 +149,9 @@ class EventCheckerThread(Thread):
             collect_queue.put(metric)
         log.info("Thread exits: %s" % str(self.name))
 
+
 class SendThread(Thread):
+
     def __init__(self, name=None):
         Thread.__init__(self, name=name)
         self.flag_alive = True
@@ -169,7 +173,9 @@ class SendThread(Thread):
             metric.send_data()
         log.info("Thread exits: %s" % str(self.name))
 
+
 class CollectionThread(Thread):
+
     def __init__(self, worker_stat_lock, name=None):
         Thread.__init__(self, name=name)
         self.daemon = True
@@ -216,9 +222,9 @@ class CollectionThreadPool:
         log.info("Starting " + str(num_threads) + " for collection")
         for j in range(num_threads):
             self._pool.append(CollectionThread(
-                    self._worker_stat_lock,
-                    name="Collector-%d" % (j + 1)
-                ))
+                self._worker_stat_lock,
+                name="Collector-%d" % (j + 1)
+            ))
 
     def get_num_threads(self):
         return self._num_threads
@@ -256,7 +262,8 @@ def initialize():
             event_ds = EventsPriorityQueue()
         global event_checker_thread
         if event_checker_thread is None:
-            event_checker_thread = EventCheckerThread(name="EventCheckerThread")
+            event_checker_thread = EventCheckerThread(
+                name="EventCheckerThread")
         global collect_queue
         if collect_queue is None:
             collect_queue = Queue()
@@ -270,6 +277,7 @@ def initialize():
         # TODO: Make pool size configurable
         collect_thread_pool = CollectionThreadPool(30)
         is_initialization_done = True
+
 
 def terminate():
     global event_checker_thread

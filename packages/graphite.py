@@ -32,7 +32,8 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["systems/de5k/system"]
+dependencies = ["systems/dell5k/system"]
+
 
 class PackageClass(LiotaPackage):
     """
@@ -41,7 +42,8 @@ class PackageClass(LiotaPackage):
     """
 
     def run(self, registry):
-        import ConfigParser, copy
+        import ConfigParser
+        import copy
         from liota.dccs.graphite import Graphite
         from liota.dcc_comms.socket_comms import Socket
 
@@ -56,9 +58,9 @@ class PackageClass(LiotaPackage):
 
         # Initialize DCC object with transport
         self.graphite = Graphite(
-                Socket(ip=config.get('GRAPHITE', 'IP'),
-                       port=config.getint('GRAPHITE', 'Port'))
-            )
+            Socket(ip=config.get('GRAPHITE', 'IP'),
+                   port=config.getint('GRAPHITE', 'Port'))
+        )
 
         # Register gateway
         graphite_system = self.graphite.register(system)

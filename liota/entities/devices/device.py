@@ -32,6 +32,7 @@
 
 from abc import ABCMeta, abstractmethod
 from liota.entities.entity import Entity
+from liota.dccs.dcc import DataCenterComponent
 
 
 class Device(Entity):
@@ -56,4 +57,13 @@ class Device(Entity):
             parent=parent,
             entity_id=entity_id,
             entity_type=entity_type
+        )
+
+    def register(self, entity_obj, dcc_obj, reg_entity_id):
+        if not isinstance(dcc_obj, DataCenterComponent):
+            raise TypeError
+        return super(Device, self).register(
+            entity_obj=entity_obj,
+            dcc_obj=dcc_obj,
+            reg_entity_id=reg_entity_id
         )

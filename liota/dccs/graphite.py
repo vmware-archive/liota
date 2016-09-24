@@ -30,10 +30,9 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 import logging
-
+from liota.entities.entity import Entity
 from liota.dccs.dcc import DataCenterComponent
 from liota.entities.metrics.registered_metric import RegisteredMetric
-from liota.entities.registered_entity import RegisteredEntity
 
 
 log = logging.getLogger(__name__)
@@ -45,12 +44,10 @@ class Graphite(DataCenterComponent):
         DataCenterComponent.__init__(self, comms=comms)
 
     def register(self, entity_obj):
+        if not isinstance(entity_obj, Entity):
+            raise TypeError
         DataCenterComponent.register(self, entity_obj)
-        return RegisteredEntity(entity_obj, self, None)
-
-    def register_metric(self, metric_obj):
-        DataCenterComponent.register_metric(self, metric_obj)
-        return RegisteredMetric(metric_obj, self, None)
+        return entity_obj.register(self, None)
 
     def _create_relationship(self, entity_parent, entity_child):
         pass

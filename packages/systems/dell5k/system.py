@@ -40,7 +40,7 @@ class PackageClass(LiotaPackage):
     """
 
     def run(self, registry):
-        from liota.entities.systems.de5k_system import Dell5KSystem
+        from liota.entities.systems.dell5k_system import Dell5KSystem
         import ConfigParser
 
         # getting values from conf file

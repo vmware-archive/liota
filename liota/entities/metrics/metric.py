@@ -32,6 +32,7 @@
 
 import pint
 from liota.entities.entity import Entity
+from liota.entities.metrics.registered_metric import RegisteredMetric
 
 
 class Metric(Entity):
@@ -44,8 +45,8 @@ class Metric(Entity):
                  ):
         if not (unit is None or isinstance(unit, pint.unit._Unit)) \
                 or not (
-		            isinstance(interval, int) or isinstance(interval, float)
-		        ) \
+            isinstance(interval, int) or isinstance(interval, float)
+        ) \
                 or not isinstance(aggregation_size, int):
             raise TypeError()
         super(Metric, self).__init__(
@@ -58,3 +59,6 @@ class Metric(Entity):
         self.interval = interval
         self.aggregation_size = aggregation_size
         self.sampling_function = sampling_function
+
+    def register(self, dcc_obj, reg_entity_id):
+        return RegisteredMetric(self, dcc_obj, reg_entity_id)

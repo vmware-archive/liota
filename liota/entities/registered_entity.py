@@ -30,16 +30,9 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.dccs.dcc import DataCenterComponent
-from liota.entities.entity import Entity
-
-
 class RegisteredEntity:
 
     def __init__(self, ref_entity, ref_dcc, reg_entity_id):
-        if not isinstance(ref_entity, Entity) \
-                or not isinstance(ref_dcc, DataCenterComponent):
-            raise TypeError
         self.ref_entity = ref_entity
         self.ref_dcc = ref_dcc
         self.reg_entity_id = reg_entity_id

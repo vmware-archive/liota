@@ -36,12 +36,13 @@ import pint
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.systems.de5k_system import Dell5KSystem
+from liota.entities.systems.dell5k_system import Dell5KSystem
 from liota.entities.devices.thermistor_simulated import ThermistorSimulated
 
 # getting values from conf file
 config = ConfigParser.ConfigParser()
 config.readfp(open('../sampleProp.conf'))
+
 
 def static_vars(**kwargs):
     def decorate(func):
@@ -59,27 +60,28 @@ ureg = pint.UnitRegistry()
 # Decorators provided by the pint library are used to check the dimensions of
 # arguments passed to the functions.
 
+
 @ureg.check(ureg.volt, ureg.ohm, ureg.volt)
 def get_rx(u, r0, ux):
     rx = r0 * ux / (u - ux)
     return rx
 
+
 @ureg.check(1 / ureg.kelvin, 1 / ureg.kelvin, 1 / ureg.kelvin, ureg.ohm)
 def get_temperature(c1, c2, c3, rx):
-    temper = 1 / ( \
-            c1 + \
-            c2 * math.log(rx / ureg.ohm) + \
-            c3 * math.log(rx / ureg.ohm) ** 3
-        )
+    temper = 1 / (
+        c1 +
+        c2 * math.log(rx / ureg.ohm) +
+        c3 * math.log(rx / ureg.ohm) ** 3
+    )
 
     #-----------------------------------------------------------------------
     # Here commented is a counter example, showing how a dimension mismatch
     # can be prevented using pint.
-    # Since in the correct one above, the unit of temper is 
+    # Since in the correct one above, the unit of temper is
     # already Kelvin, if we multiply it by ureg.kelvin, the unit of the
-    # returned values will become ureg.kelvin ** 2, which will consequently 
+    # returned values will become ureg.kelvin ** 2, which will consequently
     # throw an exception in succeeding method calls.
-
 
     # temper = 1 / ( \
     #         c1 + \
@@ -96,21 +98,22 @@ def get_temperature(c1, c2, c3, rx):
 # resistance from the thermistor simulator, and calls the methods defined
 # above to get the temperature.
 
+
 def get_thermistor_temperature():
     temper = get_temperature(
-            thermistor_model.get_c1(),
-            thermistor_model.get_c2(),
-            thermistor_model.get_c3(),
-            get_rx(
-                    thermistor_model.get_u(),
-                    thermistor_model.get_r0(),
-                    thermistor_model.get_ux()
-                )
-        ).to(ureg.degC)
-    return temper.magnitude # return a scalar for compatibility
+        thermistor_model.get_c1(),
+        thermistor_model.get_c2(),
+        thermistor_model.get_c3(),
+        get_rx(
+            thermistor_model.get_u(),
+            thermistor_model.get_r0(),
+            thermistor_model.get_ux()
+        )
+    ).to(ureg.degC)
+    return temper.magnitude  # return a scalar for compatibility
 
 #---------------------------------------------------------------------------
-# In this example, we demonstrate how data from a simulated device generating 
+# In this example, we demonstrate how data from a simulated device generating
 # random physical variables can be directed to graphite data center component
 # using Liota.
 
@@ -119,24 +122,25 @@ if __name__ == '__main__':
     system = Dell5KSystem(config.get('DEFAULT', 'GatewayName'))
 
     # initialize and run the physical model (simulated device)
-    thermistor_model = ThermistorSimulated(name=config.get('DEFAULT', 'DeviceName'),
-            parent=system, ureg=ureg)
+    thermistor_model = ThermistorSimulated(name=config.get(
+        'DEFAULT', 'DeviceName'), parent=system, ureg=ureg)
 
     # Sending data to a data center component
     # Graphite is a data center component
-    # Socket is the transport which the agent uses to connect to the graphite instance
+    # Socket is the transport which the agent uses to connect to the graphite
+    # instance
     graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
                                port=config.getint('GRAPHITE', 'Port')))
     graphite_reg_dev = graphite.register(thermistor_model)
 
     metric_name = "model.thermistor.temperature"
     thermistor_temper = Metric(
-			name = metric_name,
-			parent = thermistor_model,
-			entity_id = metric_name,
-            unit = ureg.degC,
-			interval = 5,
-			sampling_function = get_thermistor_temperature
-		)
-    reg_thermistor_temper = graphite.register_metric(thermistor_temper)
+        name=metric_name,
+        parent=thermistor_model,
+        entity_id=metric_name,
+        unit=ureg.degC,
+        interval=5,
+        sampling_function=get_thermistor_temperature
+    )
+    reg_thermistor_temper = graphite.register(thermistor_temper)
     reg_thermistor_temper.start_collecting()

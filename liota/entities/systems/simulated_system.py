@@ -38,7 +38,14 @@ class SimulatedSystem(System):
 
     def __init__(self, name):
         super(SimulatedSystem, self).__init__(
-                        name = name,
-                        entity_id = systemUUID().get_uuid(name),
-                        entity_type = "SimulatedSystem"
-                        )
+            name=name,
+            entity_id=systemUUID().get_uuid(name),
+            entity_type="SimulatedSystem"
+        )
+
+    def register(self, dcc_obj, reg_entity_id):
+        super(SimulatedSystem, self).register(
+            entity_obj=self,
+            dcc_obj=dcc_obj,
+            reg_entity_id=entity_id
+        )
