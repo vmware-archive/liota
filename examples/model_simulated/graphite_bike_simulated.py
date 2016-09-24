@@ -37,12 +37,13 @@ import pint
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.systems.de5k_system import Dell5KSystem
+from liota.entities.systems.dell5k_system import Dell5KSystem
 from liota.entities.devices.bike_simulated import BikeSimulated
 
 # getting values from conf file
 config = ConfigParser.ConfigParser()
 config.readfp(open('../sampleProp.conf'))
+
 
 def static_vars(**kwargs):
     def decorate(func):
@@ -60,9 +61,11 @@ ureg = pint.UnitRegistry()
 # Decorators provided by the pint library are used to check the dimensions of
 # arguments passed to the functions.
 
+
 @ureg.check(ureg.rpm, ureg.m)
 def get_speed(revolution, radius):
     return revolution * radius
+
 
 @ureg.check(ureg.m / ureg.sec)
 @static_vars(speed_last=None, time_last=None)
@@ -77,13 +80,16 @@ def get_acceleration(speed):
     get_acceleration.time_last = t
     return acc
 
+
 @ureg.check(ureg.m ** 2, ureg.m / ureg.sec, ureg.kg / ureg.m ** 3)
 def get_resistance(area, speed, k):
     return (k * area * speed ** 2)
 
+
 @ureg.check(ureg.kg, ureg.m / ureg.sec ** 2)
 def get_force(mass, acceleration):
     return mass * acceleration
+
 
 @ureg.check(ureg.newton, ureg.m / ureg.sec)
 def get_power(force, speed):
@@ -93,51 +99,53 @@ def get_power(force, speed):
 # This is a sampling method, which queries the physical model, and calls the
 # physical functions to calculate a desired variable.
 
+
 def get_bike_speed():
     speed = get_speed(
-            bike_model.get_revolution(),
-            bike_model.get_radius_wheel()
-        ).to(ureg.m / ureg.sec)
+        bike_model.get_revolution(),
+        bike_model.get_radius_wheel()
+    ).to(ureg.m / ureg.sec)
     return speed.magnitude
 
 #---------------------------------------------------------------------------
 # This is a more complex sampling method, which queries the physical model.
 
+
 def get_bike_power():
     weight_total = bike_model.get_weight_bike() + \
-                   bike_model.get_weight_rider() + \
-                   bike_model.get_weight_load()
+        bike_model.get_weight_rider() + \
+        bike_model.get_weight_load()
     speed = get_speed(
-            bike_model.get_revolution(),
-            bike_model.get_radius_wheel()
-        )
+        bike_model.get_revolution(),
+        bike_model.get_radius_wheel()
+    )
     power_acceleration = get_power(
-            get_force(
-                    weight_total,
-                    get_acceleration(speed)
-                ),
-            speed
-        ).to(ureg.watt)
+        get_force(
+            weight_total,
+            get_acceleration(speed)
+        ),
+        speed
+    ).to(ureg.watt)
     power_gravity = get_power(
-            get_force(
-                    weight_total,
-                    9.8 * ureg.m / ureg.sec ** 2
-                ),
-            speed * math.sin(bike_model.get_slope())
-        ).to(ureg.watt)
+        get_force(
+            weight_total,
+            9.8 * ureg.m / ureg.sec ** 2
+        ),
+        speed * math.sin(bike_model.get_slope())
+    ).to(ureg.watt)
     power_resistance = get_power(
-            get_resistance(
-                    bike_model.get_area(),
-                    speed,
-                    10 * ureg.kg / ureg.m ** 3
-                ).to(ureg.newton),
-            speed
-        ).to(ureg.watt)
+        get_resistance(
+            bike_model.get_area(),
+            speed,
+            10 * ureg.kg / ureg.m ** 3
+        ).to(ureg.newton),
+        speed
+    ).to(ureg.watt)
     power = power_acceleration + power_gravity + power_resistance
     return power.to(ureg.watt).magnitude
 
 #---------------------------------------------------------------------------
-# In this example, we demonstrate how data from a simulated device generating 
+# In this example, we demonstrate how data from a simulated device generating
 # random physical variables can be directed to graphite data center component
 # using Liota.
 
@@ -147,7 +155,7 @@ if __name__ == '__main__':
 
     # initialize and run the physical model (simulated device)
     bike_model = BikeSimulated(name=config.get('DEFAULT', 'DeviceName'),
-            parent=system, ureg=ureg)
+                               parent=system, ureg=ureg)
 
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
@@ -158,24 +166,24 @@ if __name__ == '__main__':
 
     metric_name = "model.bike.speed"
     bike_speed = Metric(
-			name=metric_name,
-			parent=bike_model,
-			entity_id=metric_name,
-            unit=(ureg.m / ureg.sec),
-			interval=5,
-			sampling_function=get_bike_speed
-		)
-    reg_bike_speed = graphite.register_metric(bike_speed)
+        name=metric_name,
+        parent=bike_model,
+        entity_id=metric_name,
+        unit=(ureg.m / ureg.sec),
+        interval=5,
+        sampling_function=get_bike_speed
+    )
+    reg_bike_speed = graphite.register(bike_speed)
     reg_bike_speed.start_collecting()
 
     metric_name = "model.bike.power"
     bike_power = Metric(
-			name=metric_name,
-			parent=bike_model,
-			entity_id=metric_name,
-            unit=ureg.watt,
-			interval=5,
-			sampling_function=get_bike_power
-		)
-    reg_bike_power = graphite.register_metric(bike_power)
+        name=metric_name,
+        parent=bike_model,
+        entity_id=metric_name,
+        unit=ureg.watt,
+        interval=5,
+        sampling_function=get_bike_power
+    )
+    reg_bike_power = graphite.register(bike_power)
     reg_bike_power.start_collecting()

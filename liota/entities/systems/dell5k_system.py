@@ -33,12 +33,11 @@
 from liota.entities.systems.system import System
 from liota.lib.utilities.utility import systemUUID
 
-
 class Dell5KSystem(System):
 
     def __init__(self, name):
         super(Dell5KSystem, self).__init__(
-                        name=name,
-                        entity_id=systemUUID().get_uuid(name),
-                        entity_type="Dell5KSystem"
-                        )
+            name=name,
+            entity_id=systemUUID().get_uuid(name),
+            entity_type="Dell5KSystem"
+        )

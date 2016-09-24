@@ -55,7 +55,7 @@ if [ "$package_messenger_pipe" == "" ]; then
     echo "ERROR: Pipe path not found in configuration file" >&2
     exit -2
 fi
-package_messenger_pipe="/ect/liota/packages/package_messenger.fifo"
+
 if [ ! -p "$package_messenger_pipe" ]; then
     echo "ERROR: Pipe path is not a named pipe" >&2
     exit -3

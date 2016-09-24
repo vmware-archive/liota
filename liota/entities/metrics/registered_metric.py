@@ -35,7 +35,7 @@ import inspect
 import logging
 
 from liota.core import metric_handler
-from liota.entities.metrics.metric import Metric
+#from liota.entities.metrics.metric import Metric
 from liota.entities.registered_entity import RegisteredEntity
 from liota.lib.utilities.utility import getUTCmillis
 
@@ -46,8 +46,6 @@ log = logging.getLogger(__name__)
 class RegisteredMetric(RegisteredEntity):
 
     def __init__(self, ref_metric, ref_dcc, reg_entity_id):
-        if not isinstance(ref_metric, Metric):
-            raise TypeError
         RegisteredEntity.__init__(self,
                                   ref_entity=ref_metric,
                                   ref_dcc=ref_dcc,
@@ -71,7 +69,8 @@ class RegisteredMetric(RegisteredEntity):
 
     def stop_collecting(self):
         self.flag_alive = False
-        log.info("Metric %s is marked for deletion" % str(self.ref_entity.name))
+        log.info("Metric %s is marked for deletion" %
+                 str(self.ref_entity.name))
 
     def add_collected_data(self, collected_data):
         if isinstance(collected_data, list):

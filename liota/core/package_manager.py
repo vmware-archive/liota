@@ -52,20 +52,20 @@ if __name__ == "__main__":
     log.warning("Package manager is not supposed to run alone")
 
     import liota.core.package_manager as actual_package_manager
-    
-    log.debug("Package Manager is waiting for interruption signal...")
+
+    log.debug("MainThread is waiting for interruption signal...")
     try:
         while not isinstance(
-                actual_package_manager.package_thread,
-                actual_package_manager.PackageThread
-            ) or actual_package_manager.package_thread.isAlive():
+            actual_package_manager.package_thread,
+            actual_package_manager.PackageThread
+        ) or actual_package_manager.package_thread.isAlive():
             sleep(1)
     except (KeyboardInterrupt, SystemExit):
         pass
     finally:
         if actual_package_manager.package_message_queue is not None:
             actual_package_manager.package_message_queue.put(["terminate"])
-    log.info("Exiting Package Manager")
+    log.info("Exiting Mainthread")
     exit()
 
 is_package_manager_initialized = False
@@ -85,11 +85,11 @@ if fullPath != '':
         if config.read(fullPath) != []:
             try:
                 package_path = os.path.abspath(
-                        config.get('PKG_CFG', 'pkg_path')
-                    )
+                    config.get('PKG_CFG', 'pkg_path')
+                )
                 package_messenger_pipe = os.path.abspath(
-                        config.get('PKG_CFG', 'pkg_msg_pipe')
-                    )
+                    config.get('PKG_CFG', 'pkg_msg_pipe')
+                )
             except ConfigParser.ParsingError:
                 log.error('Could not parse log config file')
                 exit(-4)
@@ -110,10 +110,11 @@ package_startup_list = []
 # Parse packages to load at start-up
 try:
     package_startup_list_path = os.path.abspath(
-            config.get('PKG_CFG', 'pkg_list')
-        )
+        config.get('PKG_CFG', 'pkg_list')
+    )
 except (ConfigParser.ParsingError, ConfigParser.NoOptionError):
     pass
+
 
 class ResourceRegistryPerPackage:
     """
@@ -136,6 +137,7 @@ class ResourceRegistryPerPackage:
     def has(self, identifier):
         return self._outer.has(identifier)
 
+
 class ResourceRegistry:
     """
     ResourceRegistry is a wrapped structure for Liota packages to register
@@ -143,15 +145,15 @@ class ResourceRegistry:
     """
 
     def __init__(self):
-        self._registry = {} # key: resource name, value: resource ref
-        self._packages = {} # key: package name, value: list of resource names
+        self._registry = {}  # key: resource name, value: resource ref
+        self._packages = {}  # key: package name, value: list of resource names
 
     def register(self, identifier, ref, package_name=None):
         if identifier in self._registry:
             raise KeyError("Conflicting resource identifier: " + identifier)
         self._registry[identifier] = ref
         if package_name:
-            if not package_name in self._packages:
+            if package_name not in self._packages:
                 self._packages[package_name] = []
             self._packages[package_name].append(identifier)
 
@@ -171,6 +173,7 @@ class ResourceRegistry:
 
     def get_package_registry(self, package_name):
         return ResourceRegistryPerPackage(self, package_name)
+
 
 class LiotaPackage:
     """
@@ -192,15 +195,17 @@ class LiotaPackage:
 # This method calculates SHA-1 checksum of file.
 # May raise IOError upon "open"
 
+
 def sha1sum(path_file):
     sha1 = hashlib.sha1()
     with open(path_file, "rb") as fp:
         while True:
-            data = fp.read(65536) # buffer size
+            data = fp.read(65536)  # buffer size
             if not data:
                 break
             sha1.update(data)
     return sha1
+
 
 class PackageRecord:
     """
@@ -215,7 +220,7 @@ class PackageRecord:
         self._file_name = file_name
         self._ext = None
         self._sha1 = None
-        self._dependents = {} # key: dependent name, value: None
+        self._dependents = {}  # key: dependent name, value: None
         self._dependencies = []
 
         #-------------------------------------------------------------------
@@ -261,6 +266,7 @@ class PackageRecord:
     def set_dependencies(self, list_dependencies):
         self._dependencies = list_dependencies
 
+
 class PackageThread(Thread):
     """
     PackageThread should be instantiated only once.
@@ -274,7 +280,7 @@ class PackageThread(Thread):
 
         global package_path
 
-        self._packages_loaded = {} # key: package name, value: PackageRecord obj
+        self._packages_loaded = {}  # key: package name, value: PackageRecord obj
         self._resource_registry = ResourceRegistry()
         self._resource_registry.register("package_conf", package_path)
         self.flag_alive = True
@@ -285,36 +291,36 @@ class PackageThread(Thread):
 
     def _cmd_handler_list(self, parameter):
         if parameter == "packages" or parameter == "pkg":
-            log.warning("List of packages - \n\t%s" \
-                    % "\n\t".join(sorted(
+            log.warning("List of packages - \n\t%s"
+                        % "\n\t".join(sorted(
                             self._packages_loaded.keys()
                         ))
-                )
+                        )
             return
         if parameter == "resources" or parameter == "res":
-            log.warning("List of resources - \n\t%s" \
-                    % "\n\t".join(sorted(
+            log.warning("List of resources - \n\t%s"
+                        % "\n\t".join(sorted(
                             self._resource_registry._registry.keys()
                         ))
-                )
+                        )
             return
         if parameter == "threads" or parameter == "th":
             import threading
-            
-            log.warning("Active threads - \n\t%s" \
-                    % "\n\t".join(map(
-                        lambda tref: "%s: %016x %s %s" % (
+
+            log.warning("Active threads - \n\t%s"
+                        % "\n\t".join(map(
+                            lambda tref: "%s: %016x %s %s" % (
                                 tref.name,
                                 tref.ident,
                                 type(tref).__name__.split(".")[-1],
                                 tref.isAlive()
                             ),
-                        sorted(
-                            threading.enumerate(),
-                            key=lambda tref: tref.ident
+                            sorted(
+                                threading.enumerate(),
+                                key=lambda tref: tref.ident
+                            )
+                        ))
                         )
-                    ))
-                )
             return
         log.warning("Unsupported list")
 
@@ -325,7 +331,7 @@ class PackageThread(Thread):
         if parameter == "metrics" or parameter == "met":
             from liota.core.metric_handler \
                 import event_ds, collect_queue, send_queue, \
-                       CollectionThreadPool, collect_thread_pool
+                CollectionThreadPool, collect_thread_pool
 
             stats = ["n/a", "n/a", "n/a", "n/a"]
             if isinstance(event_ds, Queue):
@@ -336,12 +342,12 @@ class PackageThread(Thread):
                 stats[2] = str(collect_queue.qsize())
             if isinstance(collect_thread_pool, CollectionThreadPool):
                 stats[3] = collect_thread_pool.get_stats_working()[0]
-            log.warning(("Number of metrics in - \n\t" \
-                    + "Waiting queue: %s\n\t" \
-                    + "Sending queue: %s\n\t" \
-                    + "Collecting queue: %s\n\t" \
-                    + "Collecting threads: %s"
-                ) % tuple(stats))
+            log.warning(("Number of metrics in - \n\t"
+                         + "Waiting queue: %s\n\t"
+                         + "Sending queue: %s\n\t"
+                         + "Collecting queue: %s\n\t"
+                         + "Collecting threads: %s"
+                         ) % tuple(stats))
             return
         if parameter == "collection_threads" or parameter == "col":
             from liota.core.metric_handler \
@@ -350,21 +356,21 @@ class PackageThread(Thread):
             stats = ["n/a", "n/a", "n/a", "n/a"]
             if isinstance(collect_thread_pool, CollectionThreadPool):
                 stats = map(
-                        lambda n: str(n), 
-                        collect_thread_pool.get_stats_working()
-                    )
-            log.warning(("Status of collection threads - \n\t" \
-                    + "Collecting: %s\n\t" \
-                    + "Alive: %s\n\t" \
-                    + "Pool: %s\n\t" \
-                    + "Capacity: %s"
-                ) % tuple(stats))
+                    lambda n: str(n),
+                    collect_thread_pool.get_stats_working()
+                )
+            log.warning(("Status of collection threads - \n\t"
+                         + "Collecting: %s\n\t"
+                         + "Alive: %s\n\t"
+                         + "Pool: %s\n\t"
+                         + "Capacity: %s"
+                         ) % tuple(stats))
             return
         if parameter == "threads" or parameter == "th":
             import threading
 
-            log.warning("Count of active threads: %d" \
-                    % threading.active_count())
+            log.warning("Count of active threads: %d"
+                        % threading.active_count())
             return
         log.warning("Unsupported stat")
 
@@ -384,8 +390,8 @@ class PackageThread(Thread):
         # Other packages are loaded here according to commands received
         while self.flag_alive:
             msg = package_message_queue.get()
-            log.info("Got message in package messenger queue: %s" \
-                    % " ".join(msg))
+            log.info("Got message in package messenger queue: %s"
+                     % " ".join(msg))
             if not isinstance(msg, tuple) and not isinstance(msg, list):
                 raise TypeError(type(msg))
 
@@ -408,8 +414,8 @@ class PackageThread(Thread):
                         elif command == "update":
                             self._package_update_list(list_packages)
                         else:
-                            log.warning("Batch operation not supported: %s" \
-                                    % command)
+                            log.warning("Batch operation not supported: %s"
+                                        % command)
                         continue
                     file_name = msg[1]
                     if command == "load":
@@ -422,7 +428,7 @@ class PackageThread(Thread):
                         self._package_reload(file_name)
                     elif command == "update":
                         self._package_update(file_name)
-                    else: # should not happen
+                    else:  # should not happen
                         raise RuntimeError("Command category error")
             elif command == "list":
                 with package_lock:
@@ -486,11 +492,11 @@ class PackageThread(Thread):
                 file_ext = ext_forced
         if not file_ext:
             if not ext_forced:
-                log.error("Package file not found: %s" \
-                        % (path_file + "." + prompt_ext_all))
+                log.error("Package file not found: %s"
+                          % (path_file + "." + prompt_ext_all))
             else:
-                log.error("Package file not found: %s" \
-                        % (path_file + "." + ext_forced))
+                log.error("Package file not found: %s"
+                          % (path_file + "." + ext_forced))
             return None
         path_file_ext = path_file + "." + file_ext
         log.debug("Package file found: %s" % path_file_ext)
@@ -501,8 +507,8 @@ class PackageThread(Thread):
         except IOError:
             log.error("Could not open file: %s" % path_file_ext)
             return None
-        log.info("Loaded package file: %s (%s)" \
-                % (path_file_ext, sha1.hexdigest()))
+        log.info("Loaded package file: %s (%s)"
+                 % (path_file_ext, sha1.hexdigest()))
 
         #-------------------------------------------------------------------
         # Following sections do these:
@@ -525,17 +531,17 @@ class PackageThread(Thread):
         try:
             if file_ext in ["py"]:
                 module_loaded = imp.load_source(
-                        module_name,
-                        path_file_ext
-                    )
+                    module_name,
+                    path_file_ext
+                )
             elif file_ext in ["pyc", "pyo"]:
                 module_loaded = imp.load_compiled(
-                        module_name,
-                        path_file_ext
-                    )
-            else: # should not happen
+                    module_name,
+                    path_file_ext
+                )
+            else:  # should not happen
                 raise RuntimeError("File extension category error")
-        except Exception, err:
+        except Exception as err:
             log.error("Error loading module: %s" % str(err))
             return None
 
@@ -549,37 +555,37 @@ class PackageThread(Thread):
         if hasattr(module_loaded, "dependencies"):
             dependencies = getattr(module_loaded, "dependencies")
             if not isinstance(dependencies, list):
-                log.error("Mal-formatted list of dependencies in module %s" \
-                        % module_loaded.__name__)
+                log.error("Mal-formatted list of dependencies in module %s"
+                          % module_loaded.__name__)
                 return None
 
             if len(dependencies) > 0:
-                log.info("Package %s depends on: %s" \
-                        % (file_name, " ".join(dependencies)))
+                log.info("Package %s depends on: %s"
+                         % (file_name, " ".join(dependencies)))
                 if not isinstance(check_stack, list):
                     check_stack = []
                 check_stack.append(file_name)
                 for dependency in dependencies:
                     if dependency in check_stack:
-                        log.error("%s is not loaded, because %s depends on it" \
-                                % (file_name, dependency))
+                        log.error("%s is not loaded, because %s depends on it"
+                                  % (file_name, dependency))
                         check_stack.pop()
                         return None
-                    if not dependency in self._packages_loaded:
+                    if dependency not in self._packages_loaded:
                         self._package_load(dependency, check_stack=check_stack)
-                    if not dependency in self._packages_loaded:
-                        log.error("%s is not loaded, because %s failed to load"\
-                                % (file_name, dependency))
+                    if dependency not in self._packages_loaded:
+                        log.error("%s is not loaded, because %s failed to load"
+                                  % (file_name, dependency))
                         check_stack.pop()
                         return None
-                    
+
                     # Add dependent record
                     dep_record = self._packages_loaded[dependency]
                     assert(isinstance(dep_record, PackageRecord))
                     dep_record.add_dependent(file_name)
                 check_stack.pop()
-                log.debug("Dependency check of package %s is complete" \
-                        % file_name)
+                log.debug("Dependency check of package %s is complete"
+                          % file_name)
 
         # Get package class from module and instantiate it
         if not hasattr(module_loaded, "PackageClass"):
@@ -591,10 +597,10 @@ class PackageThread(Thread):
         if not package_record.set_instance(klass()):
             log.error("Unexpected failure initializing package")
             return None
-        try: # Run created instance
+        try:  # Run created instance
             package_record.get_instance().run(
-                    self._resource_registry.get_package_registry(file_name)
-                )
+                self._resource_registry.get_package_registry(file_name)
+            )
         except Exception as er:
             log.error("Exception in initialization: %s" % str(er))
             return None
@@ -603,8 +609,8 @@ class PackageThread(Thread):
         package_record.set_dependencies(dependencies)
         self._packages_loaded[file_name] = package_record
 
-        log.info("Package class from module %s is initialized" \
-                % module_loaded.__name__)
+        log.info("Package class from module %s is initialized"
+                 % module_loaded.__name__)
         return package_record
 
     #-----------------------------------------------------------------------
@@ -612,11 +618,11 @@ class PackageThread(Thread):
 
     def _package_unload(self, file_name, track_list=None):
         log.debug("Attempting to unload package: %s" % file_name)
-        
+
         # Check if specified package is already loaded
-        if not file_name in self._packages_loaded:
-            log.warning("Could not unload package - not loaded: %s" \
-                    % file_name)
+        if file_name not in self._packages_loaded:
+            log.warning("Could not unload package - not loaded: %s"
+                        % file_name)
             return False
 
         package_record = self._packages_loaded[file_name]
@@ -624,20 +630,20 @@ class PackageThread(Thread):
 
         # Stop all dependents, before making any change to current package
         dependents = package_record.get_dependents()
-        
+
         if len(dependents) > 0:
-            log.info("Package %s is depended by: %s" \
-                    % (file_name, " ".join(dependents)))
+            log.info("Package %s is depended by: %s"
+                     % (file_name, " ".join(dependents)))
             for dependent in dependents:
                 if dependent in self._packages_loaded:
                     self._package_unload(dependent, track_list=track_list)
                 if dependent in self._packages_loaded:
-                    log.error("%s is still alive, because %s failed to unload" \
-                        % (file_name, dependent))
+                    log.error("%s is still alive, because %s failed to unload"
+                              % (file_name, dependent))
                     return False
                 # package_record.del_dependent(dependent)
-            log.debug("Dependency check of package %s is complete" \
-                % file_name)
+            log.debug("Dependency check of package %s is complete"
+                      % file_name)
 
         package_obj = package_record.get_instance()
         if not isinstance(package_obj, LiotaPackage):
@@ -649,11 +655,11 @@ class PackageThread(Thread):
             for identifier in self._resource_registry._packages[file_name]:
                 self._resource_registry.deregister(identifier)
             del self._resource_registry._packages[file_name]
-            log.debug("Deregistered resource refs for package: %s" \
-                    % file_name)
+            log.debug("Deregistered resource refs for package: %s"
+                      % file_name)
         else:
-            log.warning("Could not deregister resource refs for package: %s" \
-                    % file_name)
+            log.warning("Could not deregister resource refs for package: %s"
+                        % file_name)
 
         # Clean-up
         try:
@@ -662,12 +668,12 @@ class PackageThread(Thread):
             log.error("Exception in clean-up: %s" % er)
 
         # Remove dependent item from dependencies
-        log.debug("Package %s depends on: %s" \
-                % (file_name, " ".join(package_record.get_dependencies())))
+        log.debug("Package %s depends on: %s"
+                  % (file_name, " ".join(package_record.get_dependencies())))
         for dependency in package_record.get_dependencies():
             self._packages_loaded[dependency].del_dependent(file_name)
-            log.debug("Package %s is no longer a dependent of %s" \
-                    % (file_name, dependency))
+            log.debug("Package %s is no longer a dependent of %s"
+                      % (file_name, dependency))
 
         if isinstance(track_list, list):
             track_list.append((file_name, package_record.get_ext()))
@@ -678,7 +684,7 @@ class PackageThread(Thread):
 
     def _package_delete(self, file_name):
         log.debug("Attempting to delete package: %s" % file_name)
-        pass # TODO
+        pass  # TODO
         log.info("Deleted package: %s" % file_name)
 
     #-----------------------------------------------------------------------
@@ -691,21 +697,21 @@ class PackageThread(Thread):
         log.debug("Attempting to reload package: %s" % file_name)
 
         # Check if specified package is already loaded
-        if not file_name in self._packages_loaded:
-            log.warning("Could not reload package - not loaded: %s" \
-                    % file_name)
+        if file_name not in self._packages_loaded:
+            log.warning("Could not reload package - not loaded: %s"
+                        % file_name)
             return False
-        
+
         # Logic of reload
         track_list = []
         if self._package_unload(file_name, track_list=track_list):
             package_record = None
             track_list.reverse()
-            log.info("Packages will be reloaded: %s" \
-                    % " ".join(
-                            map(lambda item: item[0], track_list)
-                        )
-                )
+            log.info("Packages will be reloaded: %s"
+                     % " ".join(
+                         map(lambda item: item[0], track_list)
+                     )
+                     )
             for track_item in track_list:
                 if track_item[0] in self._packages_loaded:
                     continue
@@ -716,8 +722,8 @@ class PackageThread(Thread):
                         package_record = temp_record
                     log.info("Reloaded package: %s" % file_name)
                 else:
-                    log.error("Unloaded but could not reload package: %s" \
-                            % file_name)
+                    log.error("Unloaded but could not reload package: %s"
+                              % file_name)
             if not package_record is None:
                 return package_record
             else:
@@ -731,30 +737,30 @@ class PackageThread(Thread):
     # We keep track of full file name (without ext) when unloading.
     # The difference between this method and _package_reload is:
     #   1)  If target package is not loaded, this method tries to load it.
-    #   2)  For all packages involved in update, this method calls 
+    #   2)  For all packages involved in update, this method calls
     #       _package_load to look for source files and compiled files in our
     #       preferred priority order, so updated source file can be used to
     #       update target package even if it was loaded using compiled file.
 
     def _package_update(self, file_name):
         log.debug("Attempting to update package: %s" % file_name)
-        
+
         # Check if specified package is already loaded
-        if not file_name in self._packages_loaded:
-            log.info("Package is not loaded, will try to load: %s" \
-                    % file_name)
+        if file_name not in self._packages_loaded:
+            log.info("Package is not loaded, will try to load: %s"
+                     % file_name)
             return self._package_load(file_name)
-        
+
         # Logic of reload
         track_list = []
         if self._package_unload(file_name, track_list=track_list):
             package_record = None
             track_list.reverse()
-            log.info("Packages will be reloaded and updated: %s" \
-                    % " ".join(
-                            map(lambda item: item[0], track_list)
-                        )
-                )
+            log.info("Packages will be reloaded and updated: %s"
+                     % " ".join(
+                         map(lambda item: item[0], track_list)
+                     )
+                     )
             for track_item in track_list:
                 if track_item[0] in self._packages_loaded:
                     continue
@@ -765,8 +771,8 @@ class PackageThread(Thread):
                         package_record = temp_record
                     log.info("Reloaded and updated package: %s" % file_name)
                 else:
-                    log.error("Unloaded but could not reload package: %s" \
-                            % file_name)
+                    log.error("Unloaded but could not reload package: %s"
+                              % file_name)
             if not package_record is None:
                 return package_record
             else:
@@ -779,14 +785,14 @@ class PackageThread(Thread):
 
     #-----------------------------------------------------------------------
     # This method is called to load a list of packages.
-    # If any package in list is already loaded, it will be simply ignored - 
-    # Neither will this method throw an exception, nor will this package be 
+    # If any package in list is already loaded, it will be simply ignored -
+    # Neither will this method throw an exception, nor will this package be
     # reloaded.
     # It returns True if all packages in list are successfully loaded.
 
     def _package_load_list(self, package_list):
-        log.debug("Attempting to load packages: %s" \
-                % " ".join(package_list))
+        log.debug("Attempting to load packages: %s"
+                  % " ".join(package_list))
         list_failed = []
         for file_name in package_list:
             if file_name in self._packages_loaded:
@@ -795,32 +801,32 @@ class PackageThread(Thread):
                 list_failed.append(file_name)
 
         if len(list_failed) > 0:
-            log.warning("Some packages specified in list failed to load: %s" \
-                    % " ".join(list_failed))
+            log.warning("Some packages specified in list failed to load: %s"
+                        % " ".join(list_failed))
         else:
             log.info("Batch load successful")
         return len(list_failed) < 1
 
     #-----------------------------------------------------------------------
     # This method is called to unload a list of packages.
-    # If any package in list is not loaded, it will be simply ignored - 
+    # If any package in list is not loaded, it will be simply ignored -
     # This method will simply assume it is successfully unloaded and won't
     # throw an exception.
     # It returns True if all packages in list are successfully unloaded.
 
     def _package_unload_list(self, package_list, track_list=None):
-        log.debug("Attempting to unload packages: %s" \
-                % " ".join(package_list))
+        log.debug("Attempting to unload packages: %s"
+                  % " ".join(package_list))
         list_failed = []
         for file_name in package_list:
-            if not file_name in self._packages_loaded:
+            if file_name not in self._packages_loaded:
                 continue
             if not self._package_unload(file_name, track_list=track_list):
                 list_failed.append(file_name)
 
         if len(list_failed) > 0:
-            log.warning("Some packages specified in list failed to unload: %s" \
-                    % " ".join(list_failed))
+            log.warning("Some packages specified in list failed to unload: %s"
+                        % " ".join(list_failed))
         else:
             log.info("Batch unload successful")
         return len(list_failed) < 1
@@ -830,8 +836,8 @@ class PackageThread(Thread):
     # It first unload packages in that list, and then load them back.
 
     def _package_update_list(self, package_list):
-        log.debug("Attempting to update packages: %s" \
-                % " ".join(package_list))
+        log.debug("Attempting to update packages: %s"
+                  % " ".join(package_list))
         flag_failed = False
 
         # Acquire a list of all dependents of these packages
@@ -848,7 +854,7 @@ class PackageThread(Thread):
         if len(track_list) > 0:
             if not self._package_load_list(map(lambda x: x[0], track_list)):
                 flag_failed = True
-        
+
         if flag_failed:
             log.warning("Some packages failed to update. See log for details")
         else:
@@ -871,8 +877,8 @@ class PackageThread(Thread):
                 with open(package_startup_list_path, "r") as fp:
                     package_startup_list = fp.read().split()
             except IOError:
-                log.warning("Could not load start-up list from: %s" \
-                        % package_startup_list_path)
+                log.warning("Could not load start-up list from: %s"
+                            % package_startup_list_path)
         else:
             log.info("No package is automatically loaded at start-up")
 
@@ -917,8 +923,8 @@ class PackageThread(Thread):
                 file_names_found.append(file_name + "." + file_ext_ind)
 
         if len(file_names_found) < 1:
-            log.warning("No source or compiled file found for package: %s" \
-                    % file_name)
+            log.warning("No source or compiled file found for package: %s"
+                        % file_name)
             return False
 
         # Create stash folder for delete packages
@@ -935,9 +941,9 @@ class PackageThread(Thread):
             file_name_src = package_path + c_slash + file_name_found
             try:
                 os.rename(
-                        file_name_src,
-                        package_path + c_slash + "stash/" + file_name_found
-                    )
+                    file_name_src,
+                    package_path + c_slash + "stash/" + file_name_found
+                )
                 log.debug("File moved to stash: %s" % file_name_found)
             except OSError:
                 log.warning("Could not move file: %s" % file_name_src)
@@ -966,7 +972,7 @@ class PackageThread(Thread):
         log.info("Shutting down package messenger...")
         if package_messenger_thread.isAlive():
             with open(package_messenger_pipe, "w") as fp:
-                fp.write( \
+                fp.write(
                     "terminate_messenger_but_you_should_not_do_this_yourself\n")
 
         log.info("Unloading packages...")
@@ -1008,7 +1014,7 @@ class PackageMessengerThread(Thread):
         except OSError as err:
             import errno
             if err.errno == errno.EAGAIN or err.errno == errno.EWOULDBLOCK:
-                pass # It is supposed to raise one of these exceptions
+                pass  # It is supposed to raise one of these exceptions
             else:
                 raise err
         finally:
@@ -1027,7 +1033,7 @@ class PackageMessengerThread(Thread):
                     msg = line.split()
                     if len(msg) > 0:
                         if len(msg) == 1 and msg[0] == \
-                    "terminate_messenger_but_you_should_not_do_this_yourself":
+                                "terminate_messenger_but_you_should_not_do_this_yourself":
                             self.flag_alive = False
                             break
                         package_message_queue.put(msg)
@@ -1038,6 +1044,7 @@ class PackageMessengerThread(Thread):
 # This method create queues and spawns PackageThread, which will loop on
 # commands grabbed from a queue and load/unload packages as requested in
 # those commands.
+
 
 def initialize():
     global is_package_manager_initialized
@@ -1110,15 +1117,15 @@ def initialize():
     if package_thread is None:
         package_thread = PackageThread(name="PackageThread")
 
-    # PackageMessengerThread should start last because it triggers actions 
+    # PackageMessengerThread should start last because it triggers actions
     global package_messenger_thread
     if package_messenger_thread is None:
         if package_thread.isAlive():
             package_messenger_thread = \
                 PackageMessengerThread(
-                        pipe_file=package_messenger_pipe,
-                        name="PackageMessengerThread"
-                    )
+                    pipe_file=package_messenger_pipe,
+                    name="PackageMessengerThread"
+                )
         else:
             log.warning("Package messenger will not start")
 

@@ -36,10 +36,8 @@ from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
 
-requirements = [
-    str(requirement.req)
-    for requirement in parse_requirements('requirements.txt', session=pip.download.PipSession())
-]
+requirements = [str(requirement.req) for requirement in parse_requirements(
+    'requirements.txt', session=pip.download.PipSession())]
 
 # Get the long description from the README file
 with open('README.md') as f:
@@ -84,31 +82,30 @@ setup(
 
     # 'data_file'(conf_files) at custom location
     data_files=[(os.path.abspath(os.sep) + '/../etc/liota/examples',
-                        ['examples/simulated_system_graphite.py',
-                         'examples/dell5k_system_graphite.py',
-                         'examples/multi_metric_simulated_system_graphite.py',
-                         'examples/sampleProp.conf']),
+                 ['examples/simulated_system_graphite.py',
+                  'examples/dell5k_system_graphite.py',
+                  'examples/multi_metric_simulated_system_graphite.py',
+                  'examples/sampleProp.conf']),
                 (os.path.abspath(os.sep) + '/../etc/liota/examples/model_simulated',
-                        ['examples/model_simulated/graphite_bike_simulated.py',
-                         'examples/model_simulated/graphite_thermistor_simulated.py']),
+                 ['examples/model_simulated/graphite_bike_simulated.py',
+                  'examples/model_simulated/graphite_thermistor_simulated.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages',
-                        ['packages/graphite.py',
-                         'packages/sampleProp.conf',
-                         'packages/liotad.py',
-                         'packages/liotapkg.sh',
-                         'packages/packages_auto.txt',
-                         'packages/package_messenger.fifo']),
+                 ['packages/graphite.py',
+                  'packages/sampleProp.conf',
+                  'packages/liotad.py',
+                  'packages/liotapkg.sh',
+                  'packages/packages_auto.txt']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/examples',
-                        ['packages/examples/bike_simulator.py',
-                         'packages/examples/graphite_bike_simulated.py',
-                         'packages/examples/graphite_system_stats.py',
-                         'packages/examples/thermistor_simulator.py',
-                         'packages/examples/graphite_thermistor_simulated.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages/systems/de5k',
-                        ['packages/systems/de5k/system.py']),
+                 ['packages/examples/bike_simulator.py',
+                  'packages/examples/graphite_bike_simulated.py',
+                  'packages/examples/graphite_system_stats.py',
+                  'packages/examples/thermistor_simulator.py',
+                  'packages/examples/graphite_thermistor_simulated.py']),
+                (os.path.abspath(os.sep) + '/../etc/liota/packages/systems/dell5k',
+                 ['packages/systems/dell5k/system.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/conf',
-                        ['config/liota.conf', 'config/logging.json']),
+                 ['config/liota.conf', 'config/logging.json']),
                 (os.path.abspath(os.sep) + '/../etc/liota',
-                        ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
+                 ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
                 (os.path.abspath(os.sep) + '/../var/log/liota', [])]
 )

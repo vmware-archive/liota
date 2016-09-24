@@ -32,13 +32,16 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["systems/de5k/system", "graphite"]
+dependencies = ["systems/dell5k/system", "graphite"]
+
 
 class PackageClass(LiotaPackage):
 
     def run(self, registry):
         from liota.entities.devices.thermistor_simulated import ThermistorSimulated
-        import ConfigParser, pint, copy
+        import ConfigParser
+        import pint
+        import copy
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -52,8 +55,8 @@ class PackageClass(LiotaPackage):
         # create a pint unit registry
         ureg = pint.UnitRegistry()
         # initialize and run the physical model (simulated device)
-        thermistor_simulator = ThermistorSimulated(name=config.get('DEFAULT', 'DeviceName'),
-            parent=system, ureg=ureg)
+        thermistor_simulator = ThermistorSimulated(name=config.get(
+            'DEFAULT', 'DeviceName'), parent=system, ureg=ureg)
 
         registry.register("thermistor_simulator", thermistor_simulator)
 

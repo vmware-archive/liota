@@ -54,11 +54,11 @@ def setup_logging(default_level=logging.WARNING):
                 try:
                     log_path = config.get('LOG_PATH', 'log_path')
                     log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError, err:
+                except ConfigParser.ParsingError as err:
                     log.error('Could not parse log config file')
             else:
                 raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError, err:
+        except IOError as err:
             log.error('Could not open log config file')
         mkdir_log(log_path)
         if os.path.exists(log_cfg):
@@ -70,7 +70,45 @@ def setup_logging(default_level=logging.WARNING):
             # missing logging.json file
             logging.basicConfig(level=default_level)
             log.warn(
-                'logging.json file missing,created default logger with level = ' + str(default_level))
+                'logging.json file missing,created default logger with level = ' +
+                str(default_level))
+    else:
+        # missing config file
+        log.warn('liota.conf file missing')
+
+
+def setup_package():
+    """Setup package manager configuration
+
+    """
+    log = logging.getLogger(__name__)
+    config = ConfigParser.RawConfigParser()
+    fullPath = LiotaConfigPath().get_liota_fullpath()
+    if fullPath != '':
+        if config.read(fullPath) != []:
+            try:
+                path = config.get('PKG_CFG', 'pkg_msg_pipe')
+            except ConfigParser.ParsingError as err:
+                log.error('Could not parse config file')
+        else:
+            raise IOError('Cannot open config file ' + fullPath)
+        dir = os.path.dirname(path)
+        log.error('dir: ' + str(dir))
+        if not os.path.exists(dir):
+            log.warn('directory does not exist; create it')
+            try:
+                supermakedirs(dir, 777)
+            except Exception as e:
+                raise OSError('Cannot create directory' + dir)
+            finally:
+                os.umask(original_umask)
+        try:
+            os.mkfifo(path)
+        except OSError as exc:  # Python > 2.5
+            if exc.errno == errno.EEXIST:
+                pass
+            else:
+                raise
     else:
         # missing config file
         log.warn('liota.conf file missing')
@@ -87,4 +125,5 @@ def mkdir_log(path):
                 raise
 
 setup_logging()
+setup_package()
 systemUUID()

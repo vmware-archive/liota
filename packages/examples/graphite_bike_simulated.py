@@ -34,12 +34,14 @@ from liota.core.package_manager import LiotaPackage
 
 dependencies = ["graphite", "examples/bike_simulator"]
 
+
 def static_vars(**kwargs):
     def decorate(func):
         for k in kwargs:
             setattr(func, k, kwargs[k])
         return func
     return decorate
+
 
 class PackageClass(LiotaPackage):
 
@@ -50,7 +52,7 @@ class PackageClass(LiotaPackage):
         import math
 
         #-------------------------------------------------------------------
-        # The following functions operate on physical variables represented 
+        # The following functions operate on physical variables represented
         # in pint objects, and returns a pint object, too.
         # Decorators provided by the pint library are used to check the
         # dimensions of arguments passed to the functions.
@@ -85,14 +87,14 @@ class PackageClass(LiotaPackage):
             return force * speed
 
         #-------------------------------------------------------------------
-        # This is a sampling method, which queries the physical model, and 
+        # This is a sampling method, which queries the physical model, and
         # calls the physical functions to calculate a desired variable.
 
         def get_bike_speed():
             speed = get_speed(
-                    bike_model.get_revolution(),
-                    bike_model.get_radius_wheel()
-                ).to(ureg.m / ureg.sec)
+                bike_model.get_revolution(),
+                bike_model.get_radius_wheel()
+            ).to(ureg.m / ureg.sec)
             return speed.magnitude
 
         #-------------------------------------------------------------------
@@ -101,34 +103,34 @@ class PackageClass(LiotaPackage):
 
         def get_bike_power():
             weight_total = bike_model.get_weight_bike() + \
-                           bike_model.get_weight_rider() + \
-                           bike_model.get_weight_load()
+                bike_model.get_weight_rider() + \
+                bike_model.get_weight_load()
             speed = get_speed(
-                    bike_model.get_revolution(),
-                    bike_model.get_radius_wheel()
-                )
+                bike_model.get_revolution(),
+                bike_model.get_radius_wheel()
+            )
             power_acceleration = get_power(
-                    get_force(
-                            weight_total,
-                            get_acceleration(speed)
-                        ),
-                    speed
-                ).to(ureg.watt)
+                get_force(
+                    weight_total,
+                    get_acceleration(speed)
+                ),
+                speed
+            ).to(ureg.watt)
             power_gravity = get_power(
-                    get_force(
-                            weight_total,
-                            9.8 * ureg.m / ureg.sec ** 2
-                        ),
-                    speed * math.sin(bike_model.get_slope())
-                ).to(ureg.watt)
+                get_force(
+                    weight_total,
+                    9.8 * ureg.m / ureg.sec ** 2
+                ),
+                speed * math.sin(bike_model.get_slope())
+            ).to(ureg.watt)
             power_resistance = get_power(
-                    get_resistance(
-                            bike_model.get_area(),
-                            speed,
-                            10 * ureg.kg / ureg.m ** 3
-                        ).to(ureg.newton),
-                    speed
-                ).to(ureg.watt)
+                get_resistance(
+                    bike_model.get_area(),
+                    speed,
+                    10 * ureg.kg / ureg.m ** 3
+                ).to(ureg.newton),
+                speed
+            ).to(ureg.watt)
             power = power_acceleration + power_gravity + power_resistance
             return power.to(ureg.watt).magnitude
 
@@ -148,33 +150,33 @@ class PackageClass(LiotaPackage):
 
         # Create metrics
         self.metrics = []
-    
+
         metric_name = "model.bike.speed"
         bike_speed = Metric(
-                name=metric_name,
-                parent=bike_simulator,
-                entity_id=metric_name,
-                unit=(ureg.m / ureg.sec),
-                interval=5,
-                sampling_function=self.get_bike_speed
-            )
-        reg_bike_speed = graphite.register_metric(bike_speed)
+            name=metric_name,
+            parent=bike_simulator,
+            entity_id=metric_name,
+            unit=(ureg.m / ureg.sec),
+            interval=5,
+            sampling_function=self.get_bike_speed
+        )
+        reg_bike_speed = graphite.register(bike_speed)
         if reg_bike_speed is None:
             print "failed to register bike_speed to graphite instance"
         else:
             reg_bike_speed.start_collecting()
             self.metrics.append(reg_bike_speed)
-    
+
         metric_name = "model.bike.power"
         bike_power = Metric(
-                name=metric_name,
-                parent=bike_simulator,
-                entity_id=metric_name,
-                unit=ureg.watt,
-                interval=5,
-                sampling_function=self.get_bike_power
-            )
-        reg_bike_power = graphite.register_metric(bike_power)
+            name=metric_name,
+            parent=bike_simulator,
+            entity_id=metric_name,
+            unit=ureg.watt,
+            interval=5,
+            sampling_function=self.get_bike_power
+        )
+        reg_bike_power = graphite.register(bike_power)
         if reg_bike_speed is None:
             print "failed to register bike_power to graphite instance"
         else:
