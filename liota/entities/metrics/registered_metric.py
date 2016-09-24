@@ -33,7 +33,6 @@
 from Queue import Queue
 import inspect
 import logging
-
 from liota.core import metric_handler
 from liota.entities.registered_entity import RegisteredEntity
 from liota.lib.utilities.utility import getUTCmillis
