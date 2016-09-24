@@ -37,15 +37,16 @@ import pint
 from liota.entities.devices.device import Device
 from liota.lib.utilities.utility import systemUUID
 
+
 class ThermistorSimulated(Device):
 
     def __init__(self, name, parent, u=5.0, r0=3000, interval=5, ureg=None):
         super(ThermistorSimulated, self).__init__(
-                        name=name,
-                        parent=parent,
-                        entity_id=systemUUID().get_uuid(name),
-                        entity_type="ThermistorSimulated"
-                        )
+            name=name,
+            parent=parent,
+            entity_id=systemUUID().get_uuid(name),
+            entity_type="ThermistorSimulated"
+        )
 
         self.u = u                  # Total voltage
         self.r0 = r0                # Reference resistor
@@ -59,6 +60,13 @@ class ThermistorSimulated(Device):
             self.ureg = ureg
         else:
             self.ureg = pint.UnitRegistry()
+
+    def register(self, dcc_obj, reg_entity_id):
+        return super(ThermistorSimulated, self).register(
+            entity_obj=self,
+            dcc_obj=dcc_obj,
+            reg_entity_id=reg_entity_id
+        )
 
     def run(self):
         self.th = threading.Thread(target=self.simulate)
@@ -75,12 +83,12 @@ class ThermistorSimulated(Device):
             time.sleep(self.interval)
 
             self.ux = min(
-                    max(
-                            self.ux + \
-                                random.uniform(-0.01, 0.01) * self.interval,
-                            1.5
-                        ),  3.5
-                )
+                max(
+                    self.ux +
+                    random.uniform(-0.01, 0.01) * self.interval,
+                    1.5
+                ), 3.5
+            )
 
     #-----------------------------------------------------------------------
     # These methods are used to access the state of the simulated physical

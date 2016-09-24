@@ -41,6 +41,7 @@ from liota.entities.systems.de5k_system import Dell5KSystem
 config = ConfigParser.ConfigParser()
 config.readfp(open('sampleProp.conf'))
 
+
 def read_cpu_utilization(sample_duration_sec=1):
     return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
 
@@ -55,20 +56,21 @@ if __name__ == '__main__':
     system = Dell5KSystem(config.get('DEFAULT', 'GatewayName'))
 
     # Sending data to Graphite data center component
-    # Socket is the underlying transport used to connect to the Graphite instance
+    # Socket is the underlying transport used to connect to the Graphite
+    # instance
     graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
                                port=config.getint('GRAPHITE', 'Port')))
     graphite_reg_system = graphite.register(system)
 
     metric_name = config.get('DEFAULT', 'MetricName')
     cpu_utilization = Metric(
-            name=metric_name,
-            parent=system,
-            entity_id=metric_name,
-            unit=None,
-            interval=10,
-            aggregation_size=2,
-            sampling_function=read_cpu_utilization
-        )
-    reg_cpu_utilization = graphite.register_metric(cpu_utilization)
+        name=metric_name,
+        parent=system,
+        entity_id=metric_name,
+        unit=None,
+        interval=10,
+        aggregation_size=2,
+        sampling_function=read_cpu_utilization
+    )
+    reg_cpu_utilization = graphite.register(cpu_utilization)
     reg_cpu_utilization.start_collecting()

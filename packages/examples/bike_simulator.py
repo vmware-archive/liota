@@ -32,13 +32,16 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["systems/de5k/system", "graphite"]
+dependencies = ["systems/dell5k/system", "graphite"]
+
 
 class PackageClass(LiotaPackage):
 
     def run(self, registry):
         from liota.entities.devices.bike_simulated import BikeSimulated
-        import ConfigParser, pint, copy
+        import ConfigParser
+        import pint
+        import copy
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -52,8 +55,12 @@ class PackageClass(LiotaPackage):
         # create a pint unit registry
         ureg = pint.UnitRegistry()
         # initialize and run the physical model (simulated device)
-        bike_simulator = BikeSimulated(name=config.get('DEFAULT', 'DeviceName'),
-            parent=system, ureg=ureg)
+        bike_simulator = BikeSimulated(
+            name=config.get(
+                'DEFAULT',
+                'DeviceName'),
+            parent=system,
+            ureg=ureg)
 
         registry.register("bike_simulator", bike_simulator)
 

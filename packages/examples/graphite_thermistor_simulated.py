@@ -34,12 +34,14 @@ from liota.core.package_manager import LiotaPackage
 
 dependencies = ["graphite", "examples/thermistor_simulator"]
 
+
 def static_vars(**kwargs):
     def decorate(func):
         for k in kwargs:
             setattr(func, k, kwargs[k])
         return func
     return decorate
+
 
 class PackageClass(LiotaPackage):
 
@@ -50,7 +52,7 @@ class PackageClass(LiotaPackage):
         import math
 
         #-------------------------------------------------------------------
-        # The following functions operate on physical variables represented 
+        # The following functions operate on physical variables represented
         # in pint objects, and returns a pint object, too.
         # Decorators provided by the pint library are used to check the
         # dimensions of arguments passed to the functions.
@@ -60,18 +62,22 @@ class PackageClass(LiotaPackage):
             rx = r0 * ux / (u - ux)
             return rx
 
-        @ureg.check(1 / ureg.kelvin, 1 / ureg.kelvin, 1 / ureg.kelvin, ureg.ohm)
+        @ureg.check(
+            1 / ureg.kelvin,
+            1 / ureg.kelvin,
+            1 / ureg.kelvin,
+            ureg.ohm)
         def get_temperature(c1, c2, c3, rx):
-            temper = 1 / ( \
-                    c1 + \
-                    c2 * math.log(rx / ureg.ohm) + \
-                    c3 * math.log(rx / ureg.ohm) ** 3
-                )
+            temper = 1 / (
+                c1 +
+                c2 * math.log(rx / ureg.ohm) +
+                c3 * math.log(rx / ureg.ohm) ** 3
+            )
 
             #---------------------------------------------------------------
             # Here commented is a counter example, showing how a dimension
             # mismatch can be prevented using pint.
-            # Since in the correct one above, the unit of temper is 
+            # Since in the correct one above, the unit of temper is
             # already Kelvin, if we multiply it by ureg.kelvin, the unit of
             # the returned values will become ureg.kelvin ** 2, which will
             # consequently throw an exception in succeeding method calls.
@@ -93,15 +99,15 @@ class PackageClass(LiotaPackage):
 
         def get_thermistor_temperature():
             temper = get_temperature(
-                    thermistor_model.get_c1(),
-                    thermistor_model.get_c2(),
-                    thermistor_model.get_c3(),
-                    get_rx(
-                            thermistor_model.get_u(),
-                            thermistor_model.get_r0(),
-                            thermistor_model.get_ux()
-                        )
-                ).to(ureg.degC)
+                thermistor_model.get_c1(),
+                thermistor_model.get_c2(),
+                thermistor_model.get_c3(),
+                get_rx(
+                    thermistor_model.get_u(),
+                    thermistor_model.get_r0(),
+                    thermistor_model.get_ux()
+                )
+            ).to(ureg.degC)
             return temper.magnitude
 
         self.get_thermistor_temperature = get_thermistor_temperature
@@ -113,7 +119,7 @@ class PackageClass(LiotaPackage):
         graphite = registry.get("graphite")
         thermistor_simulator = registry.get("thermistor_simulator")
         graphite_thermistor = graphite.register(thermistor_simulator)
-        
+
         ureg = thermistor_simulator.ureg
         self.create_udm(thermistor_model=thermistor_simulator)
 
@@ -121,14 +127,14 @@ class PackageClass(LiotaPackage):
         self.metrics = []
         metric_name = "model.thermistor.temperature"
         thermistor_temper = Metric(
-                name=metric_name,
-                parent=thermistor_simulator,
-                entity_id=metric_name,
-                unit=ureg.degC,
-                interval=5,
-                sampling_function=self.get_thermistor_temperature
-            )
-        reg_thermistor_temper = graphite.register_metric(thermistor_temper)
+            name=metric_name,
+            parent=thermistor_simulator,
+            entity_id=metric_name,
+            unit=ureg.degC,
+            interval=5,
+            sampling_function=self.get_thermistor_temperature
+        )
+        reg_thermistor_temper = graphite.register(thermistor_temper)
         if reg_thermistor_temper is None:
             print "failed to register thermistor_temperature to graphite instance"
         else:

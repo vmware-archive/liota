@@ -38,22 +38,23 @@ import pint
 from liota.entities.devices.device import Device
 from liota.lib.utilities.utility import systemUUID
 
+
 class BikeSimulated(Device):
 
     def __init__(self, name, parent, wheel=26, m_bike=20, m_rider=80,
-            m_load=0, interval=5, ureg=None):
+                 m_load=0, interval=5, ureg=None):
         super(BikeSimulated, self).__init__(
-                        name=name,
-                        parent=parent,
-                        entity_id=systemUUID().get_uuid(name),
-                        entity_type="BikeSimulated"
-                        )
+            name=name,
+            parent=parent,
+            entity_id=systemUUID().get_uuid(name),
+            entity_type="BikeSimulated"
+        )
 
         self.slope = 0.0            # rad
         self.radius_wheel = wheel   # inch
-        self.weight_bike  = m_bike  # kg
-        self.weight_rider = m_rider # kg
-        self.weight_load  = m_load  # kg
+        self.weight_bike = m_bike  # kg
+        self.weight_rider = m_rider  # kg
+        self.weight_load = m_load  # kg
         self.revolution = 0.0       # rpm
         self.area = 1.0             # m ** 2
         self.interval = interval
@@ -64,6 +65,13 @@ class BikeSimulated(Device):
             self.ureg = pint.UnitRegistry()
         self.time_last = None
         self.run()
+
+    def register(self, dcc_obj, reg_entity_id):
+        return super(BikeSimulated, self).register(
+            entity_obj=self,
+            dcc_obj=dcc_obj,
+            reg_entity_id=reg_entity_id
+        )
 
     def run(self):
         self.th = threading.Thread(target=self.simulate)
@@ -81,20 +89,20 @@ class BikeSimulated(Device):
 
             # Change slope
             self.slope = min(
-                    max(self.slope + \
-                            random.uniform(-0.01, 0.01) * self.interval,
-                            -math.pi / 16
-                        ), math.pi / 16
-                )
+                max(self.slope +
+                    random.uniform(-0.01, 0.01) * self.interval,
+                    -math.pi / 16
+                    ), math.pi / 16
+            )
 
             # Change revolution
             self.revolution = min(
-                    max(
-                        self.revolution + \
-                            random.uniform(-2.0, 5.0) * self.interval,
-                        0
-                    ), 40
-                )
+                max(
+                    self.revolution +
+                    random.uniform(-2.0, 5.0) * self.interval,
+                    0
+                ), 40
+            )
 
             # Change load
             t = time.time()

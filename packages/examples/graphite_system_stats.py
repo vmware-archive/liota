@@ -38,6 +38,7 @@ dependencies = ["graphite"]
 #---------------------------------------------------------------------------
 # User defined methods
 
+
 def read_cpu_procs():
     cnt = 0
     procs = psutil.pids()
@@ -47,21 +48,31 @@ def read_cpu_procs():
             cnt += 1
     return cnt
 
+
 def read_cpu_utilization(sample_duration_sec=1):
     return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
+
 
 def read_disk_busy_stats():
     return round(psutil.disk_usage('/dev/disk1')[3], 2)
 
+
 def read_network_bits_received():
-    return round((psutil.net_io_counters(pernic=True)["en0"][1] * 8) / (8192), 2)
+    return round(
+        (psutil.net_io_counters(
+            pernic=True)["en0"][1] *
+            8) /
+        (8192),
+        2)
+
 
 class PackageClass(LiotaPackage):
 
     def run(self, registry):
-        import ConfigParser, copy
+        import ConfigParser
+        import copy
         from liota.entities.metrics.metric import Metric
-        
+
         # Acquire resources from registry
         system = copy.copy(registry.get("system"))
         graphite = registry.get("graphite")
@@ -73,47 +84,47 @@ class PackageClass(LiotaPackage):
 
         # Create metrics
         self.metrics = []
-        metric_name = "CPU.Utilization"
+        metric_name = "system.CPU_Utilization"
         metric1 = Metric(name=metric_name, parent=system,
-                entity_id=metric_name,
-                unit=None, interval=5,
-                aggregation_size=1,
-                sampling_function=read_cpu_utilization
-            )
-        reg_metric1 = graphite.register_metric(metric1)
+                         entity_id=metric_name,
+                         unit=None, interval=5,
+                         aggregation_size=1,
+                         sampling_function=read_cpu_utilization
+                         )
+        reg_metric1 = graphite.register(metric1)
         reg_metric1.start_collecting()
         self.metrics.append(reg_metric1)
-        
-        metric_name = "CPU.Process"
+
+        metric_name = "system.CPU_Process"
         metric2 = Metric(name=metric_name, parent=system,
-                entity_id=metric_name,
-                unit=None, interval=5,
-                aggregation_size=1,
-                sampling_function=read_cpu_procs
-            )
-        reg_metric2 = graphite.register_metric(metric2)
+                         entity_id=metric_name,
+                         unit=None, interval=5,
+                         aggregation_size=1,
+                         sampling_function=read_cpu_procs
+                         )
+        reg_metric2 = graphite.register(metric2)
         reg_metric2.start_collecting()
         self.metrics.append(reg_metric2)
-        
-        metric_name = "Disk.BusyStats"
+
+        metric_name = "system.Disk_BusyStats"
         metric3 = Metric(name=metric_name, parent=system,
-                entity_id=metric_name,
-                unit=None, interval=5,
-                aggregation_size=1,
-                sampling_function=read_disk_busy_stats
-            )
-        reg_metric3 = graphite.register_metric(metric3)
+                         entity_id=metric_name,
+                         unit=None, interval=5,
+                         aggregation_size=1,
+                         sampling_function=read_disk_busy_stats
+                         )
+        reg_metric3 = graphite.register(metric3)
         reg_metric3.start_collecting()
         self.metrics.append(reg_metric3)
-        
-        metric_name = "Network.BitsReceived"
+
+        metric_name = "system.Network_BitsReceived"
         metric4 = Metric(name=metric_name, parent=system,
-                entity_id=metric_name,
-                unit=None, interval=5,
-                aggregation_size=1,
-                sampling_function=read_network_bits_received
-            )
-        reg_metric4 = graphite.register_metric(metric4)
+                         entity_id=metric_name,
+                         unit=None, interval=5,
+                         aggregation_size=1,
+                         sampling_function=read_network_bits_received
+                         )
+        reg_metric4 = graphite.register(metric4)
         reg_metric4.start_collecting()
         self.metrics.append(reg_metric4)
 

@@ -62,11 +62,6 @@ class DataCenterComponent:
             raise TypeError
 
     @abstractmethod
-    def register_metric(self, metric_obj):
-        if not isinstance(metric_obj, Metric):
-            raise TypeError
-
-    @abstractmethod
     def _create_relationship(self, entity_parent, entity_child):
         pass
 
