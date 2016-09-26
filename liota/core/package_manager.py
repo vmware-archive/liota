@@ -488,7 +488,7 @@ class PackageThread(Thread):
             else:
                 log.error("Package file not found: %s"
                           % (path_file + "." + ext_forced))
-            return None
+            return None, None
         path_file_ext = path_file + "." + file_ext
         log.debug("Package file found: %s" % path_file_ext)
         return path_file_ext, file_ext
@@ -521,7 +521,7 @@ class PackageThread(Thread):
                 raise RuntimeError("File extension category error")
         except Exception as err:
             log.error("Error loading module: %s" % str(err))
-            return None
+            return None, None
 
         log.debug("Loaded module: %s" % module_loaded.__name__)
         return module_loaded, module_name
@@ -541,6 +541,9 @@ class PackageThread(Thread):
 
         path_file_ext, file_ext = self._package_chk_exists(
             file_name, ext_forced)
+        if path_file_ext is None:
+            return None
+
         # Read file and calculate SHA-1
         try:
             sha1 = sha1sum(path_file_ext)
