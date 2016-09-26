@@ -178,7 +178,7 @@ class ResourceRegistry:
 class LiotaPackage:
     """
     LiotaPackage is ABC (abstract base class) of all package classes.
-    Here it should define abstract methods that developers should implement.
+    Developers should extend LiotaPackage class and implement the abstract methods.
     """
 
     __metaclass__ = ABCMeta
@@ -460,20 +460,11 @@ class PackageThread(Thread):
         log.info("Thread exits: %s" % str(self.name))
 
     #-----------------------------------------------------------------------
-    # This method is called to load package into current Liota process using
-    # file_name (no_ext) as package identifier.
+    # This method is called to check if specified package exists
 
-    def _package_load(self, file_name, ext_forced=None, check_stack=None):
+    def _package_chk_exists(self, file_name, ext_forced=None):
         global package_path
 
-        log.debug("Attempting to load package: %s" % file_name)
-
-        # Check if specified package is already loaded
-        if file_name in self._packages_loaded:
-            log.warning("Package already loaded: %s" % file_name)
-            return None
-
-        # Check if specified package exists
         c_slash = "/"
         if package_path.endswith(c_slash):
             c_slash = ""
@@ -497,34 +488,21 @@ class PackageThread(Thread):
             else:
                 log.error("Package file not found: %s"
                           % (path_file + "." + ext_forced))
-            return None
+            return None, None
         path_file_ext = path_file + "." + file_ext
         log.debug("Package file found: %s" % path_file_ext)
+        return path_file_ext, file_ext
 
-        # Read file and calculate SHA-1
-        try:
-            sha1 = sha1sum(path_file_ext)
-        except IOError:
-            log.error("Could not open file: %s" % path_file_ext)
-            return None
-        log.info("Loaded package file: %s (%s)"
-                 % (path_file_ext, sha1.hexdigest()))
+    #-------------------------------------------------------------------
+    # Attempt to load package module from file.
+    # Supported file types are source files (.py) with highest priority,
+    #                          compiled files (.pyc),
+    #                      and optimized compiled files (.pyo).
+    # Having .py files to have highest priority guarantees that coming
+    # packages in .py format can override compiled files of its previous
+    # version.
 
-        #-------------------------------------------------------------------
-        # Following sections do these:
-        #   1)     from file path  load module,
-        #   2)     from module     load class,
-        #   3)     with class      create instance (object),
-        #   4) and call method run of created instance.
-
-        #-------------------------------------------------------------------
-        # Attempt to load package module from file.
-        # Supported file types are source files (.py) with highest priority,
-        #                          compiled files (.pyc),
-        #                      and optimized compiled files (.pyo).
-        # Having .py files to have highest priority guarantees that coming
-        # packages in .py format can override compiled files of its previous
-        # version.
+    def _package_module_load(self, file_name, path_file_ext, file_ext):
 
         module_loaded = None
         module_name = re.sub(r"\.", "_", file_name)
@@ -543,9 +521,49 @@ class PackageThread(Thread):
                 raise RuntimeError("File extension category error")
         except Exception as err:
             log.error("Error loading module: %s" % str(err))
-            return None
+            return None, None
 
         log.debug("Loaded module: %s" % module_loaded.__name__)
+        return module_loaded, module_name
+
+    #-----------------------------------------------------------------------
+    # This method is called to load package into current Liota process using
+    # file_name (no_ext) as package identifier.
+
+    def _package_load(self, file_name, ext_forced=None, check_stack=None):
+
+        log.debug("Attempting to load package: %s" % file_name)
+
+        # Check if specified package is already loaded
+        if file_name in self._packages_loaded:
+            log.warning("Package already loaded: %s" % file_name)
+            return None
+
+        path_file_ext, file_ext = self._package_chk_exists(
+            file_name, ext_forced)
+        if path_file_ext is None:
+            return None
+
+        # Read file and calculate SHA-1
+        try:
+            sha1 = sha1sum(path_file_ext)
+        except IOError:
+            log.error("Could not open file: %s" % path_file_ext)
+            return None
+        log.info("Loaded package file: %s (%s)"
+                 % (path_file_ext, sha1.hexdigest()))
+
+        #-------------------------------------------------------------------
+        # Following sections do these:
+        #   1)     from file path  load module,
+        #   2)     from module     load class,
+        #   3)     with class      create instance (object),
+        #   4) and call method run of created instance.
+
+        module_loaded, module_name = self._package_module_load(
+            file_name, path_file_ext, file_ext)
+        if module_loaded is None:
+            return None
 
         #-------------------------------------------------------------------
         # Acquire dependency list and recursively load them.
@@ -615,7 +633,8 @@ class PackageThread(Thread):
 
     #-----------------------------------------------------------------------
     # This method is called to unload package using its file_name (no ext).
-
+    # Use track_list to keep track of full file name (with ext) when unloading,
+    # so reload can always load exactly that same file
     def _package_unload(self, file_name, track_list=None):
         log.debug("Attempting to unload package: %s" % file_name)
 
@@ -641,7 +660,6 @@ class PackageThread(Thread):
                     log.error("%s is still alive, because %s failed to unload"
                               % (file_name, dependent))
                     return False
-                # package_record.del_dependent(dependent)
             log.debug("Dependency check of package %s is complete"
                       % file_name)
 
