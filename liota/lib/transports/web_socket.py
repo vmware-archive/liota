@@ -37,17 +37,17 @@ import ssl
 import sys
 from websocket import create_connection
 
-from transport_layer_base import TransportLayer
 log = logging.getLogger(__name__)
 
-class WebSocket(TransportLayer):
+
+class WebSocket():
     """ WebSocket class implementation
 
     """
+
     def __init__(self, url):
         self.url = url
         self.connect_soc()
-        TransportLayer.__init__(self)
 
     def connect_soc(self):
         try:
@@ -57,38 +57,34 @@ class WebSocket(TransportLayer):
             log.exception("WebSocket exception, please check the WebSocket address and try again.")
             sys.exit(0)
 
-
-    def WebSocketConnection(self, host, verify_cert=True, CERTDIR="/var/lib/helix-agent/cert"):
-
-      if not verify_cert:
+    # CERTPATH to be taken in consideration later
+    def WebSocketConnection(self, host, verify_cert=True, CERTPATH="/etc/liota/cert"):
+        self.counter = 0
+        if not verify_cert:
             self.ws = None
             self.ws = create_connection(host, enable_multithread=True,
-              sslopt={"cert_reqs": ssl.CERT_NONE})
-      else:
-         self.ws = None
-         for filename in os.listdir(CERTDIR):
-            if os.path.isfile(CERTDIR + "/" + filename):
-               try:
-                  self.ws = create_connection(host, enable_multithread=True,
-                     sslopt={"cert_reqs": ssl.CERT_REQUIRED, "ca_certs": CERTDIR + "/" + filename})
-                  break
-               except ssl.SSLError:
-                  pass
-         if self.ws is None:
-            raise(IOError("Couldn't verify host certificate"))
-
-      self.counter = 0
+                                        sslopt={"cert_reqs": ssl.CERT_NONE})
+        else:
+            self.ws = None
+            if os.path.isfile(CERTPATH):
+                try:
+                    self.ws = create_connection(host, enable_multithread=True,
+                                                sslopt={"cert_reqs": ssl.CERT_REQUIRED,
+                                                        "ca_certs": CERTPATH})
+                except ssl.SSLError:
+                    pass
+            if self.ws is None:
+                raise (IOError("Couldn't verify host certificate"))
 
     def run(self):
         try:
             log.debug("Stream Opened")
             while True:
                 msg = self.ws.recv()
-                log.debug ("Message received while running {0}".format(msg))
+                log.debug("Message received while running {0}".format(msg))
                 if msg is "":
-                    # TO DO Check if os._exit(0) required everywhere
                     log.error("Stream Closed")
-                    os._exit(0)
+                    sys.exit(0)
                     break
                 log.debug("RX {0}".format(msg))
                 if self.on_receive is not None:
@@ -96,45 +92,46 @@ class WebSocket(TransportLayer):
         except Exception:
             log.exception("Exception on receiving the response from Server, please check the connection and try again.")
             self.close()
-            os._exit(0)
+            sys.exit(0)
 
     def send(self, msg):
-      request_calls = ['request', 'response']
-      complete_message = json.dumps(msg)
-      log.info("TX Sending message {0}".format(complete_message))
-      try:
-          self.ws.send(complete_message)
-      except:
-          # Retry logic only for publishing stats, not for request or response calls
-          if all(request not in complete_message for request in request_calls):
-              attempts = 1
-              while attempts < 4:
-                  try:
-                      log.info("Exception while sending data, applying retry logic.")
-                      self.connect_soc()
-                      log.info("Created New Websocket")
-                      log.info("TX Sending message {0}".format(complete_message))
-                      self.ws.send(complete_message)
-                      break
-                  except Exception:
-                      # Three times retry websocket connection for publishing data
-                      log.info("{0} attempt".format(attempts))
-                      attempts += 1
-                      if attempts == 4:
-                          log.exception("Exception while sending data, please check the connection and try again.")
-                          self.close()
-                          os._exit(0)
-          else:
-              log.exception("Exception while sending data, please check the connection and try again.")
-              self.close()
-              os._exit(0)
+        request_calls = ['request', 'response']
+        complete_message = json.dumps(msg)
+        log.info("TX Sending message {0}".format(complete_message))
+        try:
+            self.ws.send(complete_message)
+        except:
+            # Retry logic only for publishing stats, not for request or response calls
+            if all(request not in complete_message for request in request_calls):
+                attempts = 1
+                while attempts < 4:
+                    try:
+                        log.info("Exception while sending data, applying retry logic.")
+                        self.connect_soc()
+                        log.info("Created New Websocket")
+                        log.info("TX Sending message {0}".format(complete_message))
+                        self.ws.send(complete_message)
+                        break
+                    except Exception:
+                        # Three times retry websocket connection for publishing data
+                        log.info("{0} attempt".format(attempts))
+                        attempts += 1
+                        if attempts == 4:
+                            # os._exit used as websocket connection is not created even after the fourth retry
+                            log.exception("Exception while sending data, please check the connection and try again.")
+                            self.close()
+                            os._exit(0)
+            else:
+                log.exception("Exception while sending data, please check the connection and try again.")
+                self.close()
+                sys.exit(0)
 
     def next_id(self):
-      self.counter = (self.counter + 1) & 0xffffff
-      # Enforce even IDs
-      return self.counter * 2
+        self.counter = (self.counter + 1) & 0xffffff
+        # Enforce even IDs
+        return self.counter * 2
 
     def close(self):
-      if self.ws is not None:
-          self.ws.close()
-      log.debug("Connection closed, cleanup done")
+        if self.ws is not None:
+            self.ws.close()
+        log.debug("Connection closed, cleanup done")

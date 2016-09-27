@@ -30,24 +30,26 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 import logging
-from liota.entities.entity import Entity
 from liota.dccs.dcc import DataCenterComponent
 from liota.entities.metrics.registered_metric import RegisteredMetric
+from liota.entities.metrics.metric import Metric
+from liota.entities.registered_entity import RegisteredEntity
 
 
 log = logging.getLogger(__name__)
 
 
 class Graphite(DataCenterComponent):
-
     def __init__(self, comms):
-        DataCenterComponent.__init__(self, comms=comms)
+        super(Graphite, self).__init__(
+            comms=comms
+        )
 
     def register(self, entity_obj):
-        if not isinstance(entity_obj, Entity):
-            raise TypeError
-        DataCenterComponent.register(self, entity_obj)
-        return entity_obj.register(self, None)
+        if isinstance(entity_obj, Metric):
+            return RegisteredMetric(entity_obj, self, None)
+        else:
+            return RegisteredEntity(entity_obj, self, None)
 
     def _create_relationship(self, entity_parent, entity_child):
         pass
@@ -68,12 +70,6 @@ class Graphite(DataCenterComponent):
             return
         log.debug("Formatted message: {0}".format(message))
         return message
-
-    def publish(self, reg_metric):
-        if not isinstance(reg_metric, RegisteredMetric):
-            raise TypeError
-        message = self._format_data(reg_metric)
-        self.comms.send(message)
 
     def set_properties(self, reg_entity, properties):
         raise NotImplementedError

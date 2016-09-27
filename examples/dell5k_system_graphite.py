@@ -35,7 +35,7 @@ import psutil
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.systems.de5k_system import Dell5KSystem
+from liota.entities.systems.dell5k_system import Dell5KSystem
 
 # getting values from conf file
 config = ConfigParser.ConfigParser()

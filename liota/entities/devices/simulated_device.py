@@ -31,32 +31,17 @@
 # ----------------------------------------------------------------------------#
 
 from abc import ABCMeta, abstractmethod
-
-from liota.entities.entity import Entity
+from liota.entities.devices.device import Device
 from liota.dccs.dcc import DataCenterComponent
+from liota.utilities.utility import systemUUID
 
 
-class System(Entity):
+class SimulatedDevice(Device):
 
-    """
-    Abstract base class for all systems (gateways).
-    """
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def __init__(self, name, entity_id, entity_type="IoT System"):
-        super(System, self).__init__(
+    def __init__(self, name, parent, entity_type="SimulatedDevice"):
+        super(SimulatedDevice, self).__init__(
             name=name,
-            parent=None,
-            entity_id=entity_id,
-            entity_type=entity_type
-        )
-
-    def register(self, dcc_obj, reg_entity_id):
-        if not isinstance(dcc_obj, DataCenterComponent):
-            raise TypeError
-        return super(System, self).register(
-            entity_obj=self,
-            dcc_obj=dcc_obj,
-            reg_entity_id=reg_entity_id
+            parent=parent,
+            entity_type=entity_type,
+            entity_id=systemUUID().get_uuid(name)
         )
