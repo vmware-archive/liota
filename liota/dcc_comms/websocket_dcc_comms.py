@@ -29,32 +29,29 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+import logging
+from liota.lib.transports.web_socket import WebSocket
 
-from abc import ABCMeta, abstractmethod
-from liota.entities.devices.device import Device
-from liota.dccs.dcc import DataCenterComponent
-from liota.utilities.utility import systemUUID
+from liota.dcc_comms.dcc_comms import DCCComms
 
 
-class Ram(Device):
+log = logging.getLogger(__name__)
 
-    """
-    Abstract base class for all devices (things).
-    """
-    __metaclass__ = ABCMeta
 
-    #-----------------------------------------------------------------------
-    # Constructor of Device is not made abstract, so developer can create a
-    # plain device if that device does not have any specific method/data.
-    #
-    # It is possible to instantiate this class if no abstract method exists,
-    # even if it has ABCMeta as its meta-class.
-    #
-    # Add @abstractmethod if this is not what we want.
-    #
-    def __init__(self, name, parent):
-        super(Ram, self).__init__(
-            name=name,
-            parent=parent,
-            entity_id=systemUUID().get_uuid(name)
-        )
+class WebSocketDccComms(DCCComms):
+
+    def __init__(self, url):
+        self.url = url
+        self._connect()
+
+    def _connect(self):
+        self.wss = WebSocket(self.url)
+
+    def _disconnect(self):
+        raise NotImplementedError
+
+    def send(self, message):
+        self.wss.send(message)
+
+    def receive(self):
+        raise NotImplementedError

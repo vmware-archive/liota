@@ -33,6 +33,7 @@
 from abc import ABCMeta, abstractmethod
 from liota.entities.entity import Entity
 from liota.dcc_comms.dcc_comms import DCCComms
+from liota.entities.metrics.registered_metric import RegisteredMetric
 
 
 class DataCenterComponent:
@@ -68,9 +69,11 @@ class DataCenterComponent:
     def _format_data(self, reg_metric):
         pass
 
-    @abstractmethod
     def publish(self, reg_metric):
-        pass
+        if not isinstance(reg_metric, RegisteredMetric):
+            raise TypeError
+        message = self._format_data(reg_metric)
+        self.comms.send(message)
 
     @abstractmethod
     def set_properties(self, reg_entity, properties):

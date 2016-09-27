@@ -35,26 +35,30 @@ import logging
 import time
 import threading
 import ConfigParser
-import Queue
 
 from liota.dccs.dcc import DataCenterComponent
 from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
+from liota.entities.systems.system import System
 from liota.utilities.utility import getUTCmillis, LiotaConfigPath
 from liota.utilities.si_unit import parse_unit
+from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
+
+
 
 log = logging.getLogger(__name__)
 
 
 class IotControlCenter(DataCenterComponent):
-    """ The implementation of vROPS cloud provider solution
+    """ The implementation of IoTCC cloud provider solution
 
     """
 
     def __init__(self, username, password, con):
         log.info("Logging into DCC")
-        self.con = con
+        self.comms = con
+        self.con = con.wss
         self.username = username
         self.password = password
         self.proto = HelixProtocol(self.con, username, password)
@@ -85,8 +89,10 @@ class IotControlCenter(DataCenterComponent):
 
         """
         if isinstance(entity_obj, Metric):
-            self.publish_unit(entity_obj.parent, entity_obj.name, entity_obj.unit)
-            return entity_obj.register(self, entity_obj.parent.reg_entity_id)
+            self.publish_unit(entity_obj, entity_obj.name, entity_obj.unit)
+            if entity_obj.parent is not None:
+                reg_parent_entity_id = self.get_parent_reg_id(entity_obj.parent)
+                return RegisteredMetric(entity_obj, self, reg_parent_entity_id)
         else:
             if not hasattr(entity_obj, "reg_entity_id"):
                 log.info("Creating resource")
@@ -108,8 +114,8 @@ class IotControlCenter(DataCenterComponent):
                                 log.info("Waiting for resource creation")
                                 time.sleep(5)
                                 self.con.send(
-                                    self.registration(self.con.next_id(), entity_obj.entity_id, entity_obj.name,
-                                                      entity_obj.entity_type))
+                                    self._registration(self.con.next_id(), entity_obj.entity_id, entity_obj.name,
+                                                       entity_obj.entity_type))
                 except:
                     raise
 
@@ -118,17 +124,20 @@ class IotControlCenter(DataCenterComponent):
             thread.daemon = True
             thread.start()
             self.con.send(
-                self.registration(self.con.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type))
+                self._registration(self.con.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type))
             thread.join()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.parent is not None:
-                self._create_relationship(entity_obj.parent.reg_entity_id, self.reg_entity_id)
+                reg_parent_entity_id = self.get_parent_reg_id(entity_obj.parent)
+                self._create_relationship(reg_parent_entity_id, self.reg_entity_id)
                 log.info("Relationship Created")
             if entity_obj.entity_type == "IoT System":
-                self.store_reg_entity_details(entity_obj, self.reg_entity_id)
-            return entity_obj.register(self, self.reg_entity_id)
+                self.store_reg_entity_details(entity_obj, self.reg_entity_id, "System", 'w')
+            else:
+                self.store_reg_entity_details(entity_obj, self.reg_entity_id, entity_obj.name, 'a')
+            return RegisteredEntity(entity_obj,self,self.reg_entity_id)
 
-    def store_reg_entity_details(self, entity_obj, reg_entity_id):
+    def store_reg_entity_details(self, entity_obj, reg_entity_id, section_name, mode):
         config = ConfigParser.RawConfigParser()
         fullPath = LiotaConfigPath().get_liota_fullpath()
         if fullPath != '':
@@ -138,10 +147,11 @@ class IotControlCenter(DataCenterComponent):
                         uuid_path = config.get('UUID_PATH', 'uuid_path')
                         uuid_config = ConfigParser.RawConfigParser()
                         uuid_config.optionxform = str
-                        uuid_config.add_section('GATEWAY')
-                        uuid_config.set('GATEWAY', 'uuid', reg_entity_id)
-                        uuid_config.set('GATEWAY', 'name', entity_obj.name)
-                        with open(uuid_path, 'w') as configfile:
+                        uuid_config.add_section(section_name)
+                        uuid_config.set(section_name, 'name', entity_obj.name)
+                        uuid_config.set(section_name, 'local_uuid', entity_obj.entity_id)
+                        uuid_config.set(section_name, 'uuid', reg_entity_id)
+                        with open(uuid_path, mode) as configfile:
                             uuid_config.write(configfile)
                     except ConfigParser.ParsingError, err:
                         log.error('Could not open config file')
@@ -153,33 +163,45 @@ class IotControlCenter(DataCenterComponent):
             # missing config file
             log.warn('liota.conf file missing')
 
-    def publish(self, reg_metric):
-        met_cnt = reg_metric.values.qsize()
-        if met_cnt == 0:
-            return
-        reg_metric.timestamps = []
-        reg_metric._values = []
-        for _ in range(met_cnt):
-            m = reg_metric.values.get(block=True)
-            if m is not None:
-                reg_metric.timestamps.append(m[0])
-                reg_metric._values.append(m[1])
-        if reg_metric.timestamps == []:
-            return
-        message = self._format_data(reg_metric)
-        log.info('publishing {0}'.format(message))
-        self.con.send(message)
+    def get_parent_reg_id(self, entity_obj):
+        config = ConfigParser.RawConfigParser()
+        fullPath = LiotaConfigPath().get_liota_fullpath()
+        if fullPath != '':
+            try:
+                if config.read(fullPath) != []:
+                    try:
+                        uuid_path = config.get('UUID_PATH', 'uuid_path')
+                        uuid_config = ConfigParser.RawConfigParser()
+                        uuid_config.optionxform = str
+                        uuid_config.read(uuid_path)
+                        if isinstance(entity_obj, System):
+                            entity_obj_name = "System"
+                        else:
+                            entity_obj_name = entity_obj.name
+                        stored_entity_id = uuid_config.get(entity_obj_name, "local_uuid")
+                        if stored_entity_id == entity_obj.entity_id:
+                            reg_parent_entity_id = uuid_config.get(entity_obj_name, "uuid")
+                        return reg_parent_entity_id
+                    except ConfigParser.ParsingError, err:
+                        log.error('Could not open config file')
+                else:
+                    raise IOError('Could not open config file ' + fullPath)
+            except IOError, err:
+                log.error('Could not open config file')
+        else:
+            # missing config file
+            log.warn('liota.conf file missing')
 
     def _create_relationship(self, entity_parent_reg_id, entity_child_reg_id):
-        """ This function initializes all relations between gateway and it's children.
+        """ This function initializes all relations between System and it's children.
             It is called after each object's UUID is received.
 
             Parameters:
             - obj: The object that has just obtained an UUID
         """
-        self.con.send(self.relationship(self.con.next_id(), entity_parent_reg_id, entity_child_reg_id))
+        self.con.send(self._relationship(self.con.next_id(), entity_parent_reg_id, entity_child_reg_id))
 
-    def registration(self, msg_id, res_id, res_name, res_kind):
+    def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
             "transactionID": msg_id,
             "type": "create_or_find_resource_request",
@@ -190,7 +212,7 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 
-    def relationship(self, msg_id, parent_res_uuid, child_res_uuid):
+    def _relationship(self, msg_id, parent_res_uuid, child_res_uuid):
         return {
             "transactionID": msg_id,
             "type": "create_relationship_request",
@@ -200,7 +222,7 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 
-    def properties(self, msg_id, res_uuid, res_kind, timestamp, properties):
+    def _properties(self, msg_id, res_uuid, res_kind, timestamp, properties):
         msg = {
             "transationID": msg_id,
             "type": "add_properties",
@@ -216,25 +238,41 @@ class IotControlCenter(DataCenterComponent):
         return msg
 
     def _format_data(self, reg_metric):
+        met_cnt = reg_metric.values.qsize()
+        if met_cnt == 0:
+            return
+        _timestamps = []
+        _values = []
+        for _ in range(met_cnt):
+            m = reg_metric.values.get(block=True)
+            if m is not None:
+                _timestamps.append(m[0])
+                _values.append(m[1])
+        if _timestamps == []:
+            return
         return {
             "type": "add_stats",
             "uuid": reg_metric.reg_entity_id,
             "metric_data": [{
                 "statKey": reg_metric.ref_entity.name,
-                "timestamps": reg_metric.timestamps,
-                "data": reg_metric._values
+                "timestamps": _timestamps,
+                "data": _values
             }],
         }
-        pass
 
-    def set_properties(self, registered_entity, properties):
-        if isinstance(registered_entity, RegisteredEntity):
-            log.info("Properties defined for resource {0}".format(registered_entity.ref_entity.name))
-            self.con.send(
-                self.properties(self.con.next_id(), registered_entity.reg_entity_id, registered_entity.ref_entity.entity_type,
-                                getUTCmillis(), properties))
+    def set_properties(self, entity_obj, properties):
+        if isinstance(entity_obj, Metric):
+            reg_entity_id = self.get_parent_reg_id(entity_obj.parent)
+            reg_entity = entity_obj.parent
+        else:
+            reg_entity_id = entity_obj.reg_entity_id
+            reg_entity = entity_obj.ref_entity
+        log.info("Properties defined for resource {0}".format(reg_entity.name))
+        self.con.send(
+                self._properties(self.con.next_id(), reg_entity_id, reg_entity.entity_type,
+                                 getUTCmillis(), properties))
 
-    def publish_unit(self, registered_entity, metric_name, unit):
+    def publish_unit(self, entity_obj, metric_name, unit):
         str_prefix, str_unit_name = parse_unit(unit)
         if not isinstance(str_prefix, basestring):
             str_prefix = ""
@@ -244,5 +282,5 @@ class IotControlCenter(DataCenterComponent):
             metric_name + "_unit": str_unit_name,
             metric_name + "_prefix": str_prefix
         }
-        self.set_properties(registered_entity, properties_added)
+        self.set_properties(entity_obj, properties_added)
         log.info("Published metric unit with prefix to IoTCC")
