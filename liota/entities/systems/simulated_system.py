@@ -45,7 +45,6 @@ class SimulatedSystem(System):
 
     def register(self, dcc_obj, reg_entity_id):
         super(SimulatedSystem, self).register(
-            entity_obj=self,
             dcc_obj=dcc_obj,
-            reg_entity_id=entity_id
+            reg_entity_id=reg_entity_id
         )

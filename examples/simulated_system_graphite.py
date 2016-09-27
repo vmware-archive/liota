@@ -68,5 +68,5 @@ if __name__ == '__main__':
     metric_name = config.get('DEFAULT', 'MetricName')
     simulated_metric = Metric(name=metric_name, parent=system, entity_id=metric_name,
                               interval=10, sampling_function=simulated_sampling_function)
-    reg_metric = graphite.register_metric(simulated_metric)
+    reg_metric = graphite.register(simulated_metric)
     reg_metric.start_collecting()
