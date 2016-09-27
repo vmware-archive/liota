@@ -33,11 +33,12 @@
 import pint
 from liota.entities.entity import Entity
 from liota.entities.metrics.registered_metric import RegisteredMetric
+from liota.lib.utilities.utility import systemUUID
 
 
 class Metric(Entity):
 
-    def __init__(self, name, parent, entity_id, entity_type="Metric",
+    def __init__(self, name, parent, entity_type="Metric",
                  unit=None,
                  interval=60,
                  aggregation_size=1,
@@ -52,7 +53,7 @@ class Metric(Entity):
         super(Metric, self).__init__(
             name=name,
             parent=parent,
-            entity_id=entity_id,
+            entity_id=systemUUID().get_uuid(name),
             entity_type=entity_type
         )
         self.unit = unit

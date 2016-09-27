@@ -30,4 +30,31 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-# TODO: Implement this module
+from abc import ABCMeta, abstractmethod
+from liota.entities.devices.device import Device
+from liota.dccs.dcc import DataCenterComponent
+from liota.utilities.utility import systemUUID
+
+
+class Ram(Device):
+
+    """
+    Abstract base class for all devices (things).
+    """
+    __metaclass__ = ABCMeta
+
+    #-----------------------------------------------------------------------
+    # Constructor of Device is not made abstract, so developer can create a
+    # plain device if that device does not have any specific method/data.
+    #
+    # It is possible to instantiate this class if no abstract method exists,
+    # even if it has ABCMeta as its meta-class.
+    #
+    # Add @abstractmethod if this is not what we want.
+    #
+    def __init__(self, name, parent):
+        super(Ram, self).__init__(
+            name=name,
+            parent=parent,
+            entity_id=systemUUID().get_uuid(name)
+        )

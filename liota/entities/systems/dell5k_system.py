@@ -38,6 +38,5 @@ class Dell5KSystem(System):
     def __init__(self, name):
         super(Dell5KSystem, self).__init__(
             name=name,
-            entity_id=systemUUID().get_uuid(name),
-            entity_type="Dell5KSystem"
+            entity_id=systemUUID().get_uuid(name)
         )

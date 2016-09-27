@@ -55,7 +55,7 @@ class System(Entity):
     def register(self, dcc_obj, reg_entity_id):
         if not isinstance(dcc_obj, DataCenterComponent):
             raise TypeError
-        super(System, self).register(
+        return super(System, self).register(
             entity_obj=self,
             dcc_obj=dcc_obj,
             reg_entity_id=reg_entity_id
