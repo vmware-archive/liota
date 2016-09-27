@@ -120,7 +120,7 @@ if __name__ == '__main__':
     # aggregation_size = the number of values collected in a cycle before publishing to DCC
     # value = user defined function to obtain the next value from the device associated with this metric
     cpu_utilization_metric = Metric(
-        name="CPU_Utilization",
+        name="CPU-Utilization",
         parent=system,
         unit=None,
         interval=10,
@@ -133,7 +133,7 @@ if __name__ == '__main__':
     reg_cpu_utilization_metric.start_collecting()
 
     cpu_procs_metric = Metric(
-        name="CPU_Process",
+        name="CPU-Process",
         parent=system,
         unit=None,
         interval=6,
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     reg_cpu_procs_metric.start_collecting()
 
     disk_usage_metric = Metric(
-        name="Disk_Usage_Stats",
+        name="Disk-Usage-Stats",
         parent=system,
         unit=None,
         aggregation_size=6,
@@ -154,7 +154,7 @@ if __name__ == '__main__':
     reg_disk_usage_metric.start_collecting()
 
     network_bits_received_metric = Metric(
-        name="Network_Bits_Received",
+        name="Network-Bits-Received",
         parent=system,
         unit=None,
         interval=5,
@@ -175,7 +175,7 @@ if __name__ == '__main__':
     # note that the location of this 'device' is different from the location of the IoTCC. It's not really different
     # but just an example of how one might create a device different from the IoTCC
     mem_free_metric = Metric(
-        name="Memory_Free",
+        name="Memory-Free",
         parent=ram_device,
         unit=None,
         interval=10,
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     reg_mem_free_metric.start_collecting()
 
     swap_mem_free_metric = Metric(
-        name="Swap_Memory_Free",
+        name="Swap-Memory-Free",
         parent=ram_device,
         unit=None,
         interval=8,
