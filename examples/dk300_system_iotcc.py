@@ -137,10 +137,10 @@ if __name__ == '__main__':
         parent=system,
         unit=None,
         interval=6,
+        aggregation_size=8,
         sampling_function=read_cpu_procs
     )
     reg_cpu_procs_metric = iotcc.register(cpu_procs_metric)
-
     reg_cpu_procs_metric.start_collecting()
 
     disk_usage_metric = Metric(
@@ -189,6 +189,7 @@ if __name__ == '__main__':
         parent=ram_device,
         unit=None,
         interval=8,
+        aggregation_size=5,
         sampling_function=read_swap_mem_free
     )
     reg_swap_mem_free_metric = iotcc.register(swap_mem_free_metric)

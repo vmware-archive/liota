@@ -45,8 +45,6 @@ from liota.utilities.si_unit import parse_unit
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
 
-
-
 log = logging.getLogger(__name__)
 
 
@@ -135,7 +133,7 @@ class IotControlCenter(DataCenterComponent):
                 self.store_reg_entity_details(entity_obj, self.reg_entity_id, "System", 'w')
             else:
                 self.store_reg_entity_details(entity_obj, self.reg_entity_id, entity_obj.name, 'a')
-            return RegisteredEntity(entity_obj,self,self.reg_entity_id)
+            return RegisteredEntity(entity_obj, self, self.reg_entity_id)
 
     def store_reg_entity_details(self, entity_obj, reg_entity_id, section_name, mode):
         config = ConfigParser.RawConfigParser()
@@ -269,8 +267,8 @@ class IotControlCenter(DataCenterComponent):
             reg_entity = entity_obj.ref_entity
         log.info("Properties defined for resource {0}".format(reg_entity.name))
         self.con.send(
-                self._properties(self.con.next_id(), reg_entity_id, reg_entity.entity_type,
-                                 getUTCmillis(), properties))
+            self._properties(self.con.next_id(), reg_entity_id, reg_entity.entity_type,
+                             getUTCmillis(), properties))
 
     def publish_unit(self, entity_obj, metric_name, unit):
         str_prefix, str_unit_name = parse_unit(unit)
