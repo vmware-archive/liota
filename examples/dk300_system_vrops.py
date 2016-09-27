@@ -113,12 +113,12 @@ if __name__ == '__main__':
 
     # ---------- Create metrics 'on' the Resource in IoTCC representing the IoT System
     # arguments:
-    #          local object referring to the Resource in IoTCC on which the metric should be associated
-    #          metric name
-    #          unit = An SI Unit (work needed here)
-    #          sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
-    #          aggregation_size = the number of values collected in a cycle before publishing to DCC
-    #          value = user defined function to obtain the next value from the device associated with this metric
+    # local object referring to the Resource in IoTCC on which the metric should be associated
+    # metric name
+    # unit = An SI Unit (work needed here)
+    # sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
+    # aggregation_size = the number of values collected in a cycle before publishing to DCC
+    # value = user defined function to obtain the next value from the device associated with this metric
     cpu_utilization_metric = Metric(
         name="CPU_Utilization",
         parent=system,
