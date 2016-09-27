@@ -30,7 +30,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-class RegisteredEntity:
+class RegisteredEntity(object):
 
     def __init__(self, ref_entity, ref_dcc, reg_entity_id):
         self.ref_entity = ref_entity

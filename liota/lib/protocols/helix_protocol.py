@@ -31,7 +31,6 @@
 # ----------------------------------------------------------------------------#
 
 import logging
-from liota.utilities.utility import getUTCmillis # FIXME: Relocate this method
 
 
 PROTOCOL_VERSION = "2.7"
@@ -55,7 +54,7 @@ def require_field(container, field):
 class HelixProtocol:
 
     """ 
-    Simple state machine for protocol to vROps adapter.
+    Simple state machine for protocol to IoT Control Center adapter.
     States and messages:
 
     handshake_awaiting

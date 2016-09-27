@@ -44,11 +44,9 @@ log = logging.getLogger(__name__)
 class RegisteredMetric(RegisteredEntity):
 
     def __init__(self, ref_metric, ref_dcc, reg_entity_id):
-        RegisteredEntity.__init__(self,
-                                  ref_entity=ref_metric,
+        super(RegisteredMetric, self).__init__(ref_entity=ref_metric,
                                   ref_dcc=ref_dcc,
-                                  reg_entity_id=reg_entity_id
-                                  )
+                                  reg_entity_id=reg_entity_id)
         self.flag_alive = False
         self._next_run_time = None
         self.current_aggregation_size = 0
