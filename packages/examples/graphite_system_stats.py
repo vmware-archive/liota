@@ -53,23 +53,17 @@ def read_cpu_utilization(sample_duration_sec=1):
     return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
 
 
-def read_disk_busy_stats():
-    return round(psutil.disk_usage('/dev/disk1')[3], 2)
+def read_disk_usage_stats():
+    return round(psutil.disk_usage('/').percent, 2)
 
 
-def read_network_bits_received():
-    return round(
-        (psutil.net_io_counters(
-            pernic=True)["en0"][1] *
-            8) /
-        (8192),
-        2)
+def read_network_bytes_received():
+    return round(psutil.net_io_counters(pernic=False).bytes_recv, 2)
 
 
 class PackageClass(LiotaPackage):
 
     def run(self, registry):
-        import ConfigParser
         import copy
         from liota.entities.metrics.metric import Metric
 
@@ -79,14 +73,13 @@ class PackageClass(LiotaPackage):
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
-        config = ConfigParser.ConfigParser()
-        config.readfp(open(config_path + "/sampleProp.conf"))
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
 
         # Create metrics
         self.metrics = []
         metric_name = "system.CPU_Utilization"
         metric1 = Metric(name=metric_name, parent=system,
-                         entity_id=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_cpu_utilization
@@ -97,7 +90,6 @@ class PackageClass(LiotaPackage):
 
         metric_name = "system.CPU_Process"
         metric2 = Metric(name=metric_name, parent=system,
-                         entity_id=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_cpu_procs
@@ -108,10 +100,9 @@ class PackageClass(LiotaPackage):
 
         metric_name = "system.Disk_BusyStats"
         metric3 = Metric(name=metric_name, parent=system,
-                         entity_id=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
-                         sampling_function=read_disk_busy_stats
+                         sampling_function=read_disk_usage_stats
                          )
         reg_metric3 = graphite.register(metric3)
         reg_metric3.start_collecting()
@@ -119,10 +110,9 @@ class PackageClass(LiotaPackage):
 
         metric_name = "system.Network_BitsReceived"
         metric4 = Metric(name=metric_name, parent=system,
-                         entity_id=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
-                         sampling_function=read_network_bits_received
+                         sampling_function=read_network_bytes_received
                          )
         reg_metric4 = graphite.register(metric4)
         reg_metric4.start_collecting()

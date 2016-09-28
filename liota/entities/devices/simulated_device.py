@@ -33,7 +33,7 @@
 from abc import ABCMeta, abstractmethod
 from liota.entities.devices.device import Device
 from liota.dccs.dcc import DataCenterComponent
-from liota.utilities.utility import systemUUID
+from liota.lib.utilities.utility import systemUUID
 
 
 class SimulatedDevice(Device):

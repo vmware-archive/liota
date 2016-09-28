@@ -40,8 +40,8 @@ from liota.dccs.dcc import DataCenterComponent
 from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
 from liota.entities.systems.system import System
-from liota.utilities.utility import getUTCmillis, LiotaConfigPath
-from liota.utilities.si_unit import parse_unit
+from liota.lib.utilities.utility import getUTCmillis, LiotaConfigPath
+from liota.lib.utilities.si_unit import parse_unit
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
 

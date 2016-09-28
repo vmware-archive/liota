@@ -1,5 +1,5 @@
 from system import System
-from liota.utilities.utility import systemUUID
+from liota.lib.utilities.utility import systemUUID
 
 
 class Dk300System(System):

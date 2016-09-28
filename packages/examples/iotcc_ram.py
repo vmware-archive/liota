@@ -30,24 +30,55 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from abc import ABCMeta, abstractmethod
+from liota.core.package_manager import LiotaPackage
+import psutil
 
-from liota.entities.entity import Entity
-from liota.dccs.dcc import DataCenterComponent
+dependencies = ["iotcc"]
 
+def read_mem_free():
+    return round((100 - psutil.virtual_memory().percent), 2)
 
-class System(Entity):
+class PackageClass(LiotaPackage):
 
-    """
-    Abstract base class for all systems (gateways).
-    """
-    __metaclass__ = ABCMeta
+    def run(self, registry):
+        from liota.entities.devices.simulated_device import SimulatedDevice
+        from liota.entities.metrics.metric import Metric
+        import copy
 
-    @abstractmethod
-    def __init__(self, name, entity_id, entity_type="IoT System"):
-        super(System, self).__init__(
-            name=name,
-            parent=None,
-            entity_id=entity_id,
-            entity_type=entity_type
+        # Acquire resources from registry
+        iotcc = registry.get("iotcc")
+        # Creating a copy of system object to keep original object "clean"
+        system = copy.copy(registry.get("system"))
+
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
+        # Register device
+        ram_device = SimulatedDevice(config['DeviceName'], system, "Device-RAM")
+        reg_ram_device = iotcc.register(ram_device)
+        iotcc.set_properties(reg_ram_device, config['DevicePropList'])
+
+        # Create metrics
+        self.metrics = []
+
+        mem_free_metric = Metric(
+            name="Memory Free",
+            parent=ram_device,
+            unit=None,
+            interval=10,
+            sampling_function=read_mem_free
         )
+        reg_mem_free_metric = iotcc.register(mem_free_metric)
+        if reg_mem_free_metric is None:
+            print "failed to register mem_free_metric to iotcc instance"
+        else:
+            reg_mem_free_metric.start_collecting()
+            self.metrics.append(reg_mem_free_metric)
+
+        registry.register("reg_ram_device", reg_ram_device)
+
+    def clean_up(self):
+        for metric in self.metrics:
+            metric.stop_collecting()

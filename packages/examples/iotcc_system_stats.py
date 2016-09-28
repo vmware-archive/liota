@@ -31,41 +31,93 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+import psutil
 
-dependencies = ["systems/dell5k/system"]
+dependencies = ["iotcc"]
+
+#---------------------------------------------------------------------------
+# User defined methods
+
+
+def read_cpu_procs():
+    cnt = 0
+    procs = psutil.pids()
+    for i in procs[:]:
+        p = psutil.Process(i)
+        if p.status() == 'running':
+            cnt += 1
+    return cnt
+
+
+def read_cpu_utilization(sample_duration_sec=1):
+    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
+
+
+def read_disk_usage_stats():
+    return round(psutil.disk_usage('/').percent, 2)
+
+
+def read_network_bytes_received():
+    return round(psutil.net_io_counters(pernic=False).bytes_recv, 2)
 
 
 class PackageClass(LiotaPackage):
-    """
-    This package creates a Graphite DCC object and registers system on
-    Graphite to acquire "registered system", i.e. graphite_system.
-    """
 
     def run(self, registry):
         import copy
-        from liota.dccs.graphite import Graphite
-        from liota.dcc_comms.socket_comms import Socket
+        from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        # Creating a copy of system object to keep original object "clean"
         system = copy.copy(registry.get("system"))
+        iotcc = registry.get("iotcc")
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
         config = {}
         execfile(config_path + '/sampleProp.conf', config)
 
-        # Initialize DCC object with transport
-        self.graphite = Graphite(
-            Socket(ip=config['GraphiteIP'],
-                   port=config['GraphitePort'])
-        )
+        # Create metrics
+        self.metrics = []
+        metric_name = "system.CPU_Utilization"
+        metric1 = Metric(name=metric_name, parent=system,
+                         unit=None, interval=5,
+                         aggregation_size=1,
+                         sampling_function=read_cpu_utilization
+                         )
+        reg_metric1 = iotcc.register(metric1)
+        reg_metric1.start_collecting()
+        self.metrics.append(reg_metric1)
 
-        # Register gateway system
-        graphite_system = self.graphite.register(system)
+        metric_name = "system.CPU_Process"
+        metric2 = Metric(name=metric_name, parent=system,
+                         unit=None, interval=5,
+                         aggregation_size=1,
+                         sampling_function=read_cpu_procs
+                         )
+        reg_metric2 = iotcc.register(metric2)
+        reg_metric2.start_collecting()
+        self.metrics.append(reg_metric2)
 
-        registry.register("graphite", self.graphite)
-        registry.register("graphite_system", graphite_system)
+        metric_name = "system.Disk_BusyStats"
+        metric3 = Metric(name=metric_name, parent=system,
+                         unit=None, interval=5,
+                         aggregation_size=1,
+                         sampling_function=read_disk_usage_stats
+                         )
+        reg_metric3 = iotcc.register(metric3)
+        reg_metric3.start_collecting()
+        self.metrics.append(reg_metric3)
+
+        metric_name = "system.Network_BitsReceived"
+        metric4 = Metric(name=metric_name, parent=system,
+                         unit=None, interval=5,
+                         aggregation_size=1,
+                         sampling_function=read_network_bytes_received
+                         )
+        reg_metric4 = iotcc.register(metric4)
+        reg_metric4.start_collecting()
+        self.metrics.append(reg_metric4)
 
     def clean_up(self):
-        self.graphite.comms.sock.close()
+        for metric in self.metrics:
+            metric.stop_collecting()

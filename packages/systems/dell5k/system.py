@@ -41,15 +41,14 @@ class PackageClass(LiotaPackage):
 
     def run(self, registry):
         from liota.entities.systems.dell5k_system import Dell5KSystem
-        import ConfigParser
 
         # getting values from conf file
         config_path = registry.get("package_conf")
-        config = ConfigParser.ConfigParser()
-        config.readfp(open(config_path + "/sampleProp.conf"))
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
 
         # Initialize gateway
-        system = Dell5KSystem(config.get('DEFAULT', 'GatewayName'))
+        system = Dell5KSystem(config['SystemName'])
         registry.register("system", system)
 
     def clean_up(self):

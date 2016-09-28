@@ -30,24 +30,42 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from abc import ABCMeta, abstractmethod
+from liota.core.package_manager import LiotaPackage
 
-from liota.entities.entity import Entity
-from liota.dccs.dcc import DataCenterComponent
+dependencies = ["systems/dell5k/system"]
 
 
-class System(Entity):
-
+class PackageClass(LiotaPackage):
     """
-    Abstract base class for all systems (gateways).
+    This package creates a IoTControlCenter DCC object and registers system on
+    IoTCC to acquire "registered system", i.e. iotcc_system.
     """
-    __metaclass__ = ABCMeta
 
-    @abstractmethod
-    def __init__(self, name, entity_id, entity_type="IoT System"):
-        super(System, self).__init__(
-            name=name,
-            parent=None,
-            entity_id=entity_id,
-            entity_type=entity_type
+    def run(self, registry):
+        import copy
+        from liota.dccs.iotcc import IotControlCenter
+        from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
+
+        # Acquire resources from registry
+        # Creating a copy of system object to keep original object "clean"
+        system = copy.copy(registry.get("system"))
+
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
+        # Initialize DCC object with transport
+        self.iotcc = IotControlCenter(
+            config['IotCCUID'], config['IotCCPassword'],
+            WebSocketDccComms(url=config['WebSocketUrl'])
         )
+
+        # Register gateway system
+        iotcc_system = self.iotcc.register(system)
+
+        registry.register("iotcc", self.iotcc)
+        registry.register("iotcc_system", iotcc_system)
+
+    def clean_up(self):
+        self.iotcc.comms.wss.close()

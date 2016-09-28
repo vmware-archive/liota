@@ -32,7 +32,7 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["graphite", "examples/bike_simulator"]
+dependencies = ["iotcc", "examples/bike_simulator"]
 
 
 def static_vars(**kwargs):
@@ -141,9 +141,9 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        graphite = registry.get("graphite")
+        iotcc = registry.get("iotcc")
         bike_simulator = registry.get("bike_simulator")
-        graphite_bike = graphite.register(bike_simulator)
+        iotcc_bike = iotcc.register(bike_simulator)
 
         ureg = bike_simulator.ureg
         self.create_udm(bike_model=bike_simulator)
@@ -159,9 +159,9 @@ class PackageClass(LiotaPackage):
             interval=5,
             sampling_function=self.get_bike_speed
         )
-        reg_bike_speed = graphite.register(bike_speed)
+        reg_bike_speed = iotcc.register(bike_speed)
         if reg_bike_speed is None:
-            print "failed to register bike_speed to graphite instance"
+            print "failed to register bike_speed to iotcc instance"
         else:
             reg_bike_speed.start_collecting()
             self.metrics.append(reg_bike_speed)
@@ -174,9 +174,9 @@ class PackageClass(LiotaPackage):
             interval=5,
             sampling_function=self.get_bike_power
         )
-        reg_bike_power = graphite.register(bike_power)
+        reg_bike_power = iotcc.register(bike_power)
         if reg_bike_speed is None:
-            print "failed to register bike_power to graphite instance"
+            print "failed to register bike_power to iotcc instance"
         else:
             reg_bike_power.start_collecting()
             self.metrics.append(reg_bike_power)

@@ -42,9 +42,3 @@ class SimulatedSystem(System):
             entity_id=systemUUID().get_uuid(name),
             entity_type="SimulatedSystem"
         )
-
-    def register(self, dcc_obj, reg_entity_id):
-        super(SimulatedSystem, self).register(
-            dcc_obj=dcc_obj,
-            reg_entity_id=reg_entity_id
-        )

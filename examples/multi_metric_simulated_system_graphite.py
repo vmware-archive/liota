@@ -30,7 +30,6 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
 import random
 import time
 
@@ -40,10 +39,9 @@ from liota.entities.metrics.metric import Metric
 from liota.entities.systems.simulated_system import SimulatedSystem
 from liota.lib.utilities.utility import getUTCmillis
 
-
 # getting values from conf file
-config = ConfigParser.ConfigParser()
-config.readfp(open('sampleProp.conf'))
+config = {}
+execfile('sampleProp.conf', config)
 
 # Simple sampling function for metric returning the current sample value
 def simulated_value_sampling_function():
@@ -74,32 +72,32 @@ def simulated_list_of_timestamps_values_sampling_function():
 
 if __name__ == '__main__':
 
-    system = SimulatedSystem(config.get('DEFAULT', 'GatewayName'))
+    system = SimulatedSystem(config['SystemName'])
 
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
     # instance
-    graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
-                               port=config.getint('GRAPHITE', 'Port')))
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
     graphite_reg_system = graphite.register(system)
 
     # A simple simulated metric which generates metric value every 10 seconds
-    simple_metric_name = config.get('DEFAULT', 'MetricName')
-    simple_metric = Metric(name=simple_metric_name, parent=system, entity_id=simple_metric_name,
-                              interval=10, sampling_function=simulated_value_sampling_function)
+    simple_metric_name = config['MetricName']
+    simple_metric = Metric(name=simple_metric_name, parent=system, interval=10,
+                              sampling_function=simulated_value_sampling_function)
     reg_simple_metric = graphite.register(simple_metric)
     reg_simple_metric.start_collecting()
 
     # A simulated metric producing sample value along with timestamp when the sample was generated
-    metric_with_own_ts_name = config.get('DEFAULT', 'MetricWithOwnTsName')
-    metric_with_own_ts = Metric(name=metric_with_own_ts_name, parent=system, entity_id=metric_with_own_ts_name,
-                              interval=10, sampling_function=simulated_timestamp_value_sampling_function)
+    metric_with_own_ts_name = config['MetricWithOwnTsName']
+    metric_with_own_ts = Metric(name=metric_with_own_ts_name, parent=system, interval=10,
+                              sampling_function=simulated_timestamp_value_sampling_function)
     reg_metric_with_own_ts = graphite.register(metric_with_own_ts)
     reg_metric_with_own_ts.start_collecting()
 
     # A simulated metric producing a list of sample values along with their timestamps in the last polling interval
-    bulk_collected_metric_name = config.get('DEFAULT', 'BulkCollectedMetricName')
-    bulk_collected_metric = Metric(name=bulk_collected_metric_name, parent=system, entity_id=bulk_collected_metric_name,
-                              interval=30, aggregation_size=10, sampling_function=simulated_list_of_timestamps_values_sampling_function)
+    bulk_collected_metric_name = config['BulkCollectedMetricName']
+    bulk_collected_metric = Metric(name=bulk_collected_metric_name, parent=system, interval=30,
+                              aggregation_size=10, sampling_function=simulated_list_of_timestamps_values_sampling_function)
     reg_bulk_collected_metric = graphite.register(bulk_collected_metric)
     reg_bulk_collected_metric.start_collecting()

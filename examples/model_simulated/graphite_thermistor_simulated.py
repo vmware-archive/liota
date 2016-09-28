@@ -30,7 +30,6 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
 import math
 import pint
 from liota.dcc_comms.socket_comms import Socket
@@ -40,9 +39,8 @@ from liota.entities.systems.dell5k_system import Dell5KSystem
 from liota.entities.devices.thermistor_simulated import ThermistorSimulated
 
 # getting values from conf file
-config = ConfigParser.ConfigParser()
-config.readfp(open('../sampleProp.conf'))
-
+config = {}
+execfile('../sampleProp.conf', config)
 
 def static_vars(**kwargs):
     def decorate(func):
@@ -119,25 +117,25 @@ def get_thermistor_temperature():
 
 if __name__ == '__main__':
 
-    system = Dell5KSystem(config.get('DEFAULT', 'GatewayName'))
+    system = Dell5KSystem(config['SystemName'])
 
     # initialize and run the physical model (simulated device)
-    thermistor_model = ThermistorSimulated(name=config.get(
-        'DEFAULT', 'DeviceName'), parent=system, ureg=ureg)
+    thermistor_model = ThermistorSimulated(name=config['DeviceName'],
+		parent=system, ureg=ureg)
 
     # Sending data to a data center component
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite
     # instance
-    graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
-                               port=config.getint('GRAPHITE', 'Port')))
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
+
     graphite_reg_dev = graphite.register(thermistor_model)
 
     metric_name = "model.thermistor.temperature"
     thermistor_temper = Metric(
         name=metric_name,
         parent=thermistor_model,
-        entity_id=metric_name,
         unit=ureg.degC,
         interval=5,
         sampling_function=get_thermistor_temperature

@@ -30,7 +30,6 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
 import random
 
 from liota.dcc_comms.socket_comms import Socket
@@ -38,10 +37,9 @@ from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.systems.simulated_system import SimulatedSystem
 
-
 # getting values from conf file
-config = ConfigParser.ConfigParser()
-config.readfp(open('sampleProp.conf'))
+config = {}
+execfile('sampleProp.conf', config)
 
 # Random number generator, simulating random metric readings.
 
@@ -57,16 +55,16 @@ def simulated_sampling_function():
 
 if __name__ == '__main__':
 
-    system = SimulatedSystem(config.get('DEFAULT', 'GatewayName'))
+    system = SimulatedSystem(config['SystemName'])
 
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
     # instance
-    graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
-                               port=config.getint('GRAPHITE', 'Port')))
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
     graphite_reg_system = graphite.register(system)
-    metric_name = config.get('DEFAULT', 'MetricName')
-    simulated_metric = Metric(name=metric_name, parent=system, entity_id=metric_name,
-                              interval=10, sampling_function=simulated_sampling_function)
+    metric_name = config['MetricName']
+    simulated_metric = Metric(name=metric_name, parent=system, interval=10,
+                              sampling_function=simulated_sampling_function)
     reg_metric = graphite.register(simulated_metric)
     reg_metric.start_collecting()

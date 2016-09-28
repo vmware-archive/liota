@@ -61,13 +61,6 @@ class ThermistorSimulated(Device):
         else:
             self.ureg = pint.UnitRegistry()
 
-    def register(self, dcc_obj, reg_entity_id):
-        return super(ThermistorSimulated, self).register(
-            entity_obj=self,
-            dcc_obj=dcc_obj,
-            reg_entity_id=reg_entity_id
-        )
-
     def run(self):
         self.th = threading.Thread(target=self.simulate)
         self.th.daemon = True
