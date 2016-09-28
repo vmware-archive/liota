@@ -50,7 +50,3 @@ class Entity:
         self.parent = parent
         self.entity_id = entity_id
         self.entity_type = entity_type
-
-    @abstractmethod
-    def register(self, entity_obj, dcc_obj, reg_entity_id):
-        return RegisteredEntity(entity_obj, dcc_obj, reg_entity_id)

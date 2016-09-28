@@ -30,12 +30,13 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+import ConfigParser
 import random
 import psutil
 from liota.dccs.iotcc import IotControlCenter
-from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.metrics.metric import Metric
-from liota.entities.systems.dk300_system import Dk300System
+from liota.entities.devices.simulated_device import SimulatedDevice
+from liota.entities.systems.dell5k_system import Dell5KSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 
 # getting values from conf file
@@ -56,35 +57,29 @@ execfile('sampleProp.conf', config)
 # from the device or system associated to the metric.
 
 def read_cpu_procs():
-    procs_running = 0
-    for p in psutil.process_iter():
-        procs_running += 1
-    return procs_running
+    cnt = 0
+    procs = psutil.pids()
+    for i in procs[:]:
+        p = psutil.Process(i)
+        if p.status() == 'running':
+            cnt += 1
+    return cnt
 
 
 def read_cpu_utilization(sample_duration_sec=1):
-    return round(psutil.cpu_percent(sample_duration_sec), 2)
-
-
-def read_swap_mem_free():
-    return round((100 - psutil.swap_memory().percent), 2)
+    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
 
 
 def read_disk_usage_stats():
     return round(psutil.disk_usage('/').percent, 2)
 
 
+def read_network_bytes_received():
+    return round(psutil.net_io_counters(pernic=False).bytes_recv, 2)
+
+
 def read_mem_free():
     return round((100 - psutil.virtual_memory().percent), 2)
-
-
-def read_network_bits_recieved():
-    return int(psutil.net_io_counters(pernic=False).packets_sent)
-
-
-def simulated_device():
-    return random.randint(0, 20)
-
 
 #---------------------------------------------------------------------------
 # In this example, we demonstrate how System health and some simluated data
@@ -97,11 +92,12 @@ if __name__ == '__main__':
     # create a data center object, IoTCC in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
     # UID/PASS login for now.
-    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'], WebSocketDccComms(url=config['WebSocketUrl']))
+    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
+        WebSocketDccComms(url=config['WebSocketUrl']))
 
     # create a System object encapsulating the particulars of a IoT System
     # argument is the name of this IoT System
-    system = Dk300System(config['SystemName'])
+    system = Dell5KSystem(config['SystemName'])
 
     # resister the IoT System with the IoTCC instance
     # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
@@ -120,7 +116,7 @@ if __name__ == '__main__':
     # aggregation_size = the number of values collected in a cycle before publishing to DCC
     # value = user defined function to obtain the next value from the device associated with this metric
     cpu_utilization_metric = Metric(
-        name="CPU_Utilization",
+        name="CPU Utilization",
         parent=system,
         unit=None,
         interval=10,
@@ -133,7 +129,7 @@ if __name__ == '__main__':
     reg_cpu_utilization_metric.start_collecting()
 
     cpu_procs_metric = Metric(
-        name="CPU_Process",
+        name="CPU Process",
         parent=system,
         unit=None,
         interval=6,
@@ -144,7 +140,7 @@ if __name__ == '__main__':
     reg_cpu_procs_metric.start_collecting()
 
     disk_usage_metric = Metric(
-        name="Disk_Usage_Stats",
+        name="Disk Usage Stats",
         parent=system,
         unit=None,
         interval=6,
@@ -155,11 +151,11 @@ if __name__ == '__main__':
     reg_disk_usage_metric.start_collecting()
 
     network_bits_received_metric = Metric(
-        name="Network_Bits_Received",
+        name="Network Bits Received",
         parent=system,
         unit=None,
         interval=5,
-        sampling_function=read_network_bits_recieved
+        sampling_function=read_network_bytes_received
     )
     reg_network_bits_received_metric = iotcc.register(network_bits_received_metric)
     reg_network_bits_received_metric.start_collecting()
@@ -176,7 +172,7 @@ if __name__ == '__main__':
     # note that the location of this 'device' is different from the location of the IoTCC. It's not really different
     # but just an example of how one might create a device different from the IoTCC
     mem_free_metric = Metric(
-        name="Memory_Free",
+        name="Memory Free",
         parent=ram_device,
         unit=None,
         interval=10,
@@ -184,14 +180,3 @@ if __name__ == '__main__':
     )
     reg_mem_free_metric = iotcc.register(mem_free_metric)
     reg_mem_free_metric.start_collecting()
-
-    swap_mem_free_metric = Metric(
-        name="Swap_Memory_Free",
-        parent=ram_device,
-        unit=None,
-        interval=8,
-        aggregation_size=5,
-        sampling_function=read_swap_mem_free
-    )
-    reg_swap_mem_free_metric = iotcc.register(swap_mem_free_metric)
-    reg_swap_mem_free_metric.start_collecting()

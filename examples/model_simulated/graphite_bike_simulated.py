@@ -30,7 +30,6 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
 import time
 import math
 import pint
@@ -41,8 +40,8 @@ from liota.entities.systems.dell5k_system import Dell5KSystem
 from liota.entities.devices.bike_simulated import BikeSimulated
 
 # getting values from conf file
-config = ConfigParser.ConfigParser()
-config.readfp(open('../sampleProp.conf'))
+config = {}
+execfile('../sampleProp.conf', config)
 
 
 def static_vars(**kwargs):
@@ -151,24 +150,23 @@ def get_bike_power():
 
 if __name__ == '__main__':
 
-    system = Dell5KSystem(config.get('DEFAULT', 'GatewayName'))
+    system = Dell5KSystem(config['SystemName'])
 
     # initialize and run the physical model (simulated device)
-    bike_model = BikeSimulated(name=config.get('DEFAULT', 'DeviceName'),
+    bike_model = BikeSimulated(name=config['DeviceName'],
                                parent=system, ureg=ureg)
 
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
     # instance
-    graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
-                               port=config.getint('GRAPHITE', 'Port')))
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
     graphite_reg_dev = graphite.register(bike_model)
 
     metric_name = "model.bike.speed"
     bike_speed = Metric(
         name=metric_name,
         parent=bike_model,
-        entity_id=metric_name,
         unit=(ureg.m / ureg.sec),
         interval=5,
         sampling_function=get_bike_speed
@@ -180,7 +178,6 @@ if __name__ == '__main__':
     bike_power = Metric(
         name=metric_name,
         parent=bike_model,
-        entity_id=metric_name,
         unit=ureg.watt,
         interval=5,
         sampling_function=get_bike_power

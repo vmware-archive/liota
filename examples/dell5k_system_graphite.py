@@ -30,7 +30,6 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
 import psutil
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
@@ -38,8 +37,8 @@ from liota.entities.metrics.metric import Metric
 from liota.entities.systems.dell5k_system import Dell5KSystem
 
 # getting values from conf file
-config = ConfigParser.ConfigParser()
-config.readfp(open('sampleProp.conf'))
+config = {}
+execfile('sampleProp.conf', config)
 
 
 def read_cpu_utilization(sample_duration_sec=1):
@@ -53,20 +52,19 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 if __name__ == '__main__':
 
-    system = Dell5KSystem(config.get('DEFAULT', 'GatewayName'))
+    system = Dell5KSystem(config['SystemName'])
 
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
     # instance
-    graphite = Graphite(Socket(ip=config.get('GRAPHITE', 'IP'),
-                               port=config.getint('GRAPHITE', 'Port')))
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
     graphite_reg_system = graphite.register(system)
 
-    metric_name = config.get('DEFAULT', 'MetricName')
+    metric_name = config['MetricName']
     cpu_utilization = Metric(
         name=metric_name,
         parent=system,
-        entity_id=metric_name,
         unit=None,
         interval=10,
         aggregation_size=2,

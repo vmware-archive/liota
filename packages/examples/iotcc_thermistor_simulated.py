@@ -32,7 +32,7 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["graphite", "examples/thermistor_simulator"]
+dependencies = ["iotcc", "examples/thermistor_simulator"]
 
 
 def static_vars(**kwargs):
@@ -115,9 +115,9 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        graphite = registry.get("graphite")
+        iotcc = registry.get("iotcc")
         thermistor_simulator = registry.get("thermistor_simulator")
-        graphite_thermistor = graphite.register(thermistor_simulator)
+        iotcc_thermistor = iotcc.register(thermistor_simulator)
 
         ureg = thermistor_simulator.ureg
         self.create_udm(thermistor_model=thermistor_simulator)
@@ -132,9 +132,9 @@ class PackageClass(LiotaPackage):
             interval=5,
             sampling_function=self.get_thermistor_temperature
         )
-        reg_thermistor_temper = graphite.register(thermistor_temper)
+        reg_thermistor_temper = iotcc.register(thermistor_temper)
         if reg_thermistor_temper is None:
-            print "failed to register thermistor_temperature to graphite instance"
+            print "failed to register thermistor_temperature to iotcc instance"
         else:
             reg_thermistor_temper.start_collecting()
             self.metrics.append(reg_thermistor_temper)

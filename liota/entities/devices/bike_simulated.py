@@ -66,13 +66,6 @@ class BikeSimulated(Device):
         self.time_last = None
         self.run()
 
-    def register(self, dcc_obj, reg_entity_id):
-        return super(BikeSimulated, self).register(
-            entity_obj=self,
-            dcc_obj=dcc_obj,
-            reg_entity_id=reg_entity_id
-        )
-
     def run(self):
         self.th = threading.Thread(target=self.simulate)
         self.th.daemon = True

@@ -58,12 +58,3 @@ class Device(Entity):
             entity_id=entity_id,
             entity_type=entity_type
         )
-
-    def register(self, dcc_obj, reg_entity_id):
-        if not isinstance(dcc_obj, DataCenterComponent):
-            raise TypeError
-        return super(Device, self).register(
-            entity_obj=self,
-            dcc_obj=dcc_obj,
-            reg_entity_id=reg_entity_id
-        )
