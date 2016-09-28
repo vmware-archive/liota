@@ -30,15 +30,22 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.entities.systems.system import System
-from liota.lib.utilities.utility import systemUUID
+from abc import ABCMeta, abstractmethod
+
+from liota.entities.entity import Entity
 
 
-class SimulatedSystem(System):
+class EdgeSystem(Entity):
 
-    def __init__(self, name):
-        super(SimulatedSystem, self).__init__(
+    """
+    Abstract base class for all systems (gateways).
+    """
+    __metaclass__ = ABCMeta
+
+    @abstractmethod
+    def __init__(self, name, entity_id, entity_type="HelixGateway"):
+        super(EdgeSystem, self).__init__(
             name=name,
-            entity_id=systemUUID().get_uuid(name),
-            entity_type="SimulatedSystem"
+            entity_id=entity_id,
+            entity_type=entity_type
         )

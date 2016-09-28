@@ -35,7 +35,7 @@ import pint
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.systems.dell5k_system import Dell5KSystem
+from liota.entities.edgesystems.dell5k_edgesystem import Dell5KEdgeSystem
 from liota.entities.devices.thermistor_simulated import ThermistorSimulated
 
 # getting values from conf file
@@ -117,11 +117,10 @@ def get_thermistor_temperature():
 
 if __name__ == '__main__':
 
-    system = Dell5KSystem(config['SystemName'])
+    edgesystem = Dell5KEdgeSystem(config['EdgeSystemName'])
 
     # initialize and run the physical model (simulated device)
-    thermistor_model = ThermistorSimulated(name=config['DeviceName'],
-		parent=system, ureg=ureg)
+    thermistor_model = ThermistorSimulated(name=config['DeviceName'], ureg=ureg)
 
     # Sending data to a data center component
     # Graphite is a data center component
@@ -135,7 +134,6 @@ if __name__ == '__main__':
     metric_name = "model.thermistor.temperature"
     thermistor_temper = Metric(
         name=metric_name,
-        parent=thermistor_model,
         unit=ureg.degC,
         interval=5,
         sampling_function=get_thermistor_temperature

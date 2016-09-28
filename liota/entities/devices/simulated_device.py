@@ -30,18 +30,15 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from abc import ABCMeta, abstractmethod
 from liota.entities.devices.device import Device
-from liota.dccs.dcc import DataCenterComponent
 from liota.lib.utilities.utility import systemUUID
 
 
 class SimulatedDevice(Device):
 
-    def __init__(self, name, parent, entity_type="SimulatedDevice"):
+    def __init__(self, name, entity_type="SimulatedDevice"):
         super(SimulatedDevice, self).__init__(
             name=name,
-            parent=parent,
             entity_type=entity_type,
             entity_id=systemUUID().get_uuid(name)
         )

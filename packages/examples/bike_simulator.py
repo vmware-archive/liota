@@ -32,7 +32,7 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["systems/dell5k/system"]
+dependencies = ["edgesystems/dell5k/edgesystem"]
 
 
 class PackageClass(LiotaPackage):
@@ -48,15 +48,14 @@ class PackageClass(LiotaPackage):
         execfile(config_path + '/sampleProp.conf', config)
 
         # Acquire resources from registry
-        # Creating a copy of system object to keep original object "clean"
-        system = copy.copy(registry.get("system"))
+        # Creating a copy of edgesystem object to keep original object "clean"
+        edgesystem = copy.copy(registry.get("edgesystem"))
 
         # create a pint unit registry
         ureg = pint.UnitRegistry()
         # initialize and run the physical model (simulated device)
         bike_simulator = BikeSimulated(
             name=config['DeviceName'],
-            parent=system,
             ureg=ureg
         )
 

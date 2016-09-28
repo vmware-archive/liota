@@ -31,21 +31,38 @@
 # ----------------------------------------------------------------------------#
 
 import random
+import time
 
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.systems.simulated_system import SimulatedSystem
+from liota.entities.edgesystems.simulated_edgesystem import SimulatedEdgeSystem
+from liota.lib.utilities.utility import getUTCmillis
 
 # getting values from conf file
 config = {}
 execfile('sampleProp.conf', config)
 
-# Random number generator, simulating random metric readings.
-
-
-def simulated_sampling_function():
+# Simple sampling function for metric returning the current sample value
+def simulated_value_sampling_function():
     return random.randint(0, 20)
+
+# Sampling function demonstrating metrics where the sample time can be different then the current time
+def simulated_timestamp_value_sampling_function():
+    current_time = getUTCmillis()
+    # Random time in the last 5 seconds, when the sample was generated.
+    sample_generation_time = current_time - random.randint(0, 5)
+    sample_value = random.randint(0, 20)
+    return (sample_generation_time, sample_value)
+
+# Sampling function demonstrating metrics which provide a list of sample values from the last time it was called.
+def simulated_list_of_timestamps_values_sampling_function():
+    random.seed(time.clock())
+    current_time = getUTCmillis()
+    list_of_timestamp_value_tuples = []
+    for step in range(0, 25, 5):
+        list_of_timestamp_value_tuples.append((current_time - step*1000, random.randint(0, 20)))
+    return list_of_timestamp_value_tuples
 
 # ---------------------------------------------------------------------------
 # In this example, we demonstrate how data for a simulated metric generating
@@ -55,16 +72,32 @@ def simulated_sampling_function():
 
 if __name__ == '__main__':
 
-    system = SimulatedSystem(config['SystemName'])
+    edgesystem = SimulatedEdgeSystem(config['EdgeSystemName'])
 
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
     # instance
     graphite = Graphite(Socket(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
-    graphite_reg_system = graphite.register(system)
-    metric_name = config['MetricName']
-    simulated_metric = Metric(name=metric_name, parent=system, interval=10,
-                              sampling_function=simulated_sampling_function)
-    reg_metric = graphite.register(simulated_metric)
-    reg_metric.start_collecting()
+    graphite_reg_edgesystem = graphite.register(edgesystem)
+
+    # A simple simulated metric which generates metric value every 10 seconds
+    simple_metric_name = config['MetricName']
+    simple_metric = Metric(name=simple_metric_name, interval=10,
+                              sampling_function=simulated_value_sampling_function)
+    reg_simple_metric = graphite.register(simple_metric)
+    reg_simple_metric.start_collecting()
+
+    # A simulated metric producing sample value along with timestamp when the sample was generated
+    metric_with_own_ts_name = config['MetricWithOwnTsName']
+    metric_with_own_ts = Metric(name=metric_with_own_ts_name, interval=10,
+                              sampling_function=simulated_timestamp_value_sampling_function)
+    reg_metric_with_own_ts = graphite.register(metric_with_own_ts)
+    reg_metric_with_own_ts.start_collecting()
+
+    # A simulated metric producing a list of sample values along with their timestamps in the last polling interval
+    bulk_collected_metric_name = config['BulkCollectedMetricName']
+    bulk_collected_metric = Metric(name=bulk_collected_metric_name, interval=30,
+                              aggregation_size=10, sampling_function=simulated_list_of_timestamps_values_sampling_function)
+    reg_bulk_collected_metric = graphite.register(bulk_collected_metric)
+    reg_bulk_collected_metric.start_collecting()

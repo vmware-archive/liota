@@ -36,7 +36,7 @@ import pint
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.systems.dell5k_system import Dell5KSystem
+from liota.entities.edgesystems.dell5k_edgesystem import Dell5KEdgeSystem
 from liota.entities.devices.bike_simulated import BikeSimulated
 
 # getting values from conf file
@@ -150,11 +150,10 @@ def get_bike_power():
 
 if __name__ == '__main__':
 
-    system = Dell5KSystem(config['SystemName'])
+    edgesystem = Dell5KEdgeSystem(config['EdgeSystemName'])
 
     # initialize and run the physical model (simulated device)
-    bike_model = BikeSimulated(name=config['DeviceName'],
-                               parent=system, ureg=ureg)
+    bike_model = BikeSimulated(name=config['DeviceName'], ureg=ureg)
 
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
@@ -166,7 +165,6 @@ if __name__ == '__main__':
     metric_name = "model.bike.speed"
     bike_speed = Metric(
         name=metric_name,
-        parent=bike_model,
         unit=(ureg.m / ureg.sec),
         interval=5,
         sampling_function=get_bike_speed
@@ -177,7 +175,6 @@ if __name__ == '__main__':
     metric_name = "model.bike.power"
     bike_power = Metric(
         name=metric_name,
-        parent=bike_model,
         unit=ureg.watt,
         interval=5,
         sampling_function=get_bike_power

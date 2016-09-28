@@ -42,7 +42,7 @@ import os
 import platform
 import random
 import uuid
-
+import errno
 
 log = logging.getLogger(__name__)
 
@@ -111,6 +111,15 @@ def get_linux_version():
 def getUTCmillis():
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
+def mkdir_log(path):
+    if not os.path.exists(path):
+        try:
+            os.makedirs(path)
+        except OSError as exc:  # Python >2.5
+            if exc.errno == errno.EEXIST and os.path.isdir(path):
+                pass
+            else:
+                raise
 
 class LiotaConfigPath:
     path_liota_config = ''

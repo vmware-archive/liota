@@ -62,7 +62,7 @@ class DataCenterComponent:
             raise TypeError
 
     @abstractmethod
-    def _create_relationship(self, entity_parent, entity_child):
+    def create_relationship(self, reg_entity_parent, reg_entity_child):
         pass
 
     @abstractmethod

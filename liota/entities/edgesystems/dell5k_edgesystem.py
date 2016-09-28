@@ -30,36 +30,13 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.core.package_manager import LiotaPackage
+from liota.entities.edgesystems.edgesystem import EdgeSystem
+from liota.lib.utilities.utility import systemUUID
 
-dependencies = ["edgesystems/dell5k/edgesystem"]
+class Dell5KEdgeSystem(EdgeSystem):
 
-
-class PackageClass(LiotaPackage):
-
-    def run(self, registry):
-        from liota.entities.devices.thermistor_simulated import ThermistorSimulated
-        import pint
-        import copy
-
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
-
-        # Acquire resources from registry
-        # Creating a copy of edgesystem object to keep original object "clean"
-        edgesystem = copy.copy(registry.get("edgesystem"))
-
-        # create a pint unit registry
-        ureg = pint.UnitRegistry()
-        # initialize and run the physical model (simulated device)
-        thermistor_simulator = ThermistorSimulated(
-            name=config['DeviceName'],
-            ureg=ureg
+    def __init__(self, name):
+        super(Dell5KEdgeSystem, self).__init__(
+            name=name,
+            entity_id=systemUUID().get_uuid(name)
         )
-
-        registry.register("thermistor_simulator", thermistor_simulator)
-
-    def clean_up(self):
-        pass
