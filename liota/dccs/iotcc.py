@@ -278,6 +278,7 @@ class IotControlCenter(DataCenterComponent):
         msg = ''
         if self.info_file == '':
             log.warn('iotcc.json file missing')
+            return
         try:
             with open(self.info_file, 'r') as f:
                 msg = json.load(f)
