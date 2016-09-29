@@ -38,7 +38,7 @@ from liota.lib.utilities.utility import systemUUID
 
 class Metric(Entity):
 
-    def __init__(self, name, parent, entity_type="Metric",
+    def __init__(self, name, entity_type="Metric",
                  unit=None,
                  interval=60,
                  aggregation_size=1,
@@ -52,7 +52,6 @@ class Metric(Entity):
             raise TypeError()
         super(Metric, self).__init__(
             name=name,
-            parent=parent,
             entity_id=systemUUID().get_uuid(name),
             entity_type=entity_type
         )

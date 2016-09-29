@@ -30,26 +30,14 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.core.package_manager import LiotaPackage
+from liota.entities.edgesystems.edgesystem import EdgeSystem
+from liota.lib.utilities.utility import systemUUID
 
-class PackageClass(LiotaPackage):
-    """
-    This package contains specifications of Dell5K and properties to import
-    from configuration file.
-    It registers "system" in package manager's resource registry.
-    """
 
-    def run(self, registry):
-        from liota.entities.systems.dell5k_system import Dell5KSystem
+class SimulatedEdgeSystem(EdgeSystem):
 
-        # getting values from conf file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
-
-        # Initialize gateway
-        system = Dell5KSystem(config['SystemName'])
-        registry.register("system", system)
-
-    def clean_up(self):
-        pass
+    def __init__(self, name):
+        super(SimulatedEdgeSystem, self).__init__(
+            name=name,
+            entity_id=systemUUID().get_uuid(name)
+        )

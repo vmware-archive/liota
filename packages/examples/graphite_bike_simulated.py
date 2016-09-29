@@ -154,7 +154,6 @@ class PackageClass(LiotaPackage):
         metric_name = "model.bike.speed"
         bike_speed = Metric(
             name=metric_name,
-            parent=bike_simulator,
             unit=(ureg.m / ureg.sec),
             interval=5,
             sampling_function=self.get_bike_speed
@@ -169,7 +168,6 @@ class PackageClass(LiotaPackage):
         metric_name = "model.bike.power"
         bike_power = Metric(
             name=metric_name,
-            parent=bike_simulator,
             unit=ureg.watt,
             interval=5,
             sampling_function=self.get_bike_power

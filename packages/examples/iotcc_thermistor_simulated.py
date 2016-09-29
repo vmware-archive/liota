@@ -113,11 +113,15 @@ class PackageClass(LiotaPackage):
 
     def run(self, registry):
         from liota.entities.metrics.metric import Metric
+        import copy
 
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
+        iotcc_edgesystem = copy.copy(registry.get("iotcc_edgesystem"))
+
         thermistor_simulator = registry.get("thermistor_simulator")
         iotcc_thermistor = iotcc.register(thermistor_simulator)
+        iotcc.create_relationship(iotcc_edgesystem, iotcc_thermistor)
 
         ureg = thermistor_simulator.ureg
         self.create_udm(thermistor_model=thermistor_simulator)
@@ -127,15 +131,15 @@ class PackageClass(LiotaPackage):
         metric_name = "model.thermistor.temperature"
         thermistor_temper = Metric(
             name=metric_name,
-            parent=thermistor_simulator,
             unit=ureg.degC,
             interval=5,
             sampling_function=self.get_thermistor_temperature
         )
         reg_thermistor_temper = iotcc.register(thermistor_temper)
         if reg_thermistor_temper is None:
-            print "failed to register thermistor_temperature to iotcc instance"
+            print "failed to register thermistor_temperature to iotcc_thermistor instance"
         else:
+            iotcc.create_relationship(iotcc_thermistor, reg_thermistor_temper)
             reg_thermistor_temper.start_collecting()
             self.metrics.append(reg_thermistor_temper)
 

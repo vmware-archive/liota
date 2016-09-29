@@ -34,7 +34,7 @@ import psutil
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.systems.dell5k_system import Dell5KSystem
+from liota.entities.edgesystems.dell5k_edgesystem import Dell5KEdgeSystem
 
 # getting values from conf file
 config = {}
@@ -52,19 +52,18 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 if __name__ == '__main__':
 
-    system = Dell5KSystem(config['SystemName'])
+    edgesystem = Dell5KEdgeSystem(config['EdgeSystemName'])
 
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
     # instance
     graphite = Graphite(Socket(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
-    graphite_reg_system = graphite.register(system)
+    graphite_reg_edgesystem = graphite.register(edgesystem)
 
     metric_name = config['MetricName']
     cpu_utilization = Metric(
         name=metric_name,
-        parent=system,
         unit=None,
         interval=10,
         aggregation_size=2,

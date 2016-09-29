@@ -32,8 +32,6 @@
 
 from abc import ABCMeta, abstractmethod
 from liota.entities.entity import Entity
-from liota.dccs.dcc import DataCenterComponent
-
 
 class Device(Entity):
 
@@ -51,10 +49,9 @@ class Device(Entity):
     #
     # Add @abstractmethod if this is not what we want.
     #
-    def __init__(self, name, parent, entity_id, entity_type="Device"):
+    def __init__(self, name, entity_id, entity_type="Device"):
         super(Device, self).__init__(
             name=name,
-            parent=parent,
             entity_id=entity_id,
             entity_type=entity_type
         )

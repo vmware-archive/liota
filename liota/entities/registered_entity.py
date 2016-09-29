@@ -36,6 +36,16 @@ class RegisteredEntity(object):
         self.ref_entity = ref_entity
         self.ref_dcc = ref_dcc
         self.reg_entity_id = reg_entity_id
+        self.parent = None
 
     def set_properties(self, properties):
         self.ref_dcc.set_properties(self, properties)
+
+    def get_reg_entity_id(self):
+        return self.reg_entity_id
+
+    def set_reg_entity_id(self, reg_entity_id):
+        self.reg_entity_id = reg_entity_id
+
+    def set_parent(self, parent_reg_entity):
+        self.parent = parent_reg_entity

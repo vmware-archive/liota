@@ -37,7 +37,7 @@ import logging
 import logging.config
 import os
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath
+from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -75,16 +75,6 @@ def setup_logging(default_level=logging.WARNING):
     else:
         # missing config file
         log.warn('liota.conf file missing')
-
-def mkdir_log(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
 
 setup_logging()
 systemUUID()

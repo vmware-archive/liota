@@ -127,7 +127,6 @@ class PackageClass(LiotaPackage):
         metric_name = "model.thermistor.temperature"
         thermistor_temper = Metric(
             name=metric_name,
-            parent=thermistor_simulator,
             unit=ureg.degC,
             interval=5,
             sampling_function=self.get_thermistor_temperature

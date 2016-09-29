@@ -41,11 +41,10 @@ from liota.lib.utilities.utility import systemUUID
 
 class BikeSimulated(Device):
 
-    def __init__(self, name, parent, wheel=26, m_bike=20, m_rider=80,
+    def __init__(self, name, wheel=26, m_bike=20, m_rider=80,
                  m_load=0, interval=5, ureg=None):
         super(BikeSimulated, self).__init__(
             name=name,
-            parent=parent,
             entity_id=systemUUID().get_uuid(name),
             entity_type="BikeSimulated"
         )

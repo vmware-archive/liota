@@ -47,8 +47,8 @@ class PackageClass(LiotaPackage):
 
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
-        # Creating a copy of system object to keep original object "clean"
-        system = copy.copy(registry.get("system"))
+        # Creating a copy of edgesystem object to keep original object "clean"
+        iotcc_edgesystem = copy.copy(registry.get("iotcc_edgesystem"))
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -56,16 +56,17 @@ class PackageClass(LiotaPackage):
         execfile(config_path + '/sampleProp.conf', config)
 
         # Register device
-        ram_device = SimulatedDevice(config['DeviceName'], system, "Device-RAM")
+        ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
         reg_ram_device = iotcc.register(ram_device)
         iotcc.set_properties(reg_ram_device, config['DevicePropList'])
+
+        iotcc.create_relationship(iotcc_edgesystem, reg_ram_device)
 
         # Create metrics
         self.metrics = []
 
         mem_free_metric = Metric(
             name="Memory Free",
-            parent=ram_device,
             unit=None,
             interval=10,
             sampling_function=read_mem_free
@@ -74,6 +75,7 @@ class PackageClass(LiotaPackage):
         if reg_mem_free_metric is None:
             print "failed to register mem_free_metric to iotcc instance"
         else:
+            iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
             reg_mem_free_metric.start_collecting()
             self.metrics.append(reg_mem_free_metric)
 

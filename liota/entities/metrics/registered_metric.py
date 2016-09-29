@@ -55,6 +55,12 @@ class RegisteredMetric(RegisteredEntity):
         #
         self.values = Queue()
 
+    def set_reg_entity_id(self, parent_reg_entity_id):
+        super(RegisteredMetric, self).set_reg_entity_id(parent_reg_entity_id)
+
+    def set_parent(self, parent_reg_entity):
+        super(RegisteredMetric, self).set_parent(parent_reg_entity)
+
     def start_collecting(self):
         self.flag_alive = True
         # TODO: Add a check to ensure that start_collecting for a metric is

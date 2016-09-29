@@ -33,7 +33,7 @@
 from liota.core.package_manager import LiotaPackage
 import psutil
 
-dependencies = ["iotcc"]
+dependencies = ["graphite"]
 
 #---------------------------------------------------------------------------
 # User defined methods
@@ -68,8 +68,8 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        system = copy.copy(registry.get("system"))
-        iotcc = registry.get("iotcc")
+        edgesystem = copy.copy(registry.get("edgesystem"))
+        graphite = registry.get("graphite")
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -79,42 +79,42 @@ class PackageClass(LiotaPackage):
         # Create metrics
         self.metrics = []
         metric_name = "system.CPU_Utilization"
-        metric1 = Metric(name=metric_name, parent=system,
+        metric1 = Metric(name=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_cpu_utilization
                          )
-        reg_metric1 = iotcc.register(metric1)
+        reg_metric1 = graphite.register(metric1)
         reg_metric1.start_collecting()
         self.metrics.append(reg_metric1)
 
         metric_name = "system.CPU_Process"
-        metric2 = Metric(name=metric_name, parent=system,
+        metric2 = Metric(name=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_cpu_procs
                          )
-        reg_metric2 = iotcc.register(metric2)
+        reg_metric2 = graphite.register(metric2)
         reg_metric2.start_collecting()
         self.metrics.append(reg_metric2)
 
         metric_name = "system.Disk_BusyStats"
-        metric3 = Metric(name=metric_name, parent=system,
+        metric3 = Metric(name=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_disk_usage_stats
                          )
-        reg_metric3 = iotcc.register(metric3)
+        reg_metric3 = graphite.register(metric3)
         reg_metric3.start_collecting()
         self.metrics.append(reg_metric3)
 
         metric_name = "system.Network_BitsReceived"
-        metric4 = Metric(name=metric_name, parent=system,
+        metric4 = Metric(name=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_network_bytes_received
                          )
-        reg_metric4 = iotcc.register(metric4)
+        reg_metric4 = graphite.register(metric4)
         reg_metric4.start_collecting()
         self.metrics.append(reg_metric4)
 

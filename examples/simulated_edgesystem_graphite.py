@@ -30,24 +30,42 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from abc import ABCMeta, abstractmethod
+import random
 
-from liota.entities.entity import Entity
-from liota.dccs.dcc import DataCenterComponent
+from liota.dcc_comms.socket_comms import Socket
+from liota.dccs.graphite import Graphite
+from liota.entities.metrics.metric import Metric
+from liota.entities.edgesystems.simulated_edgesystem import SimulatedEdgeSystem
+
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
+
+# Random number generator, simulating random metric readings.
 
 
-class System(Entity):
+def simulated_sampling_function():
+    return random.randint(0, 20)
 
-    """
-    Abstract base class for all systems (gateways).
-    """
-    __metaclass__ = ABCMeta
+# ---------------------------------------------------------------------------
+# In this example, we demonstrate how data for a simulated metric generating
+# random numbers can be directed to graphite data center component using Liota.
+# The program illustrates the ease of use Liota brings to IoT application
+# developers.
 
-    @abstractmethod
-    def __init__(self, name, entity_id, entity_type="IoT System"):
-        super(System, self).__init__(
-            name=name,
-            parent=None,
-            entity_id=entity_id,
-            entity_type=entity_type
-        )
+if __name__ == '__main__':
+
+    edgesystem = SimulatedEdgeSystem(config['EdgeSystemName'])
+
+    # Sending data to Graphite data center component
+    # Socket is the underlying transport used to connect to the Graphite
+    # instance
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
+    graphite_reg_edgesystem = graphite.register(edgesystem)
+
+    metric_name = config['MetricName']
+    simulated_metric = Metric(name=metric_name, interval=10,
+                              sampling_function=simulated_sampling_function)
+    reg_metric = graphite.register(simulated_metric)
+    reg_metric.start_collecting()

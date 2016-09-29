@@ -40,10 +40,9 @@ from liota.lib.utilities.utility import systemUUID
 
 class ThermistorSimulated(Device):
 
-    def __init__(self, name, parent, u=5.0, r0=3000, interval=5, ureg=None):
+    def __init__(self, name, u=5.0, r0=3000, interval=5, ureg=None):
         super(ThermistorSimulated, self).__init__(
             name=name,
-            parent=parent,
             entity_id=systemUUID().get_uuid(name),
             entity_type="ThermistorSimulated"
         )
