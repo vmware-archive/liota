@@ -36,7 +36,7 @@ import pint
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.edgesystems.dell5k_edgesystem import Dell5KEdgeSystem
+from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.entities.devices.bike_simulated import BikeSimulated
 
 # getting values from conf file
@@ -150,7 +150,7 @@ def get_bike_power():
 
 if __name__ == '__main__':
 
-    edgesystem = Dell5KEdgeSystem(config['EdgeSystemName'])
+    edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
 
     # initialize and run the physical model (simulated device)
     bike_model = BikeSimulated(name=config['DeviceName'], ureg=ureg)
@@ -161,6 +161,9 @@ if __name__ == '__main__':
     graphite = Graphite(Socket(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
     graphite_reg_dev = graphite.register(bike_model)
+    if graphite_reg_dev is None:
+        print "Device registration to Graphite failed"
+        exit()
 
     metric_name = "model.bike.speed"
     bike_speed = Metric(
@@ -170,7 +173,11 @@ if __name__ == '__main__':
         sampling_function=get_bike_speed
     )
     reg_bike_speed = graphite.register(bike_speed)
-    reg_bike_speed.start_collecting()
+    if reg_bike_speed is None:
+        print "Metric registration to Graphite failed"
+    else:
+        graphite.create_relationship(graphite_reg_dev, reg_bike_speed)
+        reg_bike_speed.start_collecting()
 
     metric_name = "model.bike.power"
     bike_power = Metric(
@@ -180,4 +187,8 @@ if __name__ == '__main__':
         sampling_function=get_bike_power
     )
     reg_bike_power = graphite.register(bike_power)
-    reg_bike_power.start_collecting()
+    if reg_bike_power is None:
+        print "Metric registration to Graphite failed"
+    else:
+        graphite.create_relationship(graphite_reg_dev, reg_bike_power)
+        reg_bike_power.start_collecting()

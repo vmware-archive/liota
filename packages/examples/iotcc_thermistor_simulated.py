@@ -117,11 +117,14 @@ class PackageClass(LiotaPackage):
 
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
-        iotcc_edgesystem = copy.copy(registry.get("iotcc_edgesystem"))
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
 
         thermistor_simulator = registry.get("thermistor_simulator")
         iotcc_thermistor = iotcc.register(thermistor_simulator)
-        iotcc.create_relationship(iotcc_edgesystem, iotcc_thermistor)
+        if iotcc_thermistor is None:
+            print "Device registration to IOTCC failed"
+            exit()
+        iotcc.create_relationship(iotcc_edge_system, iotcc_thermistor)
 
         ureg = thermistor_simulator.ureg
         self.create_udm(thermistor_model=thermistor_simulator)

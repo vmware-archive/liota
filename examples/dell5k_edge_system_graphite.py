@@ -30,22 +30,51 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from abc import ABCMeta, abstractmethod
+import psutil
+from liota.dcc_comms.socket_comms import Socket
+from liota.dccs.graphite import Graphite
+from liota.entities.metrics.metric import Metric
+from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 
-from liota.entities.entity import Entity
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
 
 
-class EdgeSystem(Entity):
+def read_cpu_utilization(sample_duration_sec=1):
+    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
 
-    """
-    Abstract base class for all systems (gateways).
-    """
-    __metaclass__ = ABCMeta
+# ---------------------------------------------------------------------------
+# In this example, we demonstrate how a Dell5000 Gateway metric (e.g.,
+# CPU utilization) can be directed to graphite data center component
+# using Liota. The program illustrates the ease of use Liota brings
+# to IoT application developers.
 
-    @abstractmethod
-    def __init__(self, name, entity_id, entity_type="HelixGateway"):
-        super(EdgeSystem, self).__init__(
-            name=name,
-            entity_id=entity_id,
-            entity_type=entity_type
-        )
+if __name__ == '__main__':
+
+    edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
+
+    # Sending data to Graphite data center component
+    # Socket is the underlying transport used to connect to the Graphite
+    # instance
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
+    graphite_reg_edge_system = graphite.register(edge_system)
+    if graphite_reg_edge_system is None:
+        print "EdgeSystem registration to Graphite failed"
+        exit()
+
+    metric_name = config['MetricName']
+    cpu_utilization = Metric(
+        name=metric_name,
+        unit=None,
+        interval=10,
+        aggregation_size=2,
+        sampling_function=read_cpu_utilization
+    )
+    reg_cpu_utilization = graphite.register(cpu_utilization)
+    if reg_cpu_utilization is None:
+        print "Metric registration to Graphite failed"
+    else:
+        graphite.create_relationship(graphite_reg_edge_system, reg_cpu_utilization)
+        reg_cpu_utilization.start_collecting()

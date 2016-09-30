@@ -120,12 +120,15 @@ class IotControlCenter(DataCenterComponent):
             self.con.on_receive = on_receive_safe
             thread.daemon = True
             thread.start()
+            if entity_obj.entity_type == "EdgeSystem":
+                entity_obj.entity_type = "HelixGateway"
             self.con.send(
                 self._registration(self.con.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type))
             thread.join()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
                 self.store_reg_entity_details("EdgeSystem", entity_obj.name, self.reg_entity_id)
+                self.store_edge_system_uuid(entity_obj.name, self.reg_entity_id)
             else:
                 self.store_reg_entity_details("Devices", entity_obj.name, self.reg_entity_id)
             return RegisteredEntity(entity_obj, self, self.reg_entity_id)
@@ -143,10 +146,10 @@ class IotControlCenter(DataCenterComponent):
                 and not isinstance(reg_entity_child, RegisteredMetric)):
             raise TypeError()
 
-        reg_entity_child.set_parent(reg_entity_parent)
+        reg_entity_child.parent = reg_entity_parent
         if isinstance(reg_entity_child, RegisteredMetric):
             # should save parent's reg_entity_id
-            reg_entity_child.set_reg_entity_id(reg_entity_parent.get_reg_entity_id())
+            reg_entity_child.reg_entity_id = reg_entity_parent.reg_entity_id
             entity_obj = reg_entity_child.ref_entity
             self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
@@ -214,7 +217,7 @@ class IotControlCenter(DataCenterComponent):
 
     def set_properties(self, reg_entity_obj, properties):
         # RegisteredMetric get parent's resid; RegisteredEntity gets own resid
-        reg_entity_id = reg_entity_obj.get_reg_entity_id()
+        reg_entity_id = reg_entity_obj.reg_entity_id
 
         if isinstance(reg_entity_obj, RegisteredMetric):
             entity = reg_entity_obj.parent.ref_entity
@@ -297,3 +300,28 @@ class IotControlCenter(DataCenterComponent):
             with open(self.info_file, 'w') as f:
                 json.dump(msg, f, sort_keys = True, indent = 4, ensure_ascii=False)
             f.close()
+
+    def store_edge_system_uuid(self, entity_name, reg_entity_id):
+        config = ConfigParser.RawConfigParser()
+        fullPath = LiotaConfigPath().get_liota_fullpath()
+        if fullPath != '':
+            try:
+                if config.read(fullPath) != []:
+                    try:
+                        uuid_path = config.get('UUID_PATH', 'uuid_path')
+                        uuid_config = ConfigParser.RawConfigParser()
+                        uuid_config.optionxform = str
+                        uuid_config.add_section('GATEWAY')
+                        uuid_config.set('GATEWAY', 'uuid', reg_entity_id)
+                        uuid_config.set('GATEWAY', 'name', entity_name)
+                        with open(uuid_path, 'w') as configfile:
+                            uuid_config.write(configfile)
+                    except ConfigParser.ParsingError, err:
+                        log.error('Could not open config file ' + err)
+                else:
+                    raise IOError('Could not open config file ' + fullPath)
+            except IOError, err:
+                log.error('Could not open config file')
+        else:
+            # missing config file
+            log.warn('liota.conf file missing')

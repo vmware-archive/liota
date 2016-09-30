@@ -32,7 +32,7 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["edgesystems/dell5k/edgesystem"]
+dependencies = ["edge_systems/dell5k/edge_system"]
 
 
 class PackageClass(LiotaPackage):
@@ -48,8 +48,8 @@ class PackageClass(LiotaPackage):
         execfile(config_path + '/sampleProp.conf', config)
 
         # Acquire resources from registry
-        # Creating a copy of edgesystem object to keep original object "clean"
-        edgesystem = copy.copy(registry.get("edgesystem"))
+        # Creating a copy of edge system object to keep original object "clean"
+        edge_system = copy.copy(registry.get("edge_system"))
 
         # create a pint unit registry
         ureg = pint.UnitRegistry()

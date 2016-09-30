@@ -30,11 +30,12 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+import random
 import psutil
 from liota.dccs.iotcc import IotControlCenter
-from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
-from liota.entities.edgesystems.dell5k_edgesystem import Dell5KEdgeSystem
+from liota.entities.metrics.metric import Metric
+from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 
 # getting values from conf file
@@ -55,29 +56,35 @@ execfile('sampleProp.conf', config)
 # from the device or system associated to the metric.
 
 def read_cpu_procs():
-    cnt = 0
-    procs = psutil.pids()
-    for i in procs[:]:
-        p = psutil.Process(i)
-        if p.status() == 'running':
-            cnt += 1
-    return cnt
+    procs_running = 0
+    for p in psutil.process_iter():
+        procs_running += 1
+    return procs_running
 
 
 def read_cpu_utilization(sample_duration_sec=1):
-    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
+    return round(psutil.cpu_percent(sample_duration_sec), 2)
+
+
+def read_swap_mem_free():
+    return round((100 - psutil.swap_memory().percent), 2)
 
 
 def read_disk_usage_stats():
     return round(psutil.disk_usage('/').percent, 2)
 
 
-def read_network_bytes_received():
-    return round(psutil.net_io_counters(pernic=False).bytes_recv, 2)
-
-
 def read_mem_free():
     return round((100 - psutil.virtual_memory().percent), 2)
+
+
+def read_network_packets_sent():
+    return int(psutil.net_io_counters(pernic=False).packets_sent)
+
+
+def simulated_device():
+    return random.randint(0, 20)
+
 
 #---------------------------------------------------------------------------
 # In this example, we demonstrate how System health and some simluated data
@@ -95,15 +102,18 @@ if __name__ == '__main__':
 
     # create a System object encapsulating the particulars of a IoT System
     # argument is the name of this IoT System
-    edgesystem = Dell5KEdgeSystem(config['EdgeSystemName'])
+    edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
 
     # resister the IoT System with the IoTCC instance
     # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
-    reg_edgesystem = iotcc.register(edgesystem)
+    reg_edge_system = iotcc.register(edge_system)
+    if reg_edge_system is None:
+        print "EdgeSystem registration to IOTCC failed"
+        exit()
 
     # these call set properties on the Resource representing the IoT System
     # properties are a key:value store
-    reg_edgesystem.set_properties(config['SystemPropList'])
+    reg_edge_system.set_properties(config['SystemPropList'])
 
     # ---------- Create metrics 'on' the Resource in IoTCC representing the IoT System
     # arguments:
@@ -121,10 +131,12 @@ if __name__ == '__main__':
         sampling_function=read_cpu_utilization
     )
     reg_cpu_utilization_metric = iotcc.register(cpu_utilization_metric)
-    iotcc.create_relationship(reg_edgesystem, reg_cpu_utilization_metric)
-
-    # call to start collecting values from the device or system and sending to the data center component
-    reg_cpu_utilization_metric.start_collecting()
+    if reg_cpu_utilization_metric is None:
+        print "Metric registration to IOTCC failed"
+    else:
+        iotcc.create_relationship(reg_edge_system, reg_cpu_utilization_metric)
+        # call to start collecting values from the device or system and sending to the data center component
+        reg_cpu_utilization_metric.start_collecting()
 
     cpu_procs_metric = Metric(
         name="CPU Process",
@@ -134,8 +146,11 @@ if __name__ == '__main__':
         sampling_function=read_cpu_procs
     )
     reg_cpu_procs_metric = iotcc.register(cpu_procs_metric)
-    iotcc.create_relationship(reg_edgesystem, reg_cpu_procs_metric)
-    reg_cpu_procs_metric.start_collecting()
+    if reg_cpu_procs_metric is None:
+        print "Metric registration to IOTCC failed"
+    else:
+        iotcc.create_relationship(reg_edge_system, reg_cpu_procs_metric)
+        reg_cpu_procs_metric.start_collecting()
 
     disk_usage_metric = Metric(
         name="Disk Usage Stats",
@@ -145,18 +160,24 @@ if __name__ == '__main__':
         sampling_function=read_disk_usage_stats
     )
     reg_disk_usage_metric = iotcc.register(disk_usage_metric)
-    iotcc.create_relationship(reg_edgesystem, reg_disk_usage_metric)
-    reg_disk_usage_metric.start_collecting()
+    if reg_disk_usage_metric is None:
+        print "Metric registration to IOTCC failed"
+    else:
+        iotcc.create_relationship(reg_edge_system, reg_disk_usage_metric)
+        reg_disk_usage_metric.start_collecting()
 
-    network_bits_received_metric = Metric(
-        name="Network Bits Received",
+    network_packets_sent_metric = Metric(
+        name="Network Packets Sent",
         unit=None,
         interval=5,
-        sampling_function=read_network_bytes_received
+        sampling_function=read_network_packets_sent
     )
-    reg_network_bits_received_metric = iotcc.register(network_bits_received_metric)
-    iotcc.create_relationship(reg_edgesystem, reg_network_bits_received_metric)
-    reg_network_bits_received_metric.start_collecting()
+    reg_network_packets_sent_metric = iotcc.register(network_packets_sent_metric)
+    if reg_network_packets_sent_metric is None:
+        print "Metric registration to IOTCC failed"
+    else:
+        iotcc.create_relationship(reg_edge_system, reg_network_packets_sent_metric)
+        reg_network_packets_sent_metric.start_collecting()
 
     # Here we are showing how to create a device object, registering it in IoTCC, and setting properties on it
     # Since there are no attached devices are as simulating one by considering RAM as separate from the IoT System
@@ -167,7 +188,10 @@ if __name__ == '__main__':
     #        another Resource in IoTCC of which the should be the child of a parent-child relationship among Resources
     ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
     reg_ram_device = iotcc.register(ram_device)
-    iotcc.create_relationship(reg_edgesystem, reg_ram_device)
+    if reg_ram_device is None:
+        print "Device registration to IOTCC failed"
+        exit()
+    iotcc.create_relationship(reg_edge_system, reg_ram_device)
 
     # note that the location of this 'device' is different from the location of the IoTCC. It's not really different
     # but just an example of how one might create a device different from the IoTCC
@@ -178,5 +202,22 @@ if __name__ == '__main__':
         sampling_function=read_mem_free
     )
     reg_mem_free_metric = iotcc.register(mem_free_metric)
-    iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
-    reg_mem_free_metric.start_collecting()
+    if reg_mem_free_metric is None:
+        print "Metric registration to IOTCC failed"
+    else:
+        iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
+        reg_mem_free_metric.start_collecting()
+
+    swap_mem_free_metric = Metric(
+        name="Swap Memory Free",
+        unit=None,
+        interval=8,
+        aggregation_size=5,
+        sampling_function=read_swap_mem_free
+    )
+    reg_swap_mem_free_metric = iotcc.register(swap_mem_free_metric)
+    if reg_swap_mem_free_metric is None:
+        print "Metric registration to IOTCC failed"
+    else:
+        iotcc.create_relationship(reg_ram_device, reg_swap_mem_free_metric)
+        reg_swap_mem_free_metric.start_collecting()

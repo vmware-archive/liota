@@ -68,7 +68,7 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        iotcc_edgesystem = copy.copy(registry.get("iotcc_edgesystem"))
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
         iotcc = registry.get("iotcc")
 
         # Get values from configuration file
@@ -78,49 +78,61 @@ class PackageClass(LiotaPackage):
 
         # Create metrics
         self.metrics = []
-        metric_name = "edgesystem.CPU_Utilization"
-        metric1 = Metric(name=metric_name,
+        metric_name = "CPU Utilization"
+        metric_cpu_utilization = Metric(name=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_cpu_utilization
                          )
-        reg_metric1 = iotcc.register(metric1)
-        iotcc.create_relationship(iotcc_edgesystem, reg_metric1)
-        reg_metric1.start_collecting()
-        self.metrics.append(reg_metric1)
+        reg_metric_cpu_utilization = iotcc.register(metric_cpu_utilization)
+        if reg_metric_cpu_utilization is None:
+            print "Metric registration to Graphite failed"
+        else:
+            iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_utilization)
+            reg_metric_cpu_utilization.start_collecting()
+            self.metrics.append(reg_metric_cpu_utilization)
 
-        metric_name = "edgesystem.CPU_Process"
-        metric2 = Metric(name=metric_name,
+        metric_name = "CPU Process"
+        metric_cpu_procs = Metric(name=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_cpu_procs
                          )
-        reg_metric2 = iotcc.register(metric2)
-        iotcc.create_relationship(iotcc_edgesystem, reg_metric2)
-        reg_metric2.start_collecting()
-        self.metrics.append(reg_metric2)
+        reg_metric_cpu_procs = iotcc.register(metric_cpu_procs)
+        if reg_metric_cpu_procs is None:
+            print "Metric registration to Graphite failed"
+        else:
+            iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_procs)
+            reg_metric_cpu_procs.start_collecting()
+            self.metrics.append(reg_metric_cpu_procs)
 
-        metric_name = "edgesystem.Disk_BusyStats"
-        metric3 = Metric(name=metric_name,
+        metric_name = "Disk Usage Stats"
+        metric_disk_usage_stats = Metric(name=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_disk_usage_stats
                          )
-        reg_metric3 = iotcc.register(metric3)
-        iotcc.create_relationship(iotcc_edgesystem, reg_metric3)
-        reg_metric3.start_collecting()
-        self.metrics.append(reg_metric3)
+        reg_metric_disk_usage_stats = iotcc.register(metric_disk_usage_stats)
+        if reg_metric_disk_usage_stats is None:
+            print "Metric registration to Graphite failed"
+        else:
+            iotcc.create_relationship(iotcc_edge_system, reg_metric_disk_usage_stats)
+            reg_metric_disk_usage_stats.start_collecting()
+            self.metrics.append(reg_metric_disk_usage_stats)
 
-        metric_name = "edgesystem.Network_BitsReceived"
-        metric4 = Metric(name=metric_name,
+        metric_name = "Network Bytes Received"
+        metric_network_bytes_received = Metric(name=metric_name,
                          unit=None, interval=5,
                          aggregation_size=1,
                          sampling_function=read_network_bytes_received
                          )
-        reg_metric4 = iotcc.register(metric4)
-        iotcc.create_relationship(iotcc_edgesystem, reg_metric4)
-        reg_metric4.start_collecting()
-        self.metrics.append(reg_metric4)
+        reg_metric_network_bytes_received = iotcc.register(metric_network_bytes_received)
+        if reg_metric_network_bytes_received is None:
+            print "Metric registration to Graphite failed"
+        else:
+            iotcc.create_relationship(iotcc_edge_system, reg_metric_network_bytes_received)
+            reg_metric_network_bytes_received.start_collecting()
+            self.metrics.append(reg_metric_network_bytes_received)
 
     def clean_up(self):
         for metric in self.metrics:

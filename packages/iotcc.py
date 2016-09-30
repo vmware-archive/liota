@@ -32,13 +32,13 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["edgesystems/dell5k/edgesystem"]
+dependencies = ["edge_systems/dell5k/edge_system"]
 
 
 class PackageClass(LiotaPackage):
     """
-    This package creates a IoTControlCenter DCC object and registers edgesystem on
-    IoTCC to acquire "registered edgesystem", i.e. iotcc_edgesystem.
+    This package creates a IoTControlCenter DCC object and registers edge system on
+    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
     """
 
     def run(self, registry):
@@ -47,8 +47,8 @@ class PackageClass(LiotaPackage):
         from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 
         # Acquire resources from registry
-        # Creating a copy of edgesystem object to keep original object "clean"
-        edgesystem = copy.copy(registry.get("edgesystem"))
+        # Creating a copy of edge_system object to keep original object "clean"
+        edge_system = copy.copy(registry.get("edge_system"))
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -62,10 +62,13 @@ class PackageClass(LiotaPackage):
         )
 
         # Register gateway system
-        iotcc_edgesystem = self.iotcc.register(edgesystem)
+        iotcc_edge_system = self.iotcc.register(edge_system)
+        if iotcc_edge_system is None:
+            print "EdgeSystem registration to IOTCC failed"
+            exit()
 
         registry.register("iotcc", self.iotcc)
-        registry.register("iotcc_edgesystem", iotcc_edgesystem)
+        registry.register("iotcc_edge_system", iotcc_edge_system)
 
     def clean_up(self):
         self.iotcc.comms.wss.close()

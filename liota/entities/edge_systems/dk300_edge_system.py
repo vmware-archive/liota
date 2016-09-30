@@ -1,4 +1,4 @@
-from liota.entities.edgesystems.edgesystem import EdgeSystem
+from liota.entities.edge_systems.edge_system import EdgeSystem
 from liota.lib.utilities.utility import systemUUID
 
 
