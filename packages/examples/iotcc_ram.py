@@ -47,8 +47,8 @@ class PackageClass(LiotaPackage):
 
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
-        # Creating a copy of edgesystem object to keep original object "clean"
-        iotcc_edgesystem = copy.copy(registry.get("iotcc_edgesystem"))
+        # Creating a copy of edge_system object to keep original object "clean"
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -58,9 +58,12 @@ class PackageClass(LiotaPackage):
         # Register device
         ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
         reg_ram_device = iotcc.register(ram_device)
+        if reg_ram_device is None:
+            print "Device registration to IOTCC failed"
+            exit()
         iotcc.set_properties(reg_ram_device, config['DevicePropList'])
 
-        iotcc.create_relationship(iotcc_edgesystem, reg_ram_device)
+        iotcc.create_relationship(iotcc_edge_system, reg_ram_device)
 
         # Create metrics
         self.metrics = []

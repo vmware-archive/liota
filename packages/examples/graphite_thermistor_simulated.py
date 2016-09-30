@@ -118,6 +118,9 @@ class PackageClass(LiotaPackage):
         graphite = registry.get("graphite")
         thermistor_simulator = registry.get("thermistor_simulator")
         graphite_thermistor = graphite.register(thermistor_simulator)
+        if graphite_thermistor is None:
+            print "Device registration to Graphite failed"
+            exit()
 
         ureg = thermistor_simulator.ureg
         self.create_udm(thermistor_model=thermistor_simulator)
@@ -135,6 +138,7 @@ class PackageClass(LiotaPackage):
         if reg_thermistor_temper is None:
             print "failed to register thermistor_temperature to graphite instance"
         else:
+            graphite.create_relationship(graphite_thermistor, reg_thermistor_temper)
             reg_thermistor_temper.start_collecting()
             self.metrics.append(reg_thermistor_temper)
 

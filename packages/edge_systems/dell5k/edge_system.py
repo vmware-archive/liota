@@ -31,93 +31,25 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
-import psutil
-
-dependencies = ["graphite"]
-
-#---------------------------------------------------------------------------
-# User defined methods
-
-
-def read_cpu_procs():
-    cnt = 0
-    procs = psutil.pids()
-    for i in procs[:]:
-        p = psutil.Process(i)
-        if p.status() == 'running':
-            cnt += 1
-    return cnt
-
-
-def read_cpu_utilization(sample_duration_sec=1):
-    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
-
-
-def read_disk_usage_stats():
-    return round(psutil.disk_usage('/').percent, 2)
-
-
-def read_network_bytes_received():
-    return round(psutil.net_io_counters(pernic=False).bytes_recv, 2)
-
 
 class PackageClass(LiotaPackage):
+    """
+    This package contains specifications of Dell5K and properties to import
+    from configuration file.
+    It registers "edge system" in package manager's resource registry.
+    """
 
     def run(self, registry):
-        import copy
-        from liota.entities.metrics.metric import Metric
+        from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 
-        # Acquire resources from registry
-        edgesystem = copy.copy(registry.get("edgesystem"))
-        graphite = registry.get("graphite")
-
-        # Get values from configuration file
+        # getting values from conf file
         config_path = registry.get("package_conf")
         config = {}
         execfile(config_path + '/sampleProp.conf', config)
 
-        # Create metrics
-        self.metrics = []
-        metric_name = "system.CPU_Utilization"
-        metric1 = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_cpu_utilization
-                         )
-        reg_metric1 = graphite.register(metric1)
-        reg_metric1.start_collecting()
-        self.metrics.append(reg_metric1)
-
-        metric_name = "system.CPU_Process"
-        metric2 = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_cpu_procs
-                         )
-        reg_metric2 = graphite.register(metric2)
-        reg_metric2.start_collecting()
-        self.metrics.append(reg_metric2)
-
-        metric_name = "system.Disk_BusyStats"
-        metric3 = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_disk_usage_stats
-                         )
-        reg_metric3 = graphite.register(metric3)
-        reg_metric3.start_collecting()
-        self.metrics.append(reg_metric3)
-
-        metric_name = "system.Network_BitsReceived"
-        metric4 = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_network_bytes_received
-                         )
-        reg_metric4 = graphite.register(metric4)
-        reg_metric4.start_collecting()
-        self.metrics.append(reg_metric4)
+        # Initialize edgesystem
+        edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
+        registry.register("edge_system", edge_system)
 
     def clean_up(self):
-        for metric in self.metrics:
-            metric.stop_collecting()
+        pass

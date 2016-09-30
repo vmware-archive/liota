@@ -32,13 +32,13 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["edgesystems/dell5k/edgesystem"]
+dependencies = ["edge_systems/dell5k/edge_system"]
 
 
 class PackageClass(LiotaPackage):
     """
     This package creates a Graphite DCC object and registers system on
-    Graphite to acquire "registered edgesystem", i.e. graphite_edgesystem.
+    Graphite to acquire "registered edge system", i.e. graphite_edge_system.
     """
 
     def run(self, registry):
@@ -48,7 +48,7 @@ class PackageClass(LiotaPackage):
 
         # Acquire resources from registry
         # Creating a copy of system object to keep original object "clean"
-        edgesystem = copy.copy(registry.get("edgesystem"))
+        edge_system = copy.copy(registry.get("edge_system"))
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -62,10 +62,13 @@ class PackageClass(LiotaPackage):
         )
 
         # Register gateway system
-        graphite_edgesystem = self.graphite.register(edgesystem)
+        graphite_edge_system = self.graphite.register(edge_system)
+        if graphite_edge_system is None:
+            print "EdgeSystem registration to Graphite failed"
+            exit()
 
         registry.register("graphite", self.graphite)
-        registry.register("graphite_edgesystem", graphite_edgesystem)
+        registry.register("graphite_edge_system", graphite_edge_system)
 
     def clean_up(self):
         self.graphite.comms.sock.close()

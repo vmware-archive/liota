@@ -30,44 +30,22 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import psutil
-from liota.dcc_comms.socket_comms import Socket
-from liota.dccs.graphite import Graphite
-from liota.entities.metrics.metric import Metric
-from liota.entities.edgesystems.dell5k_edgesystem import Dell5KEdgeSystem
+from abc import ABCMeta, abstractmethod
 
-# getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+from liota.entities.entity import Entity
 
 
-def read_cpu_utilization(sample_duration_sec=1):
-    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
+class EdgeSystem(Entity):
 
-# ---------------------------------------------------------------------------
-# In this example, we demonstrate how a Dell5000 Gateway metric (e.g.,
-# CPU utilization) can be directed to graphite data center component
-# using Liota. The program illustrates the ease of use Liota brings
-# to IoT application developers.
+    """
+    Abstract base class for all edge systems (gateways).
+    """
+    __metaclass__ = ABCMeta
 
-if __name__ == '__main__':
-
-    edgesystem = Dell5KEdgeSystem(config['EdgeSystemName'])
-
-    # Sending data to Graphite data center component
-    # Socket is the underlying transport used to connect to the Graphite
-    # instance
-    graphite = Graphite(Socket(ip=config['GraphiteIP'],
-                               port=config['GraphitePort']))
-    graphite_reg_edgesystem = graphite.register(edgesystem)
-
-    metric_name = config['MetricName']
-    cpu_utilization = Metric(
-        name=metric_name,
-        unit=None,
-        interval=10,
-        aggregation_size=2,
-        sampling_function=read_cpu_utilization
-    )
-    reg_cpu_utilization = graphite.register(cpu_utilization)
-    reg_cpu_utilization.start_collecting()
+    @abstractmethod
+    def __init__(self, name, entity_id, entity_type="EdgeSystem"):
+        super(EdgeSystem, self).__init__(
+            name=name,
+            entity_id=entity_id,
+            entity_type=entity_type
+        )

@@ -52,7 +52,7 @@ class Graphite(DataCenterComponent):
             return RegisteredEntity(entity_obj, self, None)
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
-        pass
+        reg_entity_child.parent = reg_entity_parent
 
     def _format_data(self, reg_metric):
         met_cnt = reg_metric.values.qsize()

@@ -35,7 +35,7 @@ import pint
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
-from liota.entities.edgesystems.dell5k_edgesystem import Dell5KEdgeSystem
+from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.entities.devices.thermistor_simulated import ThermistorSimulated
 
 # getting values from conf file
@@ -117,7 +117,7 @@ def get_thermistor_temperature():
 
 if __name__ == '__main__':
 
-    edgesystem = Dell5KEdgeSystem(config['EdgeSystemName'])
+    edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
 
     # initialize and run the physical model (simulated device)
     thermistor_model = ThermistorSimulated(name=config['DeviceName'], ureg=ureg)
@@ -130,6 +130,9 @@ if __name__ == '__main__':
                                port=config['GraphitePort']))
 
     graphite_reg_dev = graphite.register(thermistor_model)
+    if graphite_reg_dev is None:
+        print "Device registration to Graphite failed"
+        exit()
 
     metric_name = "model.thermistor.temperature"
     thermistor_temper = Metric(
@@ -139,4 +142,8 @@ if __name__ == '__main__':
         sampling_function=get_thermistor_temperature
     )
     reg_thermistor_temper = graphite.register(thermistor_temper)
-    reg_thermistor_temper.start_collecting()
+    if reg_thermistor_temper is None:
+        print "Metric registration to Graphite failed"
+    else:
+        graphite.create_relationship(graphite_reg_dev, reg_thermistor_temper)
+        reg_thermistor_temper.start_collecting()

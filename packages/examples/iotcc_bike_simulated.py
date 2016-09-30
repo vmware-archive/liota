@@ -143,11 +143,14 @@ class PackageClass(LiotaPackage):
 
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
-        iotcc_edgesystem = copy.copy(registry.get("iotcc_edgesystem"))
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
 
         bike_simulator = registry.get("bike_simulator")
         iotcc_bike = iotcc.register(bike_simulator)
-        iotcc.create_relationship(iotcc_edgesystem, iotcc_bike)
+        if iotcc_bike is None:
+            print "Device registration to IOTCC failed"
+            exit()
+        iotcc.create_relationship(iotcc_edge_system, iotcc_bike)
 
         ureg = bike_simulator.ureg
         self.create_udm(bike_model=bike_simulator)
