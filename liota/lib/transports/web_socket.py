@@ -85,7 +85,6 @@ class WebSocket():
                 if msg is "":
                     log.error("Stream Closed")
                     sys.exit(0)
-                    break
                 log.debug("RX {0}".format(msg))
                 if self.on_receive is not None:
                     self.on_receive(msg)
