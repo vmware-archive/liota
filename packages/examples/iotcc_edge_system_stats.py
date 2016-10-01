@@ -85,12 +85,9 @@ class PackageClass(LiotaPackage):
                          sampling_function=read_cpu_utilization
                          )
         reg_metric_cpu_utilization = iotcc.register(metric_cpu_utilization)
-        if reg_metric_cpu_utilization is None:
-            print "Metric registration to Graphite failed"
-        else:
-            iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_utilization)
-            reg_metric_cpu_utilization.start_collecting()
-            self.metrics.append(reg_metric_cpu_utilization)
+        iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_utilization)
+        reg_metric_cpu_utilization.start_collecting()
+        self.metrics.append(reg_metric_cpu_utilization)
 
         metric_name = "CPU Process"
         metric_cpu_procs = Metric(name=metric_name,
@@ -99,12 +96,9 @@ class PackageClass(LiotaPackage):
                          sampling_function=read_cpu_procs
                          )
         reg_metric_cpu_procs = iotcc.register(metric_cpu_procs)
-        if reg_metric_cpu_procs is None:
-            print "Metric registration to Graphite failed"
-        else:
-            iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_procs)
-            reg_metric_cpu_procs.start_collecting()
-            self.metrics.append(reg_metric_cpu_procs)
+        iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_procs)
+        reg_metric_cpu_procs.start_collecting()
+        self.metrics.append(reg_metric_cpu_procs)
 
         metric_name = "Disk Usage Stats"
         metric_disk_usage_stats = Metric(name=metric_name,
@@ -113,12 +107,9 @@ class PackageClass(LiotaPackage):
                          sampling_function=read_disk_usage_stats
                          )
         reg_metric_disk_usage_stats = iotcc.register(metric_disk_usage_stats)
-        if reg_metric_disk_usage_stats is None:
-            print "Metric registration to Graphite failed"
-        else:
-            iotcc.create_relationship(iotcc_edge_system, reg_metric_disk_usage_stats)
-            reg_metric_disk_usage_stats.start_collecting()
-            self.metrics.append(reg_metric_disk_usage_stats)
+        iotcc.create_relationship(iotcc_edge_system, reg_metric_disk_usage_stats)
+        reg_metric_disk_usage_stats.start_collecting()
+        self.metrics.append(reg_metric_disk_usage_stats)
 
         metric_name = "Network Bytes Received"
         metric_network_bytes_received = Metric(name=metric_name,
@@ -127,12 +118,9 @@ class PackageClass(LiotaPackage):
                          sampling_function=read_network_bytes_received
                          )
         reg_metric_network_bytes_received = iotcc.register(metric_network_bytes_received)
-        if reg_metric_network_bytes_received is None:
-            print "Metric registration to Graphite failed"
-        else:
-            iotcc.create_relationship(iotcc_edge_system, reg_metric_network_bytes_received)
-            reg_metric_network_bytes_received.start_collecting()
-            self.metrics.append(reg_metric_network_bytes_received)
+        iotcc.create_relationship(iotcc_edge_system, reg_metric_network_bytes_received)
+        reg_metric_network_bytes_received.start_collecting()
+        self.metrics.append(reg_metric_network_bytes_received)
 
     def clean_up(self):
         for metric in self.metrics:

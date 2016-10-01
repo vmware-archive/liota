@@ -107,9 +107,6 @@ if __name__ == '__main__':
     # resister the IoT System with the IoTCC instance
     # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
     reg_edge_system = iotcc.register(edge_system)
-    if reg_edge_system is None:
-        print "EdgeSystem registration to IOTCC failed"
-        exit()
 
     # these call set properties on the Resource representing the IoT System
     # properties are a key:value store
@@ -131,12 +128,9 @@ if __name__ == '__main__':
         sampling_function=read_cpu_utilization
     )
     reg_cpu_utilization_metric = iotcc.register(cpu_utilization_metric)
-    if reg_cpu_utilization_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
-        iotcc.create_relationship(reg_edge_system, reg_cpu_utilization_metric)
-        # call to start collecting values from the device or system and sending to the data center component
-        reg_cpu_utilization_metric.start_collecting()
+    iotcc.create_relationship(reg_edge_system, reg_cpu_utilization_metric)
+    # call to start collecting values from the device or system and sending to the data center component
+    reg_cpu_utilization_metric.start_collecting()
 
     cpu_procs_metric = Metric(
         name="CPU Process",
@@ -146,11 +140,8 @@ if __name__ == '__main__':
         sampling_function=read_cpu_procs
     )
     reg_cpu_procs_metric = iotcc.register(cpu_procs_metric)
-    if reg_cpu_procs_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
-        iotcc.create_relationship(reg_edge_system, reg_cpu_procs_metric)
-        reg_cpu_procs_metric.start_collecting()
+    iotcc.create_relationship(reg_edge_system, reg_cpu_procs_metric)
+    reg_cpu_procs_metric.start_collecting()
 
     disk_usage_metric = Metric(
         name="Disk Usage Stats",
@@ -160,11 +151,8 @@ if __name__ == '__main__':
         sampling_function=read_disk_usage_stats
     )
     reg_disk_usage_metric = iotcc.register(disk_usage_metric)
-    if reg_disk_usage_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
-        iotcc.create_relationship(reg_edge_system, reg_disk_usage_metric)
-        reg_disk_usage_metric.start_collecting()
+    iotcc.create_relationship(reg_edge_system, reg_disk_usage_metric)
+    reg_disk_usage_metric.start_collecting()
 
     network_packets_sent_metric = Metric(
         name="Network Packets Sent",
@@ -173,11 +161,8 @@ if __name__ == '__main__':
         sampling_function=read_network_packets_sent
     )
     reg_network_packets_sent_metric = iotcc.register(network_packets_sent_metric)
-    if reg_network_packets_sent_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
-        iotcc.create_relationship(reg_edge_system, reg_network_packets_sent_metric)
-        reg_network_packets_sent_metric.start_collecting()
+    iotcc.create_relationship(reg_edge_system, reg_network_packets_sent_metric)
+    reg_network_packets_sent_metric.start_collecting()
 
     # Here we are showing how to create a device object, registering it in IoTCC, and setting properties on it
     # Since there are no attached devices are as simulating one by considering RAM as separate from the IoT System
@@ -188,9 +173,6 @@ if __name__ == '__main__':
     #        another Resource in IoTCC of which the should be the child of a parent-child relationship among Resources
     ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
     reg_ram_device = iotcc.register(ram_device)
-    if reg_ram_device is None:
-        print "Device registration to IOTCC failed"
-        exit()
     iotcc.create_relationship(reg_edge_system, reg_ram_device)
 
     # note that the location of this 'device' is different from the location of the IoTCC. It's not really different
@@ -202,11 +184,8 @@ if __name__ == '__main__':
         sampling_function=read_mem_free
     )
     reg_mem_free_metric = iotcc.register(mem_free_metric)
-    if reg_mem_free_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
-        iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
-        reg_mem_free_metric.start_collecting()
+    iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
+    reg_mem_free_metric.start_collecting()
 
     swap_mem_free_metric = Metric(
         name="Swap Memory Free",
@@ -216,8 +195,5 @@ if __name__ == '__main__':
         sampling_function=read_swap_mem_free
     )
     reg_swap_mem_free_metric = iotcc.register(swap_mem_free_metric)
-    if reg_swap_mem_free_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
-        iotcc.create_relationship(reg_ram_device, reg_swap_mem_free_metric)
-        reg_swap_mem_free_metric.start_collecting()
+    iotcc.create_relationship(reg_ram_device, reg_swap_mem_free_metric)
+    reg_swap_mem_free_metric.start_collecting()

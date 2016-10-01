@@ -56,6 +56,7 @@ class DataCenterComponent:
     # an exception if failed. Call this method from subclasses for a type
     # check.
     #
+
     @abstractmethod
     def register(self, entity_obj):
         if not isinstance(entity_obj, Entity):
@@ -78,3 +79,5 @@ class DataCenterComponent:
     @abstractmethod
     def set_properties(self, reg_entity, properties):
         pass
+
+class RegistrationFailure(Exception): pass

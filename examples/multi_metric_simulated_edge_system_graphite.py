@@ -80,39 +80,27 @@ if __name__ == '__main__':
     graphite = Graphite(Socket(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
     graphite_reg_edge_system = graphite.register(edge_system)
-    if graphite_reg_edge_system is None:
-        print "EdgeSystem registration to Graphite failed"
-        exit()
 
     # A simple simulated metric which generates metric value every 10 seconds
     simple_metric_name = config['MetricName']
     simple_metric = Metric(name=simple_metric_name, interval=10,
                               sampling_function=simulated_value_sampling_function)
     reg_simple_metric = graphite.register(simple_metric)
-    if reg_simple_metric is None:
-        print "Metric registration to Graphite failed"
-    else:
-        graphite.create_relationship(graphite_reg_edge_system, reg_simple_metric)
-        reg_simple_metric.start_collecting()
+    graphite.create_relationship(graphite_reg_edge_system, reg_simple_metric)
+    reg_simple_metric.start_collecting()
 
     # A simulated metric producing sample value along with timestamp when the sample was generated
     metric_with_own_ts_name = config['MetricWithOwnTsName']
     metric_with_own_ts = Metric(name=metric_with_own_ts_name, interval=10,
                               sampling_function=simulated_timestamp_value_sampling_function)
     reg_metric_with_own_ts = graphite.register(metric_with_own_ts)
-    if reg_metric_with_own_ts is None:
-        print "Metric registration to Graphite failed"
-    else:
-        graphite.create_relationship(graphite_reg_edge_system, reg_metric_with_own_ts)
-        reg_metric_with_own_ts.start_collecting()
+    graphite.create_relationship(graphite_reg_edge_system, reg_metric_with_own_ts)
+    reg_metric_with_own_ts.start_collecting()
 
     # A simulated metric producing a list of sample values along with their timestamps in the last polling interval
     bulk_collected_metric_name = config['BulkCollectedMetricName']
     bulk_collected_metric = Metric(name=bulk_collected_metric_name, interval=30,
                               aggregation_size=10, sampling_function=simulated_list_of_timestamps_values_sampling_function)
     reg_bulk_collected_metric = graphite.register(bulk_collected_metric)
-    if reg_bulk_collected_metric is None:
-        print "Metric registration to Graphite failed"
-    else:
-        graphite.create_relationship(graphite_reg_edge_system, reg_bulk_collected_metric)
-        reg_bulk_collected_metric.start_collecting()
+    graphite.create_relationship(graphite_reg_edge_system, reg_bulk_collected_metric)
+    reg_bulk_collected_metric.start_collecting()

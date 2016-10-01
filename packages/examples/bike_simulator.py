@@ -40,16 +40,11 @@ class PackageClass(LiotaPackage):
     def run(self, registry):
         from liota.entities.devices.bike_simulated import BikeSimulated
         import pint
-        import copy
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
         config = {}
         execfile(config_path + '/sampleProp.conf', config)
-
-        # Acquire resources from registry
-        # Creating a copy of edge system object to keep original object "clean"
-        edge_system = copy.copy(registry.get("edge_system"))
 
         # create a pint unit registry
         ureg = pint.UnitRegistry()

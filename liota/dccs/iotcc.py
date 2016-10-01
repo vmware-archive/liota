@@ -37,7 +37,7 @@ import threading
 import ConfigParser
 import os
 
-from liota.dccs.dcc import DataCenterComponent
+from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
 from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir_log
@@ -125,6 +125,8 @@ class IotControlCenter(DataCenterComponent):
             self.con.send(
                 self._registration(self.con.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type))
             thread.join()
+            if self.reg_entity_id is None:
+                raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
                 self.store_reg_entity_details("EdgeSystem", entity_obj.name, self.reg_entity_id)

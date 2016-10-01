@@ -144,9 +144,6 @@ class PackageClass(LiotaPackage):
         graphite = registry.get("graphite")
         bike_simulator = registry.get("bike_simulator")
         graphite_bike = graphite.register(bike_simulator)
-        if graphite_bike is None:
-            print "Device registration to Graphite failed"
-            exit()
 
         ureg = bike_simulator.ureg
         self.create_udm(bike_model=bike_simulator)
@@ -162,12 +159,9 @@ class PackageClass(LiotaPackage):
             sampling_function=self.get_bike_speed
         )
         reg_bike_speed = graphite.register(bike_speed)
-        if reg_bike_speed is None:
-            print "failed to register bike_speed to graphite instance"
-        else:
-            graphite.create_relationship(graphite_bike, reg_bike_speed)
-            reg_bike_speed.start_collecting()
-            self.metrics.append(reg_bike_speed)
+        graphite.create_relationship(graphite_bike, reg_bike_speed)
+        reg_bike_speed.start_collecting()
+        self.metrics.append(reg_bike_speed)
 
         metric_name = "model.bike.power"
         bike_power = Metric(
@@ -177,12 +171,9 @@ class PackageClass(LiotaPackage):
             sampling_function=self.get_bike_power
         )
         reg_bike_power = graphite.register(bike_power)
-        if reg_bike_power is None:
-            print "failed to register bike_power to graphite instance"
-        else:
-            graphite.create_relationship(graphite_bike, reg_bike_power)
-            reg_bike_power.start_collecting()
-            self.metrics.append(reg_bike_power)
+        graphite.create_relationship(graphite_bike, reg_bike_power)
+        reg_bike_power.start_collecting()
+        self.metrics.append(reg_bike_power)
 
     def clean_up(self):
         for metric in self.metrics:

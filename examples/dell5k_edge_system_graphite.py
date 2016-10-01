@@ -60,9 +60,6 @@ if __name__ == '__main__':
     graphite = Graphite(Socket(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
     graphite_reg_edge_system = graphite.register(edge_system)
-    if graphite_reg_edge_system is None:
-        print "EdgeSystem registration to Graphite failed"
-        exit()
 
     metric_name = config['MetricName']
     cpu_utilization = Metric(
@@ -73,8 +70,5 @@ if __name__ == '__main__':
         sampling_function=read_cpu_utilization
     )
     reg_cpu_utilization = graphite.register(cpu_utilization)
-    if reg_cpu_utilization is None:
-        print "Metric registration to Graphite failed"
-    else:
-        graphite.create_relationship(graphite_reg_edge_system, reg_cpu_utilization)
-        reg_cpu_utilization.start_collecting()
+    graphite.create_relationship(graphite_reg_edge_system, reg_cpu_utilization)
+    reg_cpu_utilization.start_collecting()

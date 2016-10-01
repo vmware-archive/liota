@@ -45,6 +45,7 @@ class PackageClass(LiotaPackage):
         import copy
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
+        from liota.dccs.dcc import RegistrationFailure
 
         # Acquire resources from registry
         # Creating a copy of edge_system object to keep original object "clean"
@@ -61,14 +62,14 @@ class PackageClass(LiotaPackage):
             WebSocketDccComms(url=config['WebSocketUrl'])
         )
 
-        # Register gateway system
-        iotcc_edge_system = self.iotcc.register(edge_system)
-        if iotcc_edge_system is None:
-            print "EdgeSystem registration to IOTCC failed"
-            exit()
+        try:
+            # Register edge system (gateway)
+            iotcc_edge_system = self.iotcc.register(edge_system)
 
-        registry.register("iotcc", self.iotcc)
-        registry.register("iotcc_edge_system", iotcc_edge_system)
+            registry.register("iotcc", self.iotcc)
+            registry.register("iotcc_edge_system", iotcc_edge_system)
+        except RegistrationFailure:
+            print "EdgeSystem registration to IOTCC failed"
 
     def clean_up(self):
         self.iotcc.comms.wss.close()

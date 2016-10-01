@@ -146,10 +146,8 @@ class PackageClass(LiotaPackage):
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
 
         bike_simulator = registry.get("bike_simulator")
+
         iotcc_bike = iotcc.register(bike_simulator)
-        if iotcc_bike is None:
-            print "Device registration to IOTCC failed"
-            exit()
         iotcc.create_relationship(iotcc_edge_system, iotcc_bike)
 
         ureg = bike_simulator.ureg
@@ -166,12 +164,9 @@ class PackageClass(LiotaPackage):
             sampling_function=self.get_bike_speed
         )
         reg_bike_speed = iotcc.register(bike_speed)
-        if reg_bike_speed is None:
-            print "failed to register bike_speed to iotcc_bike instance"
-        else:
-            iotcc.create_relationship(iotcc_bike, reg_bike_speed)
-            reg_bike_speed.start_collecting()
-            self.metrics.append(reg_bike_speed)
+        iotcc.create_relationship(iotcc_bike, reg_bike_speed)
+        reg_bike_speed.start_collecting()
+        self.metrics.append(reg_bike_speed)
 
         metric_name = "model.bike.power"
         bike_power = Metric(
@@ -181,12 +176,9 @@ class PackageClass(LiotaPackage):
             sampling_function=self.get_bike_power
         )
         reg_bike_power = iotcc.register(bike_power)
-        if reg_bike_speed is None:
-            print "failed to register bike_power to iotcc_bike instance"
-        else:
-            iotcc.create_relationship(iotcc_bike, reg_bike_power)
-            reg_bike_power.start_collecting()
-            self.metrics.append(reg_bike_power)
+        iotcc.create_relationship(iotcc_bike, reg_bike_power)
+        reg_bike_power.start_collecting()
+        self.metrics.append(reg_bike_power)
 
     def clean_up(self):
         for metric in self.metrics:

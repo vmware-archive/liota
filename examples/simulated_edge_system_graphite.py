@@ -63,16 +63,10 @@ if __name__ == '__main__':
     graphite = Graphite(Socket(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
     graphite_reg_edge_system = graphite.register(edge_system)
-    if graphite_reg_edge_system is None:
-        print "EdgeSystem registration to Graphite failed"
-        exit()
 
     metric_name = config['MetricName']
     simulated_metric = Metric(name=metric_name, interval=10,
                               sampling_function=simulated_sampling_function)
     reg_metric = graphite.register(simulated_metric)
-    if reg_metric is None:
-        print "Metric registration to Graphite failed"
-    else:
-        graphite.create_relationship(graphite_reg_edge_system, reg_metric)
-        reg_metric.start_collecting()
+    graphite.create_relationship(graphite_reg_edge_system, reg_metric)
+    reg_metric.start_collecting()
