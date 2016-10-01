@@ -125,7 +125,7 @@ class IotControlCenter(DataCenterComponent):
             self.con.send(
                 self._registration(self.con.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type))
             thread.join()
-            if self.reg_entity_id is None:
+            if not hasattr(self, 'reg_entity_id'):
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
