@@ -161,9 +161,6 @@ if __name__ == '__main__':
     graphite = Graphite(Socket(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
     graphite_reg_dev = graphite.register(bike_model)
-    if graphite_reg_dev is None:
-        print "Device registration to Graphite failed"
-        exit()
 
     metric_name = "model.bike.speed"
     bike_speed = Metric(
@@ -173,11 +170,8 @@ if __name__ == '__main__':
         sampling_function=get_bike_speed
     )
     reg_bike_speed = graphite.register(bike_speed)
-    if reg_bike_speed is None:
-        print "Metric registration to Graphite failed"
-    else:
-        graphite.create_relationship(graphite_reg_dev, reg_bike_speed)
-        reg_bike_speed.start_collecting()
+    graphite.create_relationship(graphite_reg_dev, reg_bike_speed)
+    reg_bike_speed.start_collecting()
 
     metric_name = "model.bike.power"
     bike_power = Metric(
@@ -187,8 +181,5 @@ if __name__ == '__main__':
         sampling_function=get_bike_power
     )
     reg_bike_power = graphite.register(bike_power)
-    if reg_bike_power is None:
-        print "Metric registration to Graphite failed"
-    else:
-        graphite.create_relationship(graphite_reg_dev, reg_bike_power)
-        reg_bike_power.start_collecting()
+    graphite.create_relationship(graphite_reg_dev, reg_bike_power)
+    reg_bike_power.start_collecting()

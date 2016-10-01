@@ -58,9 +58,6 @@ class PackageClass(LiotaPackage):
         # Register device
         ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
         reg_ram_device = iotcc.register(ram_device)
-        if reg_ram_device is None:
-            print "Device registration to IOTCC failed"
-            exit()
         iotcc.set_properties(reg_ram_device, config['DevicePropList'])
 
         iotcc.create_relationship(iotcc_edge_system, reg_ram_device)
@@ -75,12 +72,9 @@ class PackageClass(LiotaPackage):
             sampling_function=read_mem_free
         )
         reg_mem_free_metric = iotcc.register(mem_free_metric)
-        if reg_mem_free_metric is None:
-            print "failed to register mem_free_metric to iotcc instance"
-        else:
-            iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
-            reg_mem_free_metric.start_collecting()
-            self.metrics.append(reg_mem_free_metric)
+        iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
+        reg_mem_free_metric.start_collecting()
+        self.metrics.append(reg_mem_free_metric)
 
         registry.register("reg_ram_device", reg_ram_device)
 

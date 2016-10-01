@@ -92,7 +92,7 @@ class WebSocket():
         except Exception:
             log.exception("Exception on receiving the response from Server, please check the connection and try again.")
             self.close()
-            sys.exit(0)
+            sys.exit(0) # need to revisit this
 
     def send(self, msg):
         request_calls = ['request', 'response']

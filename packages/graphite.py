@@ -63,9 +63,6 @@ class PackageClass(LiotaPackage):
 
         # Register gateway system
         graphite_edge_system = self.graphite.register(edge_system)
-        if graphite_edge_system is None:
-            print "EdgeSystem registration to Graphite failed"
-            exit()
 
         registry.register("graphite", self.graphite)
         registry.register("graphite_edge_system", graphite_edge_system)

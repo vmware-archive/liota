@@ -121,9 +121,6 @@ class PackageClass(LiotaPackage):
 
         thermistor_simulator = registry.get("thermistor_simulator")
         iotcc_thermistor = iotcc.register(thermistor_simulator)
-        if iotcc_thermistor is None:
-            print "Device registration to IOTCC failed"
-            exit()
         iotcc.create_relationship(iotcc_edge_system, iotcc_thermistor)
 
         ureg = thermistor_simulator.ureg
@@ -139,12 +136,9 @@ class PackageClass(LiotaPackage):
             sampling_function=self.get_thermistor_temperature
         )
         reg_thermistor_temper = iotcc.register(thermistor_temper)
-        if reg_thermistor_temper is None:
-            print "failed to register thermistor_temperature to iotcc_thermistor instance"
-        else:
-            iotcc.create_relationship(iotcc_thermistor, reg_thermistor_temper)
-            reg_thermistor_temper.start_collecting()
-            self.metrics.append(reg_thermistor_temper)
+        iotcc.create_relationship(iotcc_thermistor, reg_thermistor_temper)
+        reg_thermistor_temper.start_collecting()
+        self.metrics.append(reg_thermistor_temper)
 
     def clean_up(self):
         for metric in self.metrics:

@@ -36,6 +36,7 @@ from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
+from liota.dccs.dcc import RegistrationFailure
 
 # getting values from conf file
 config = {}
@@ -97,106 +98,89 @@ if __name__ == '__main__':
     # argument is the name of this IoT System
     edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
 
-    # resister the IoT System with the IoTCC instance
-    # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
-    reg_edge_system = iotcc.register(edge_system)
-    if reg_edge_system is None:
-        print "EdgeSystem registration to IOTCC failed"
-        exit()
+    try:
+        # resister the IoT System with the IoTCC instance
+        # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
+        reg_edge_system = iotcc.register(edge_system)
 
-    # these call set properties on the Resource representing the IoT System
-    # properties are a key:value store
-    reg_edge_system.set_properties(config['SystemPropList'])
+        # these call set properties on the Resource representing the IoT System
+        # properties are a key:value store
+        reg_edge_system.set_properties(config['SystemPropList'])
 
-    # ---------- Create metrics 'on' the Resource in IoTCC representing the IoT System
-    # arguments:
-    # local object referring to the Resource in IoTCC on which the metric should be associated
-    # metric name
-    # unit = An SI Unit (work needed here)
-    # sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
-    # aggregation_size = the number of values collected in a cycle before publishing to DCC
-    # value = user defined function to obtain the next value from the device associated with this metric
-    cpu_utilization_metric = Metric(
-        name="CPU Utilization",
-        unit=None,
-        interval=10,
-        aggregation_size=2,
-        sampling_function=read_cpu_utilization
-    )
-    reg_cpu_utilization_metric = iotcc.register(cpu_utilization_metric)
-    if reg_cpu_utilization_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
+        # ---------- Create metrics 'on' the Resource in IoTCC representing the IoT System
+        # arguments:
+        # local object referring to the Resource in IoTCC on which the metric should be associated
+        # metric name
+        # unit = An SI Unit (work needed here)
+        # sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
+        # aggregation_size = the number of values collected in a cycle before publishing to DCC
+        # value = user defined function to obtain the next value from the device associated with this metric
+        cpu_utilization_metric = Metric(
+            name="CPU Utilization",
+            unit=None,
+            interval=10,
+            aggregation_size=2,
+            sampling_function=read_cpu_utilization
+        )
+        reg_cpu_utilization_metric = iotcc.register(cpu_utilization_metric)
         iotcc.create_relationship(reg_edge_system, reg_cpu_utilization_metric)
         # call to start collecting values from the device or system and sending to the data center component
         reg_cpu_utilization_metric.start_collecting()
 
-    cpu_procs_metric = Metric(
-        name="CPU Process",
-        unit=None,
-        interval=6,
-        aggregation_size=8,
-        sampling_function=read_cpu_procs
-    )
-    reg_cpu_procs_metric = iotcc.register(cpu_procs_metric)
-    if reg_cpu_procs_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
+        cpu_procs_metric = Metric(
+            name="CPU Process",
+            unit=None,
+            interval=6,
+            aggregation_size=8,
+            sampling_function=read_cpu_procs
+        )
+        reg_cpu_procs_metric = iotcc.register(cpu_procs_metric)
         iotcc.create_relationship(reg_edge_system, reg_cpu_procs_metric)
         reg_cpu_procs_metric.start_collecting()
 
-    disk_usage_metric = Metric(
-        name="Disk Usage Stats",
-        unit=None,
-        interval=6,
-        aggregation_size=6,
-        sampling_function=read_disk_usage_stats
-    )
-    reg_disk_usage_metric = iotcc.register(disk_usage_metric)
-    if reg_disk_usage_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
+        disk_usage_metric = Metric(
+            name="Disk Usage Stats",
+            unit=None,
+            interval=6,
+            aggregation_size=6,
+            sampling_function=read_disk_usage_stats
+        )
+        reg_disk_usage_metric = iotcc.register(disk_usage_metric)
         iotcc.create_relationship(reg_edge_system, reg_disk_usage_metric)
         reg_disk_usage_metric.start_collecting()
 
-    network_bits_received_metric = Metric(
-        name="Network Bits Received",
-        unit=None,
-        interval=5,
-        sampling_function=read_network_bytes_received
-    )
-    reg_network_bits_received_metric = iotcc.register(network_bits_received_metric)
-    if reg_network_bits_received_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
+        network_bits_received_metric = Metric(
+            name="Network Bytes Received",
+            unit=None,
+            interval=5,
+            sampling_function=read_network_bytes_received
+        )
+        reg_network_bits_received_metric = iotcc.register(network_bits_received_metric)
         iotcc.create_relationship(reg_edge_system, reg_network_bits_received_metric)
         reg_network_bits_received_metric.start_collecting()
 
-    # Here we are showing how to create a device object, registering it in IoTCC, and setting properties on it
-    # Since there are no attached devices are as simulating one by considering RAM as separate from the IoT System
-    # The agent makes possible many different data models
-    # arguments:
-    #        device name
-    #        Read or Write
-    #        another Resource in IoTCC of which the should be the child of a parent-child relationship among Resources
-    ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
-    reg_ram_device = iotcc.register(ram_device)
-    if reg_ram_device is None:
-        print "Device registration to IOTCC failed"
-        exit()
-    iotcc.create_relationship(reg_edge_system, reg_ram_device)
+        # Here we are showing how to create a device object, registering it in IoTCC, and setting properties on it
+        # Since there are no attached devices are as simulating one by considering RAM as separate from the IoT System
+        # The agent makes possible many different data models
+        # arguments:
+        #        device name
+        #        Read or Write
+        #        another Resource in IoTCC of which the should be the child of a parent-child relationship among Resources
+        ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
+        reg_ram_device = iotcc.register(ram_device)
+        iotcc.create_relationship(reg_edge_system, reg_ram_device)
 
-    # note that the location of this 'device' is different from the location of the IoTCC. It's not really different
-    # but just an example of how one might create a device different from the IoTCC
-    mem_free_metric = Metric(
-        name="Memory Free",
-        unit=None,
-        interval=10,
-        sampling_function=read_mem_free
-    )
-    reg_mem_free_metric = iotcc.register(mem_free_metric)
-    if reg_mem_free_metric is None:
-        print "Metric registration to IOTCC failed"
-    else:
+        # note that the location of this 'device' is different from the location of the IoTCC. It's not really different
+        # but just an example of how one might create a device different from the IoTCC
+        mem_free_metric = Metric(
+            name="Memory Free",
+            unit=None,
+            interval=10,
+            sampling_function=read_mem_free
+        )
+        reg_mem_free_metric = iotcc.register(mem_free_metric)
         iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
         reg_mem_free_metric.start_collecting()
+
+    except RegistrationFailure:
+        print "Registration to IOTCC failed"

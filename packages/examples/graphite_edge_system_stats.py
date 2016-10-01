@@ -71,9 +71,6 @@ class PackageClass(LiotaPackage):
         edge_system = copy.copy(registry.get("edge_system"))
         graphite = registry.get("graphite")
         reg_edge_system = graphite.register(edge_system)
-        if reg_edge_system is None:
-            print "EdgeSystem registration to Graphite failed"
-            exit()
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -89,12 +86,9 @@ class PackageClass(LiotaPackage):
                          sampling_function=read_cpu_utilization
                          )
         reg_metric_cpu_utilization = graphite.register(metric_cpu_utilization)
-        if reg_metric_cpu_utilization is None:
-            print "Metric registration to Graphite failed"
-        else:
-            graphite.create_relationship(reg_edge_system, reg_metric_cpu_utilization)
-            reg_metric_cpu_utilization.start_collecting()
-            self.metrics.append(reg_metric_cpu_utilization)
+        graphite.create_relationship(reg_edge_system, reg_metric_cpu_utilization)
+        reg_metric_cpu_utilization.start_collecting()
+        self.metrics.append(reg_metric_cpu_utilization)
 
         metric_name = "EdgeSystem.CPU_Process"
         metric_cpu_procs = Metric(name=metric_name,
@@ -103,12 +97,9 @@ class PackageClass(LiotaPackage):
                          sampling_function=read_cpu_procs
                          )
         reg_metric_cpu_procs = graphite.register(metric_cpu_procs)
-        if reg_metric_cpu_procs is None:
-            print "Metric registration to Graphite failed"
-        else:
-            graphite.create_relationship(reg_edge_system, reg_metric_cpu_procs)
-            reg_metric_cpu_procs.start_collecting()
-            self.metrics.append(reg_metric_cpu_procs)
+        graphite.create_relationship(reg_edge_system, reg_metric_cpu_procs)
+        reg_metric_cpu_procs.start_collecting()
+        self.metrics.append(reg_metric_cpu_procs)
 
         metric_name = "EdgeSystem.Disk_Busy_Stats"
         metric_disk_busy_stats = Metric(name=metric_name,
@@ -117,12 +108,9 @@ class PackageClass(LiotaPackage):
                          sampling_function=read_disk_usage_stats
                          )
         reg_metric_disk_busy_stats = graphite.register(metric_disk_busy_stats)
-        if reg_metric_disk_busy_stats is None:
-            print "Metric registration to Graphite failed"
-        else:
-            graphite.create_relationship(reg_edge_system, reg_metric_disk_busy_stats)
-            reg_metric_disk_busy_stats.start_collecting()
-            self.metrics.append(reg_metric_disk_busy_stats)
+        graphite.create_relationship(reg_edge_system, reg_metric_disk_busy_stats)
+        reg_metric_disk_busy_stats.start_collecting()
+        self.metrics.append(reg_metric_disk_busy_stats)
 
         metric_name = "EdgeSystem.Network_Bytes_Received"
         metric_network_bytes_received = Metric(name=metric_name,
@@ -131,12 +119,9 @@ class PackageClass(LiotaPackage):
                          sampling_function=read_network_bytes_received
                          )
         reg_metric_network_bytes_received = graphite.register(metric_network_bytes_received)
-        if reg_metric_network_bytes_received is None:
-            print "Metric registration to Graphite failed"
-        else:
-            graphite.create_relationship(reg_edge_system, reg_metric_network_bytes_received)
-            reg_metric_network_bytes_received.start_collecting()
-            self.metrics.append(reg_metric_network_bytes_received)
+        graphite.create_relationship(reg_edge_system, reg_metric_network_bytes_received)
+        reg_metric_network_bytes_received.start_collecting()
+        self.metrics.append(reg_metric_network_bytes_received)
 
     def clean_up(self):
         for metric in self.metrics:

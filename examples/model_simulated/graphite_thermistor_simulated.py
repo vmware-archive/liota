@@ -130,9 +130,6 @@ if __name__ == '__main__':
                                port=config['GraphitePort']))
 
     graphite_reg_dev = graphite.register(thermistor_model)
-    if graphite_reg_dev is None:
-        print "Device registration to Graphite failed"
-        exit()
 
     metric_name = "model.thermistor.temperature"
     thermistor_temper = Metric(
@@ -142,8 +139,5 @@ if __name__ == '__main__':
         sampling_function=get_thermistor_temperature
     )
     reg_thermistor_temper = graphite.register(thermistor_temper)
-    if reg_thermistor_temper is None:
-        print "Metric registration to Graphite failed"
-    else:
-        graphite.create_relationship(graphite_reg_dev, reg_thermistor_temper)
-        reg_thermistor_temper.start_collecting()
+    graphite.create_relationship(graphite_reg_dev, reg_thermistor_temper)
+    reg_thermistor_temper.start_collecting()
