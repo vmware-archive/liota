@@ -11,25 +11,19 @@ The six basic abstractions of liota represent a comoplete data flow from a devic
 ## Entities
 Entities represent abstractions for the three main passive constructs, System, Devices, and Metrics that can be, depending on the DCC, registered with the DCC. Such registration typically creates a concrete representation (let's call these 'Resources' simply to differentiate from the local representaiton we'll call lobjects) in the data-center component for the local object. Various pieces of meta-data can be associated with the Resource typically created during or after registration. Examples of such meta-data associated with the Resource, metrics, entries in a key/value store, relationships to other Resources, alerts, and actions. 
 
-### Edge Systems Layer
-The edge system layer is a sub-module of board and abstracts both the system board and the operating system.The functions
-provided by this layer are used to configure i/o endpoints, read data from endpoints connected to sensors, or pass commands
-to the endpoints of connected actuators as well as any unique OS features.
+Each DCC must implement a register() method and return a RegisteredEntity object. The registered entity object include any specific data, e.g., uuid, that the DCC may need to refer to the Resource representing the entity object. An entity may be registered with multiple DCCs in the same liota package or set of packages. 
 
-## Device Layer
-This layer (after the 'Things' in Internet-of-Things') allows developers to create representative objects in liota for devices that will
-be connected to the gateway, e.g., as USB temperature sensor connected to the gateway.
+### EdgeSystems and Devices
+The abstract subclasses of Entities, EdgeSystem and Device are, for now, mostly placeholders in the hierarchy. We expect, as concrete implementations are created over time we'll see some common data and logic that we can move up into the abstract classes. 
 
-## Transformer Layer
-This layer defines the base structure for creating representations of metrics in liota. A metric is the term for a stream of
-numeric values. Metric is a class that
-abstracts and represents this stream of values collected from, typically, attached sensors but can be collected from anywhere.
-Within the definition of metrics we support SI units are in order to provide units-based
-typing for values collected from a sensor. This meta-data can be passed to the data-center component in a format defined by that
-component.
+### Metrics
+The Metric subclass of Entity is the local object representing a stream of (number, timestamp) tuples. Metrics may be registered with one or more DCCs and the DCC returns a registered metric object. The metric object includes a sampling function which is a user defined method (udm), a sampling frequency stating the interval between subsequent executions of the udm, and an aggregation count stating how many executions of the udm to aggregate before sending to the DCCs to which the metric has been registered. An important piece of meta-data liota supports are SI units and a prefix eliminating any confusion as to what the stream of numbers represent. 
 
-## Transport Layer
-This layer abstracts the network connectivity between a gateway object and a DCC (Data center component). Currently, liota supports
+## DeviceComms
+The abstract class DeviceComms represents mechanisms which devices send and receive data to edge systems. Some examples are CAN bus, Modbus, ProfiNet, Zibgee, GPIO pins, Industrial Serial Protocols as well as sockets, websockets, MQTT, CoAP. The DeviceComms abstract class is a placeholder for these various communication mechanisms. 
+
+## DCCComms
+The abstract class DCCComms represents communications protocols between edge systems and DCCs. Currently, liota supports
 WebSocket and plain old BSD sockets. In near future it will support MQTT and CoAP. Both are ‘Session’ or layer-5 protocols. MQTT is a
 pub-sub system using TCP and CoAP implements reliable UDP datagrams and a data format specification. These protocols are capable of
 satisfying most use cases for transferring data from IoT gateways to data-center components. With the current implementation the
@@ -40,12 +34,7 @@ wss://host:port/path
 or a traditional socket endpoint.
 
 ## DCC (Data Center Component)
-This layer takes care of supporting DCC’s, which can be hosted anywhere; on-prem, public or private cloud. It is potentially the most
-important and complex layers of liota. It provides flexibility to developers for choosing the data-center components they need and
-using API’s provided by liota. With help of this layer developers may build custom solutions. The layer implements basic API’s and
-encapsulates them into unified common API’s required to send data to various DCC’s. Graphite and vROps (vRealize Operations) are
-currently the data-center components supported by the first version of liota. New DCC’s can easily be integrated in this layer as it
-follows a plug in-plug out design.
+The abstract class DCC represents an application in a data-center. It is potentially the most important and complex abstraction of liota. It provides flexibility to developers for choosing the data-center components they need and using API’s provided by liota. With help of this abstraction developers may build custom solutions. The abstract class states basic methods and encapsulates them into unified common API’s required to send data to various DCC’s. Graphite and vROps (vRealize Operations) are currently the data-center components supported by the first version of liota. New DCC’s can easily be integrated in this layer as it follows a plug in-plug out design.
 
 Liota – Sample Code Below is a sample code developed using liota for a representative IoT gateway. A temperature
 metric is defined and its values are collected from a USB-temperature sensor connected to the USB-1 port of the gateway.
