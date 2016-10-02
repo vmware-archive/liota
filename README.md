@@ -5,13 +5,13 @@ Little IoT Agent (liota) is an open source offering offering some convenience fo
 The primary liota design goals are simplicity, ease of use, easy install, and easy modification. Secondary design goals are
 generality, modularity, and enterprise-level quality.
 
-# The Basic Layers of Liota (To be changed)
+# The Basic Abstractions of Liota 
+The six basic abstractions of liota represent a comoplete data flow from a device attached to the edge system  to an application in a data-center. These are 'Device' (some data source on or attached to the edge system), 'DeviceComms' (communications protocols used between devices and the edge system), 'EdgeSystem' (the edge system hardware and software platforms, 'Metric' (represents a time-series stream from a data source to a data-center application), 'DCCComms' (communications protocols between the edge system and a data-center), and 'DCC' (data-center component, i.e., an ingestion application in a data-center). We have abstract classes for all six of these constructs in a small object hierarchy and a number of concrete classes that comprise this release of liota and allow a liota package or set of packages to create complete data flows from a data source to a component in a data-center. 
 
-## Board Layer
-The board layer is the base layer of liota and provides an abstraction for IoT gateway hardware. Items one might put in here
-are unique i/o architecture, communication physical interfaces, and any other features particular to the system board.
+## Entities
+Entities represent abstractions for the three main passive constructs, System, Devices, and Metrics that can be, depending on the DCC, registered with the DCC. Such registration typically creates a concrete representation (let's call these 'Resources' simply to differentiate from the local representaiton we'll call lobjects) in the data-center component for the local object. Various pieces of meta-data can be associated with the Resource typically created during or after registration. Examples of such meta-data associated with the Resource, metrics, entries in a key/value store, relationships to other Resources, alerts, and actions. 
 
-## Edge Systems Layer
+### Edge Systems Layer
 The edge system layer is a sub-module of board and abstracts both the system board and the operating system.The functions
 provided by this layer are used to configure i/o endpoints, read data from endpoints connected to sensors, or pass commands
 to the endpoints of connected actuators as well as any unique OS features.
