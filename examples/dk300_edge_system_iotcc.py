@@ -37,6 +37,7 @@ from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
+from liota.dccs.dcc import RegistrationFailure
 
 # getting values from conf file
 config = {}
@@ -98,102 +99,107 @@ if __name__ == '__main__':
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
     # UID/PASS login for now.
     iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-        WebSocketDccComms(url=config['WebSocketUrl']))
+                             WebSocketDccComms(url=config['WebSocketUrl']))
 
-    # create a System object encapsulating the particulars of a IoT System
-    # argument is the name of this IoT System
-    edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
+    try:
 
-    # resister the IoT System with the IoTCC instance
-    # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
-    reg_edge_system = iotcc.register(edge_system)
+        # create a System object encapsulating the particulars of a IoT System
+        # argument is the name of this IoT System
+        edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
 
-    # these call set properties on the Resource representing the IoT System
-    # properties are a key:value store
-    reg_edge_system.set_properties(config['SystemPropList'])
+        # resister the IoT System with the IoTCC instance
+        # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
+        reg_edge_system = iotcc.register(edge_system)
 
-    # ---------- Create metrics 'on' the Resource in IoTCC representing the IoT System
-    # arguments:
-    # local object referring to the Resource in IoTCC on which the metric should be associated
-    # metric name
-    # unit = An SI Unit (work needed here)
-    # sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
-    # aggregation_size = the number of values collected in a cycle before publishing to DCC
-    # value = user defined function to obtain the next value from the device associated with this metric
-    cpu_utilization_metric = Metric(
-        name="CPU Utilization",
-        unit=None,
-        interval=10,
-        aggregation_size=2,
-        sampling_function=read_cpu_utilization
-    )
-    reg_cpu_utilization_metric = iotcc.register(cpu_utilization_metric)
-    iotcc.create_relationship(reg_edge_system, reg_cpu_utilization_metric)
-    # call to start collecting values from the device or system and sending to the data center component
-    reg_cpu_utilization_metric.start_collecting()
+        # these call set properties on the Resource representing the IoT System
+        # properties are a key:value store
+        reg_edge_system.set_properties(config['SystemPropList'])
 
-    cpu_procs_metric = Metric(
-        name="CPU Process",
-        unit=None,
-        interval=6,
-        aggregation_size=8,
-        sampling_function=read_cpu_procs
-    )
-    reg_cpu_procs_metric = iotcc.register(cpu_procs_metric)
-    iotcc.create_relationship(reg_edge_system, reg_cpu_procs_metric)
-    reg_cpu_procs_metric.start_collecting()
+        # ---------- Create metrics 'on' the Resource in IoTCC representing the IoT System
+        # arguments:
+        # local object referring to the Resource in IoTCC on which the metric should be associated
+        # metric name
+        # unit = An SI Unit (work needed here)
+        # sampling_interval = the interval in seconds between called to the user function to obtain the next value for the metric
+        # aggregation_size = the number of values collected in a cycle before publishing to DCC
+        # value = user defined function to obtain the next value from the device associated with this metric
+        cpu_utilization_metric = Metric(
+            name="CPU Utilization",
+            unit=None,
+            interval=10,
+            aggregation_size=2,
+            sampling_function=read_cpu_utilization
+        )
+        reg_cpu_utilization_metric = iotcc.register(cpu_utilization_metric)
+        iotcc.create_relationship(reg_edge_system, reg_cpu_utilization_metric)
+        # call to start collecting values from the device or system and sending to the data center component
+        reg_cpu_utilization_metric.start_collecting()
 
-    disk_usage_metric = Metric(
-        name="Disk Usage Stats",
-        unit=None,
-        interval=6,
-        aggregation_size=6,
-        sampling_function=read_disk_usage_stats
-    )
-    reg_disk_usage_metric = iotcc.register(disk_usage_metric)
-    iotcc.create_relationship(reg_edge_system, reg_disk_usage_metric)
-    reg_disk_usage_metric.start_collecting()
+        cpu_procs_metric = Metric(
+            name="CPU Process",
+            unit=None,
+            interval=6,
+            aggregation_size=8,
+            sampling_function=read_cpu_procs
+        )
+        reg_cpu_procs_metric = iotcc.register(cpu_procs_metric)
+        iotcc.create_relationship(reg_edge_system, reg_cpu_procs_metric)
+        reg_cpu_procs_metric.start_collecting()
 
-    network_packets_sent_metric = Metric(
-        name="Network Packets Sent",
-        unit=None,
-        interval=5,
-        sampling_function=read_network_packets_sent
-    )
-    reg_network_packets_sent_metric = iotcc.register(network_packets_sent_metric)
-    iotcc.create_relationship(reg_edge_system, reg_network_packets_sent_metric)
-    reg_network_packets_sent_metric.start_collecting()
+        disk_usage_metric = Metric(
+            name="Disk Usage Stats",
+            unit=None,
+            interval=6,
+            aggregation_size=6,
+            sampling_function=read_disk_usage_stats
+        )
+        reg_disk_usage_metric = iotcc.register(disk_usage_metric)
+        iotcc.create_relationship(reg_edge_system, reg_disk_usage_metric)
+        reg_disk_usage_metric.start_collecting()
 
-    # Here we are showing how to create a device object, registering it in IoTCC, and setting properties on it
-    # Since there are no attached devices are as simulating one by considering RAM as separate from the IoT System
-    # The agent makes possible many different data models
-    # arguments:
-    #        device name
-    #        Read or Write
-    #        another Resource in IoTCC of which the should be the child of a parent-child relationship among Resources
-    ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
-    reg_ram_device = iotcc.register(ram_device)
-    iotcc.create_relationship(reg_edge_system, reg_ram_device)
+        network_packets_sent_metric = Metric(
+            name="Network Packets Sent",
+            unit=None,
+            interval=5,
+            sampling_function=read_network_packets_sent
+        )
+        reg_network_packets_sent_metric = iotcc.register(network_packets_sent_metric)
+        iotcc.create_relationship(reg_edge_system, reg_network_packets_sent_metric)
+        reg_network_packets_sent_metric.start_collecting()
 
-    # note that the location of this 'device' is different from the location of the IoTCC. It's not really different
-    # but just an example of how one might create a device different from the IoTCC
-    mem_free_metric = Metric(
-        name="Memory Free",
-        unit=None,
-        interval=10,
-        sampling_function=read_mem_free
-    )
-    reg_mem_free_metric = iotcc.register(mem_free_metric)
-    iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
-    reg_mem_free_metric.start_collecting()
+        # Here we are showing how to create a device object, registering it in IoTCC, and setting properties on it
+        # Since there are no attached devices are as simulating one by considering RAM as separate from the IoT System
+        # The agent makes possible many different data models
+        # arguments:
+        #        device name
+        #        Read or Write
+        #        another Resource in IoTCC of which the should be the child of a parent-child relationship among Resources
+        ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
+        reg_ram_device = iotcc.register(ram_device)
+        iotcc.create_relationship(reg_edge_system, reg_ram_device)
 
-    swap_mem_free_metric = Metric(
-        name="Swap Memory Free",
-        unit=None,
-        interval=8,
-        aggregation_size=5,
-        sampling_function=read_swap_mem_free
-    )
-    reg_swap_mem_free_metric = iotcc.register(swap_mem_free_metric)
-    iotcc.create_relationship(reg_ram_device, reg_swap_mem_free_metric)
-    reg_swap_mem_free_metric.start_collecting()
+        # note that the location of this 'device' is different from the location of the IoTCC. It's not really different
+        # but just an example of how one might create a device different from the IoTCC
+        mem_free_metric = Metric(
+            name="Memory Free",
+            unit=None,
+            interval=10,
+            sampling_function=read_mem_free
+        )
+        reg_mem_free_metric = iotcc.register(mem_free_metric)
+        iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
+        reg_mem_free_metric.start_collecting()
+
+        swap_mem_free_metric = Metric(
+            name="Swap Memory Free",
+            unit=None,
+            interval=8,
+            aggregation_size=5,
+            sampling_function=read_swap_mem_free
+        )
+        reg_swap_mem_free_metric = iotcc.register(swap_mem_free_metric)
+        iotcc.create_relationship(reg_ram_device, reg_swap_mem_free_metric)
+        reg_swap_mem_free_metric.start_collecting()
+
+    except RegistrationFailure:
+        print "Registration to IOTCC failed"

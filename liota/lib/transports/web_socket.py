@@ -84,14 +84,14 @@ class WebSocket():
                 log.debug("Message received while running {0}".format(msg))
                 if msg is "":
                     log.error("Stream Closed")
-                    sys.exit(0)
+                    raise Exception("No message received from the server, please check the connection and the DCC credentials.")
                 log.debug("RX {0}".format(msg))
                 if self.on_receive is not None:
                     self.on_receive(msg)
         except Exception:
             log.exception("Exception on receiving the response from Server, please check the connection and try again.")
             self.close()
-            sys.exit(0) # need to revisit this
+            os._exit(0) # need to revisit this
 
     def send(self, msg):
         request_calls = ['request', 'response']
@@ -111,7 +111,7 @@ class WebSocket():
                         log.info("TX Sending message {0}".format(complete_message))
                         self.ws.send(complete_message)
                         break
-                    except Exception:
+                    except:
                         # Three times retry websocket connection for publishing data
                         log.info("{0} attempt".format(attempts))
                         attempts += 1

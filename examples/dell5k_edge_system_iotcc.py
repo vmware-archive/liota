@@ -92,13 +92,13 @@ if __name__ == '__main__':
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
     # UID/PASS login for now.
     iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-        WebSocketDccComms(url=config['WebSocketUrl']))
-
-    # create a System object encapsulating the particulars of a IoT System
-    # argument is the name of this IoT System
-    edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
+                             WebSocketDccComms(url=config['WebSocketUrl']))
 
     try:
+        # create a System object encapsulating the particulars of a IoT System
+        # argument is the name of this IoT System
+        edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
+
         # resister the IoT System with the IoTCC instance
         # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
         reg_edge_system = iotcc.register(edge_system)
