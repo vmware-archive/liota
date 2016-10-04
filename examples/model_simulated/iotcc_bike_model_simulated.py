@@ -55,16 +55,8 @@ def static_vars(**kwargs):
 
     return decorate
 
-
-from bike_model_simulated import BikeModelSimulated
-
 # create a pint unit registry
 ureg = pint.UnitRegistry()
-
-# initialize and run the physical model (simulated device)
-bike_model = BikeModelSimulated(ureg=ureg)
-bike_model.run()
-
 
 # ---------------------------------------------------------------------------
 # The following functions operate on physical variables represented in
@@ -182,12 +174,12 @@ if __name__ == '__main__':
         reg_edge_system.set_properties(config['SystemPropList'])
 
         # create the device object and register it on IoTCC
-        bike_device = BikeSimulated(name=config['DeviceName'], ureg=ureg)
+        bike_model = BikeSimulated(name=config['DeviceName'], ureg=ureg)
 
-        reg_bike_device = iotcc.register(bike_device)
-        iotcc.create_relationship(reg_edge_system, reg_bike_device)
+        reg_bike_model = iotcc.register(bike_model)
+        iotcc.create_relationship(reg_edge_system, reg_bike_model)
 
-        reg_bike_device.set_properties(config['DevicePropList'])
+        reg_bike_model.set_properties(config['DevicePropList'])
 
         # Publish bike speed metrics to IoTCC
         metric_name_bike_speed = "model.bike.speed"
@@ -198,7 +190,7 @@ if __name__ == '__main__':
             sampling_function=get_bike_speed
         )
         reg_bike_speed = iotcc.register(bike_speed)
-        iotcc.create_relationship(reg_bike_device, reg_bike_speed)
+        iotcc.create_relationship(reg_bike_model, reg_bike_speed)
         reg_bike_speed.start_collecting()
 
         # Publish bike power metrics to IoTCC
@@ -211,7 +203,7 @@ if __name__ == '__main__':
         )
 
         reg_bike_power = iotcc.register(bike_power)
-        iotcc.create_relationship(reg_bike_device, reg_bike_power)
+        iotcc.create_relationship(reg_bike_model, reg_bike_power)
         reg_bike_power.start_collecting()
 
     except RegistrationFailure:

@@ -53,16 +53,8 @@ def static_vars(**kwargs):
 
     return decorate
 
-
-from thermistor_model_simulated import ThermistorModelSimulated
-
 # create a pint unit registry
 ureg = pint.UnitRegistry()
-
-# initialize and run the physical model (simulated device)
-thermistor_model = ThermistorModelSimulated(ureg=ureg)
-thermistor_model.run()
-
 
 # ---------------------------------------------------------------------------
 # The following functions operate on physical variables represented in
@@ -150,12 +142,12 @@ if __name__ == '__main__':
         reg_edge_system.set_properties(config['SystemPropList'])
 
         # create the device object and register it on IoTCC
-        thermistor_device = ThermistorSimulated(name=config['DeviceName'], ureg=ureg)
+        thermistor_model = ThermistorSimulated(name=config['DeviceName'], ureg=ureg)
 
-        reg_thermistor_device = iotcc.register(thermistor_device)
-        iotcc.create_relationship(reg_edge_system, reg_thermistor_device)
+        reg_thermistor_model = iotcc.register(thermistor_model)
+        iotcc.create_relationship(reg_edge_system, reg_thermistor_model)
 
-        reg_thermistor_device.set_properties(config['DevicePropList'])
+        reg_thermistor_model.set_properties(config['DevicePropList'])
 
         metric_name = "model.thermistor.temperature"
         thermistor_temper = Metric(
@@ -165,7 +157,7 @@ if __name__ == '__main__':
             sampling_function=get_thermistor_temperature
         )
         reg_thermistor_temper = iotcc.register(thermistor_temper)
-        iotcc.create_relationship(reg_thermistor_device, reg_thermistor_temper)
+        iotcc.create_relationship(reg_thermistor_model, reg_thermistor_temper)
         reg_thermistor_temper.start_collecting()
 
     except RegistrationFailure:
