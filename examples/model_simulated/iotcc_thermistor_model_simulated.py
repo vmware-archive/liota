@@ -124,7 +124,7 @@ def get_thermistor_temperature():
 
 
 # ---------------------------------------------------------------------------
-# In this example, we demonstrate how simulated data can be directed to vROps,
+# In this example, we demonstrate how simulated data can be directed to IoTCC
 # VMware's data center component using Liota.
 
 if __name__ == '__main__':
