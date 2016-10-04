@@ -156,7 +156,7 @@ def get_bike_power():
 
 
 # ---------------------------------------------------------------------------
-# In this example, we demonstrate how simulated data can be directed to IoTCC,
+# In this example, we demonstrate how simulated data can be directed to IoTCC
 # VMware's data center component using Liota.
 
 if __name__ == '__main__':
