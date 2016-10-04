@@ -23,7 +23,7 @@ These two files are apps using Graphite DCC:
 These two files are apps using IOTCC DCC:
 
 - `iotcc_bike_simulated.py`
-- `vrops_thermistor_simulated.py`
+- `iotcc_thermistor_simulated.py`
 
 In these applications, there are physical computation methods defined, taking
 pint Quantity objects as arguments and returning Quantity objects, too.
