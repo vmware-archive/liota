@@ -56,7 +56,7 @@ class EventsPriorityQueue(PriorityQueue):
         self.first_element_changed = Condition(self.mutex)
 
     def put_and_notify(self, item, block=True, timeout=None):
-        log.info("Adding Event:" + str(item))
+        log.debug("Adding Event:" + str(item))
         self.not_full.acquire()
         try:
             first_element_before_insertion = None
@@ -107,7 +107,7 @@ class EventsPriorityQueue(PriorityQueue):
                     timeout = (
                         first_element.get_next_run_time() - getUTCmillis()
                     ) / 1000.0
-                    log.info("Waiting on acquired first_element_changed LOCK "
+                    log.debug("Waiting on acquired first_element_changed LOCK "
                              + "for: %.2f" % timeout)
                     self.first_element_changed.wait(timeout)
                 else:
@@ -161,12 +161,12 @@ class SendThread(Thread):
         log.info("Started SendThread")
         global send_queue
         while self.flag_alive:
-            log.info("Waiting to send...")
+            log.debug("Waiting to send...")
             metric = send_queue.get()
             if isinstance(metric, SystemExit):
                 log.debug("Got exit signal")
                 break
-            log.info("Got item in send_queue: " + str(metric))
+            log.debug("Got item in send_queue: " + str(metric))
             if not metric.flag_alive:
                 log.debug("Discarded dead metric: %s" % str(metric))
                 continue
@@ -189,7 +189,7 @@ class CollectionThread(Thread):
         global send_queue
         while True:
             metric = collect_queue.get()
-            log.info("Collecting stats for metric: " + str(metric))
+            log.debug("Collecting stats for metric: " + str(metric))
             try:
                 if not metric.flag_alive:
                     log.debug("Discarded dead metric: %s" % str(metric))

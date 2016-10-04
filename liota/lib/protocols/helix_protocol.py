@@ -218,7 +218,7 @@ class SteadyState(State):
         State.__init__(self, previous, proto)
         self.name = "SteadyState"
         self.action_map = {}
-        log.info("Entered steady state")
+        log.debug("Entered steady state")
 
     def trigger_action(self, uuid, value):
         if uuid not in self.action_map:
@@ -229,7 +229,7 @@ class SteadyState(State):
             handler.on_change(value)
 
     def on_receive(self, msg):
-        log.info("IN ON_RECEIVE")
+        log.debug("IN ON_RECEIVE")
         if msg["type"] == "create_or_find_resource_response":
             require_field(msg["body"], "uuid")
             require_field(msg, "transactionID")

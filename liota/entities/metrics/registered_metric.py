@@ -65,7 +65,7 @@ class RegisteredMetric(RegisteredEntity):
 
     def stop_collecting(self):
         self.flag_alive = False
-        log.info("Metric %s is marked for deletion" %
+        log.debug("Metric %s is marked for deletion" %
                  str(self.ref_entity.name))
 
     def add_collected_data(self, collected_data):
