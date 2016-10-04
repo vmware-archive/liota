@@ -69,7 +69,7 @@ class IotControlCenter(DataCenterComponent):
                 self.proto.on_receive(json.loads(msg))
                 log.debug("Processed msg: {0}".format(json_msg["type"]))
                 if json_msg["type"] == "connection_verified":
-                    log.info("Verified")
+                    log.info("Connection verified")
                     exit()
             except Exception:
                 raise
@@ -270,7 +270,7 @@ class IotControlCenter(DataCenterComponent):
             try:
                 with open(iotcc_path, 'w') as f:
                     json.dump(msg, f, sort_keys = True, indent = 4, ensure_ascii=False)
-                    log.info('Initialized ' + iotcc_path)
+                    log.debug('Initialized ' + iotcc_path)
                 f.close()
             except IOError, err:
                 log.error('Could not open {0} file '.format(iotcc_path) + err)

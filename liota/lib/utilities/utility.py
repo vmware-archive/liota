@@ -80,14 +80,14 @@ class systemUUID:
         # uuid, and exactly the same for any instance of liota
         self.liotaNamespace = uuid.uuid5(
             uuid.NAMESPACE_URL, 'https://github.com/vmware/liota')
-        log.info(str('liota namespace uuid: ' + str(self.liotaNamespace)))
+        log.debug(str('liota namespace uuid: ' + str(self.liotaNamespace)))
         # we create a system uuid for the physical system on which this instance is running
         # we hash the interface name with the mac address in getMacAddrIfaceHash to avoid collision of
         # mac addresses across potential different physical interfaces in the
         # IoT space
         systemUUID.__UUID = uuid.uuid5(
             self.liotaNamespace, self._getMacAddrIfaceHash())
-        log.info('system UUID: ' + str(systemUUID.__UUID))
+        log.debug('system UUID: ' + str(systemUUID.__UUID))
 
     def _get_system_uuid(self):
         if systemUUID.__UUID == '':

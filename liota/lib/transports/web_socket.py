@@ -78,7 +78,7 @@ class WebSocket():
 
     def run(self):
         try:
-            log.debug("Stream Opened")
+            log.info("Stream Opened")
             while True:
                 msg = self.ws.recv()
                 log.debug("Message received while running {0}".format(msg))
@@ -96,7 +96,8 @@ class WebSocket():
     def send(self, msg):
         request_calls = ['request', 'response']
         complete_message = json.dumps(msg)
-        log.info("TX Sending message {0}".format(complete_message))
+        log.debug("Sending data to DCC")
+        log.debug("TX Sending message {0}".format(complete_message))
         try:
             self.ws.send(complete_message)
         except:
@@ -105,10 +106,10 @@ class WebSocket():
                 attempts = 1
                 while attempts < 4:
                     try:
-                        log.info("Exception while sending data, applying retry logic.")
+                        log.debug("Exception while sending data, applying retry logic.")
                         self.connect_soc()
                         log.info("Created New Websocket")
-                        log.info("TX Sending message {0}".format(complete_message))
+                        log.debug("TX Sending message {0}".format(complete_message))
                         self.ws.send(complete_message)
                         break
                     except:
