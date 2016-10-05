@@ -205,6 +205,7 @@ if __name__ == '__main__':
     except RegistrationFailure:
         print "Registration to IOTCC failed"
 
+    # Multiple DCC support
     # Sending data to an alternate data center component (e.g. data lake for analytics)
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
