@@ -41,7 +41,7 @@ Liota applications can be broken into small pieces that can be loaded and unload
 
 ## SI Units
 Liota supports SI units and the conversion of the units with help of Pint library which is included in liota package to provide
-developers the capability to use SI units in their code. We have also included the example [graphite_withTemp.py] (https://github.com/vmware/liota/blob/master/example/graphite_withTemp.py)
+developers the capability to use SI units in their code. We have also included the example [simulated_graphite_temp.py] (https://github.com/vmware/liota/blob/master/examples/simulated_graphite_temp.py)
 which uses the library to convert temperature value from Celsius to Fahrenheit and Kelvin. More details on the usage of the Pint library
 and conversion of units can be found at this [link] (https://pint.readthedocs.io/en/0.7.2/index.html).
 
