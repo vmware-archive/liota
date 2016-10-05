@@ -38,6 +38,8 @@ from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
+from liota.dcc_comms.socket_comms import Socket
+from liota.dccs.graphite import Graphite
 
 # getting values from conf file
 config = {}
@@ -83,17 +85,16 @@ def read_network_packets_sent():
     return int(psutil.net_io_counters(pernic=False).packets_sent)
 
 
-def simulated_device():
+def simulated_value():
     return random.randint(0, 20)
 
 
-#---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # In this example, we demonstrate how System health and some simluated data
 # can be directed to two data center components (IoTCC and graphite) using Liota.
 # The program illustrates the ease of use Liota brings to IoT application developers.
 
 if __name__ == '__main__':
-
 
     # create a data center object, IoTCC in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
@@ -101,11 +102,11 @@ if __name__ == '__main__':
     iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
                              WebSocketDccComms(url=config['WebSocketUrl']))
 
-    try:
+    # create a System object encapsulating the particulars of a IoT System
+    # argument is the name of this IoT System
+    edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
 
-        # create a System object encapsulating the particulars of a IoT System
-        # argument is the name of this IoT System
-        edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
+    try:
 
         # resister the IoT System with the IoTCC instance
         # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
@@ -203,3 +204,20 @@ if __name__ == '__main__':
 
     except RegistrationFailure:
         print "Registration to IOTCC failed"
+
+    # Sending data to an alternate data center component (e.g. data lake for analytics)
+    # Graphite is a data center component
+    # Socket is the transport which the agent uses to connect to the graphite instance
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
+    graphite_reg_edge_system = graphite.register(edge_system)
+    simulated_metric = Metric(
+        name="edge.simulated.metric",
+        unit=None,
+        interval=10,
+        aggregation_size=5,
+        sampling_function=simulated_value
+    )
+    reg_simulated_metric = graphite.register(simulated_metric)
+    graphite.create_relationship(graphite_reg_edge_system, reg_simulated_metric)
+    reg_simulated_metric.start_collecting()

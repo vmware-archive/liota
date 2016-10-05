@@ -47,10 +47,10 @@ class Socket(DCCComms):
 
     def _connect(self):
         self.sock = socket.socket()
-        log.debug("Establishing Socket Connection")
+        log.info("Establishing Socket Connection")
         try:
             self.sock.connect((self.ip, self.port))
-            log.debug("Socket Created")
+            log.info("Socket Created")
         except Exception as ex:
             log.exception(
                 "Unable to establish socket connection. Please check the firewall rules and try again.")

@@ -88,7 +88,7 @@ setup(
                   'examples/dell5k_edge_system_graphite.py',
                   'examples/dell5k_edge_system_iotcc.py',
                   'examples/multi_metric_simulated_edge_system_graphite.py',
-                  'examples/dk300_edge_system_iotcc.py',
+                  'examples/dk300_edge_system_iotcc_graphite.py',
                   'examples/sampleProp.conf']),
                 (os.path.abspath(os.sep) + '/../etc/liota/examples/model_simulated',
                  ['examples/model_simulated/graphite_bike_simulated.py',

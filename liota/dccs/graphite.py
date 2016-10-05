@@ -46,6 +46,7 @@ class Graphite(DataCenterComponent):
         )
 
     def register(self, entity_obj):
+        log.info("Registering resource with Graphite DCC {0}".format(entity_obj.name))
         if isinstance(entity_obj, Metric):
             return RegisteredMetric(entity_obj, self, None)
         else:
@@ -68,6 +69,7 @@ class Graphite(DataCenterComponent):
                                            v[1], v[0] / 1000)
         if message == '':
             return
+        log.info ("Publishing values to Graphite DCC")
         log.debug("Formatted message: {0}".format(message))
         return message
 

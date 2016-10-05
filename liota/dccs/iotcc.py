@@ -93,7 +93,7 @@ class IotControlCenter(DataCenterComponent):
             return RegisteredMetric(entity_obj, self, None)
         else:
             # finally will create a RegisteredEntity
-            log.info("Registering resource {0}".format(entity_obj.name))
+            log.info("Registering resource with IoTCC {0}".format(entity_obj.name))
 
             def on_receive_safe(msg):
                 try:
