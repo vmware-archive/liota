@@ -1,0 +1,13 @@
+include README.md
+include requirements.txt
+include BSD_LICENSE.txt
+include BSD_NOTICE.txt
+include example/graphite_simulated.py
+include example/vrops_graphite_dk300_sample.py
+include example/vrops_graphite_DellEdge5K_sample.py
+include example/vrops_simulated.py
+include example/graphite_withTemp.py
+include example/graphite_event_based.py
+include example/sampleProp.conf
+include config/liota.conf
+include config/logging.json
