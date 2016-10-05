@@ -30,51 +30,54 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
-
-from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
+from abc import ABCMeta, abstractmethod
+from liota.entities.entity import Entity
+from liota.dcc_comms.dcc_comms import DCCComms
+from liota.entities.metrics.registered_metric import RegisteredMetric
 
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+class DataCenterComponent:
 
     """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+    Abstract base class for all DCCs.
+    """
+    __metaclass__ = ABCMeta
 
-setup_logging()
-systemUUID()
+    @abstractmethod
+    def __init__(self, comms):
+        if not isinstance(comms, DCCComms):
+            raise TypeError
+        self.comms = comms
+
+    # -----------------------------------------------------------------------
+    # Implement this method in subclasses and do actual registration.
+    #
+    # This method should return a RegisteredEntity if successful, or raise
+    # an exception if failed. Call this method from subclasses for a type
+    # check.
+    #
+
+    @abstractmethod
+    def register(self, entity_obj):
+        if not isinstance(entity_obj, Entity):
+            raise TypeError
+
+    @abstractmethod
+    def create_relationship(self, reg_entity_parent, reg_entity_child):
+        pass
+
+    @abstractmethod
+    def _format_data(self, reg_metric):
+        pass
+
+    def publish(self, reg_metric):
+        if not isinstance(reg_metric, RegisteredMetric):
+            raise TypeError
+        message = self._format_data(reg_metric)
+        self.comms.send(message)
+
+    @abstractmethod
+    def set_properties(self, reg_entity, properties):
+        pass
+
+class RegistrationFailure(Exception): pass

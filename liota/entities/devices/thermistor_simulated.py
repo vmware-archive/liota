@@ -30,51 +30,77 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
-
-from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
+import threading
+import time
+import random
+import pint
+from liota.entities.devices.device import Device
+from liota.lib.utilities.utility import systemUUID
 
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+class ThermistorSimulated(Device):
 
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
+    def __init__(self, name, u=5.0, r0=3000, interval=5, ureg=None):
+        super(ThermistorSimulated, self).__init__(
+            name=name,
+            entity_id=systemUUID().get_uuid(name),
+            entity_type="ThermistorSimulated"
+        )
+
+        self.u = u                  # Total voltage
+        self.r0 = r0                # Reference resistor
+        self.ux = self.u / 2        # Initial voltage on thermistor
+        self.c1 = 1.40e-3
+        self.c2 = 2.37e-4
+        self.c3 = 9.90e-8
+        self.interval = interval
+        self.ureg = None
+        if isinstance(ureg, pint.UnitRegistry):
+            self.ureg = ureg
         else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+            self.ureg = pint.UnitRegistry()
 
-setup_logging()
-systemUUID()
+    def run(self):
+        self.th = threading.Thread(target=self.simulate)
+        self.th.daemon = True
+        self.th.start()
+
+    #-----------------------------------------------------------------------
+    # This method randomly changes some state variables in the model every a
+    # few seconds (as is defined as interval).
+
+    def simulate(self):
+        while True:
+            # Sleep until next cycle
+            time.sleep(self.interval)
+
+            self.ux = min(
+                max(
+                    self.ux +
+                    random.uniform(-0.01, 0.01) * self.interval,
+                    1.5
+                ), 3.5
+            )
+
+    #-----------------------------------------------------------------------
+    # These methods are used to access the state of the simulated physical
+    # object. A typical caller is the sampling method for a metric in a Liota
+    # application.
+
+    def get_u(self):
+        return self.ureg.volt * self.u
+
+    def get_r0(self):
+        return self.ureg.ohm * self.r0
+
+    def get_ux(self):
+        return self.ureg.volt * self.ux
+
+    def get_c1(self):
+        return self.c1 / self.ureg.kelvin
+
+    def get_c2(self):
+        return self.c2 / self.ureg.kelvin
+
+    def get_c3(self):
+        return self.c3 / self.ureg.kelvin

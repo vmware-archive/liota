@@ -30,51 +30,56 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
+import Queue
+import random
+import time
+import thread
+from liota.dcc_comms.socket_comms import Socket
+from liota.dccs.graphite import Graphite
+from liota.entities.metrics.metric import Metric
+from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
 
+comms_channel = Queue.Queue() # channel between device and a udm used for a metric
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+#simulates a device putting data into a comms channel at random intervals
+def simulated_event_device(write_channel):
+    while(True):
+        time.sleep(random.randint(1,10))
+        write_channel.put(random.randint(1,300))
 
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+# starting the simulated device
+thread.start_new_thread(simulated_event_device, (comms_channel,))
 
-setup_logging()
-systemUUID()
+def udm1():
+    return comms_channel.get(block=True)
+
+#---------------------------------------------------------------------------
+# In this example, we demonstrate how an event stream of data can be directed to graphite
+# data center component using Liota by setting sampling_interval_sec parameter to zero.
+
+if __name__ == '__main__':
+
+    edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
+
+    # Sending data to Graphite data center component
+    # Socket is the underlying transport used to connect to the Graphite
+    # instance
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
+    graphite_reg_edge_system = graphite.register(edge_system)
+
+    metric_name = config['MetricName']
+    content_metric = Metric(
+        name=metric_name,
+        unit=None,
+        interval=0,
+        aggregation_size=6,
+        sampling_function=udm1
+    )
+    reg_content_metric = graphite.register(content_metric)
+    graphite.create_relationship(graphite_reg_edge_system, reg_content_metric)
+    reg_content_metric.start_collecting()

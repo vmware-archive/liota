@@ -30,51 +30,54 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
+from liota.core.package_manager import LiotaPackage
+import psutil
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
+dependencies = ["iotcc"]
 
+def read_mem_free():
+    return round((100 - psutil.virtual_memory().percent), 2)
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+class PackageClass(LiotaPackage):
 
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+    def run(self, registry):
+        from liota.entities.devices.simulated_device import SimulatedDevice
+        from liota.entities.metrics.metric import Metric
+        import copy
 
-setup_logging()
-systemUUID()
+        # Acquire resources from registry
+        iotcc = registry.get("iotcc")
+        # Creating a copy of edge_system object to keep original object "clean"
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
+
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
+        # Register device
+        ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
+        reg_ram_device = iotcc.register(ram_device)
+        iotcc.set_properties(reg_ram_device, config['DevicePropList'])
+
+        iotcc.create_relationship(iotcc_edge_system, reg_ram_device)
+
+        # Create metrics
+        self.metrics = []
+
+        mem_free_metric = Metric(
+            name="Memory Free",
+            unit=None,
+            interval=10,
+            sampling_function=read_mem_free
+        )
+        reg_mem_free_metric = iotcc.register(mem_free_metric)
+        iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
+        reg_mem_free_metric.start_collecting()
+        self.metrics.append(reg_mem_free_metric)
+
+        registry.register("reg_ram_device", reg_ram_device)
+
+    def clean_up(self):
+        for metric in self.metrics:
+            metric.stop_collecting()

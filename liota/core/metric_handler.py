@@ -32,12 +32,12 @@
 
 from Queue import Queue, PriorityQueue, Full
 import heapq
-import inspect
 import logging
-from threading import Thread, Condition
+from threading import Thread, Condition, Lock
 from time import time as _time
 
-from liota.utilities.utility import getUTCmillis
+from liota.lib.utilities.utility import getUTCmillis
+
 
 log = logging.getLogger(__name__)
 
@@ -46,19 +46,23 @@ collect_queue = None
 send_queue = None
 event_checker_thread = None
 send_thread = None
+collect_thread_pool = None
+
 
 class EventsPriorityQueue(PriorityQueue):
+
     def __init__(self):
         PriorityQueue.__init__(self)
         self.first_element_changed = Condition(self.mutex)
 
     def put_and_notify(self, item, block=True, timeout=None):
-        log.info("Adding Event:" + str(item))
+        log.debug("Adding Event:" + str(item))
         self.not_full.acquire()
         try:
             first_element_before_insertion = None
             if self._qsize() > 0:
-                first_element_before_insertion = heapq.nsmallest(1, self.queue)[0]
+                first_element_before_insertion = heapq.nsmallest(1, self.queue)[
+                    0]
 
             if self.maxsize > 0:
                 if not block:
@@ -93,53 +97,90 @@ class EventsPriorityQueue(PriorityQueue):
             while isNotReady:
                 if self._qsize() > 0:
                     first_element = heapq.nsmallest(1, self.queue)[0]
-                    timeout = (first_element.get_next_run_time() - getUTCmillis()) / 1000.0
-                    log.info("Waiting on acquired first_element_changed LOCK for: " + str(timeout))
+                    if isinstance(first_element, SystemExit):
+                        first_element = self._get()
+                        break
+                    if not first_element.flag_alive:
+                        log.debug("Early termination of dead metric")
+                        first_element = self._get()
+                        break
+                    timeout = (
+                        first_element.get_next_run_time() - getUTCmillis()
+                    ) / 1000.0
+                    log.debug("Waiting on acquired first_element_changed LOCK "
+                             + "for: %.2f" % timeout)
                     self.first_element_changed.wait(timeout)
                 else:
                     self.first_element_changed.wait()
                     first_element = heapq.nsmallest(1, self.queue)[0]
-                if (first_element.get_next_run_time() - getUTCmillis()) <= 0:
+                if isinstance(first_element, SystemExit):
+                    first_element = self._get()
+                    break
+                if (first_element.get_next_run_time() - getUTCmillis()) <= 0 \
+                        or not first_element.flag_alive:
                     isNotReady = False
                     first_element = self._get()
             return first_element
         finally:
             self.first_element_changed.release()
 
+
 class EventCheckerThread(Thread):
 
-    def __init__(self):
-        Thread.__init__(self)
+    def __init__(self, name=None):
+        Thread.__init__(self, name=name)
+        self.flag_alive = True
         self.start()
 
     def run(self):
         log.info("Started EventCheckerThread")
         global event_ds
         global collect_queue
-        while True:
+        while self.flag_alive:
             log.debug("Waiting for event...")
-            matric = event_ds.get_next_element_when_ready()
-            log.debug("Got event:" + str(matric))
-            collect_queue.put(matric)
+            metric = event_ds.get_next_element_when_ready()
+            if isinstance(metric, SystemExit):
+                log.debug("Got exit signal")
+                break
+            log.debug("Got event:" + str(metric))
+            if not metric.flag_alive:
+                log.debug("Discarded dead metric: %s" % str(metric))
+                continue
+            collect_queue.put(metric)
+        log.info("Thread exits: %s" % str(self.name))
+
 
 class SendThread(Thread):
-    def __init__(self):
-        Thread.__init__(self)
+
+    def __init__(self, name=None):
+        Thread.__init__(self, name=name)
+        self.flag_alive = True
         self.start()
 
     def run(self):
         log.info("Started SendThread")
         global send_queue
-        while True:
-            log.info("Waiting to send...")
-            matric = send_queue.get()
-            log.info("Got item in send_queue:" + str(matric))
-            matric.send_data()
+        while self.flag_alive:
+            log.debug("Waiting to send...")
+            metric = send_queue.get()
+            if isinstance(metric, SystemExit):
+                log.debug("Got exit signal")
+                break
+            log.debug("Got item in send_queue: " + str(metric))
+            if not metric.flag_alive:
+                log.debug("Discarded dead metric: %s" % str(metric))
+                continue
+            metric.send_data()
+        log.info("Thread exits: %s" % str(self.name))
+
 
 class CollectionThread(Thread):
-    def __init__(self):
-        Thread.__init__(self)
+
+    def __init__(self, worker_stat_lock, name=None):
+        Thread.__init__(self, name=name)
         self.daemon = True
+        self.working_obj = None
+        self._worker_stat_lock = worker_stat_lock
         self.start()
 
     def run(self):
@@ -147,24 +188,67 @@ class CollectionThread(Thread):
         global collect_queue
         global send_queue
         while True:
-            matric = collect_queue.get()
-            log.info("Collecting stats for matric:" + str(matric))
+            metric = collect_queue.get()
+            log.debug("Collecting stats for metric: " + str(metric))
             try:
-                matric.collect()
-                matric.set_next_run_time()
-                event_ds.put_and_notify(matric)
-                if matric.is_ready_to_send():
-                    send_queue.put(matric)
-                    matric.reset_aggregation_size()
+                if not metric.flag_alive:
+                    log.debug("Discarded dead metric: %s" % str(metric))
+                    continue
+                with self._worker_stat_lock:
+                    self.working_obj = metric
+                metric.collect()
+                with self._worker_stat_lock:
+                    self.working_obj = None
+                if not metric.flag_alive:
+                    log.debug("Discarded dead metric: %s" % str(metric))
+                    continue
+                metric.set_next_run_time()
+                event_ds.put_and_notify(metric)
+                if metric.is_ready_to_send():
+                    send_queue.put(metric)
+                    metric.reset_aggregation_size()
             except Exception as e:
-                log.error(e)
+                log.error("Error collecting data for metric" + str(metric))
+                raise e
+
 
 class CollectionThreadPool:
+
     def __init__(self, num_threads):
+        self._num_threads = num_threads
+        self._pool = []
+        self._worker_stat_lock = Lock()
+
         log.info("Starting " + str(num_threads) + " for collection")
-        for _ in range(num_threads): CollectionThread()
+        for j in range(num_threads):
+            self._pool.append(CollectionThread(
+                self._worker_stat_lock,
+                name="Collector-%d" % (j + 1)
+            ))
+
+    def get_num_threads(self):
+        return self._num_threads
+
+    def get_stats_working(self):
+        num_working = 0
+        num_alive = 0
+        num_all = 0
+        with self._worker_stat_lock:
+            for tref in self._pool:
+                if not isinstance(tref, Thread):
+                    continue
+                num_all += 1
+                if tref.isAlive():
+                    num_alive += 1
+                if not tref.working_obj is None:
+                    num_working += 1
+        return [num_working,
+                num_alive,
+                num_all,
+                self._num_threads]
 
 is_initialization_done = False
+
 
 def initialize():
     global is_initialization_done
@@ -174,90 +258,37 @@ def initialize():
     else:
         log.debug("Initializing.............")
         global event_ds
-        if event_ds == None:
+        if event_ds is None:
             event_ds = EventsPriorityQueue()
         global event_checker_thread
-        if event_checker_thread == None:
-            event_checker_thread = EventCheckerThread()
+        if event_checker_thread is None:
+            event_checker_thread = EventCheckerThread(
+                name="EventCheckerThread")
         global collect_queue
-        if collect_queue == None:
+        if collect_queue is None:
             collect_queue = Queue()
         global send_queue
-        if send_queue == None:
+        if send_queue is None:
             send_queue = Queue()
         global send_thread
-        if send_thread == None:
-            send_thread = SendThread()
-        pool = CollectionThreadPool(20)  # TODO: Make pool size configurable
+        if send_thread is None:
+            send_thread = SendThread(name="SendThread")
+        global collect_thread_pool
+        # TODO: Make pool size configurable
+        collect_thread_pool = CollectionThreadPool(30)
         is_initialization_done = True
 
-class Metric(object):
 
-    def __init__(self, gw, details, unit, sampling_interval_sec, aggregation_size, sampling_function, data_center_component):
-        self.data_center_component = data_center_component
-        self.gw = gw
-        self.details = details
-        self.unit = unit
-        self.sampling_interval_sec = sampling_interval_sec
-        self.aggregation_size = aggregation_size
-        self.current_aggregation_size = 0
-        self.sampling_function = sampling_function
-        self.values = Queue()
-
-    def __str__(self, *args, **kwargs):
-        return str(self.details) + ":" + str(self.next_run_time)
-
-    def __cmp__(self, other):
-        if other == None:
-            return -1
-        if not isinstance(other, Metric):
-            return -1
-        return cmp(self.next_run_time, other.next_run_time)
-
-    def write_full(self, t, v):
-        self.values.put((t, v))
-
-    def write_map_values(self, v):
-        self.write_full(getUTCmillis(), v)
-
-    def get_next_run_time(self):
-        return self.next_run_time
-
-    def set_next_run_time(self):
-        self.next_run_time = self.next_run_time + (self.sampling_interval_sec * 1000)
-        log.info("Set next run time to:" + str(self.next_run_time))
-
-    def start_collecting(self):
-        # TODO: Add a check to ensure that start_collecting for a metric is called only once by the client code
-        initialize()
-        global event_ds
-        self.next_run_time = getUTCmillis() + (self.sampling_interval_sec * 1000)
-        event_ds.put_and_notify(self)
-
-    def is_ready_to_send(self):
-        log.debug("self.current_aggregation_size:" + str(self.current_aggregation_size))
-        log.debug("self.aggregation_size:" + str(self.aggregation_size))
-        return self.current_aggregation_size >= self.aggregation_size
-
-    def collect(self):
-        log.debug("Collecting values for the resource {0} ".format(self.details))
-        self.args_required = len(inspect.getargspec(self.sampling_function)[0])
-        if self.args_required is not 0:
-            self.cal_value = self.sampling_function(1)
-        else:
-            self.cal_value = self.sampling_function()
-        log.info("{0} Sample Value: {1}".format(self.details, self.cal_value))
-        log.debug("Size of the queue {0}".format(self.values.qsize()))
-        self.write_map_values(self.cal_value)
-        self.current_aggregation_size = self.current_aggregation_size + 1
-
-    def reset_aggregation_size(self):
-        self.current_aggregation_size = 0
-
-    def send_data(self):
-        log.info("Publishing values for the resource {0} ".format(self.details))
-        if not self.values:
-            # No values measured since last report_data
-            return True
-        self.data_center_component.publish(self)
-
+def terminate():
+    global event_checker_thread
+    if event_checker_thread:
+        event_checker_thread.flag_alive = False
+    global send_thread
+    if send_thread:
+        send_thread.flag_alive = False
+    global event_ds
+    if event_ds:
+        event_ds.put_and_notify(SystemExit(), timeout=0)
+    global send_queue
+    if send_queue:
+        send_queue.put(SystemExit())

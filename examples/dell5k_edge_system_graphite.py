@@ -30,51 +30,45 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
+import psutil
+from liota.dcc_comms.socket_comms import Socket
+from liota.dccs.graphite import Graphite
+from liota.entities.metrics.metric import Metric
+from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
 
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+def read_cpu_utilization(sample_duration_sec=1):
+    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
 
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+# ---------------------------------------------------------------------------
+# In this example, we demonstrate how a Dell5000 Gateway metric (e.g.,
+# CPU utilization) can be directed to graphite data center component
+# using Liota. The program illustrates the ease of use Liota brings
+# to IoT application developers.
 
-setup_logging()
-systemUUID()
+if __name__ == '__main__':
+
+    edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
+
+    # Sending data to Graphite data center component
+    # Socket is the underlying transport used to connect to the Graphite
+    # instance
+    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
+    graphite_reg_edge_system = graphite.register(edge_system)
+
+    metric_name = config['MetricName']
+    cpu_utilization = Metric(
+        name=metric_name,
+        unit=None,
+        interval=10,
+        aggregation_size=2,
+        sampling_function=read_cpu_utilization
+    )
+    reg_cpu_utilization = graphite.register(cpu_utilization)
+    graphite.create_relationship(graphite_reg_edge_system, reg_cpu_utilization)
+    reg_cpu_utilization.start_collecting()

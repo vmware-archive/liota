@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
 #  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
@@ -30,51 +31,24 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
+from time import sleep
+import liota.core.package_manager
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
+#---------------------------------------------------------------------------
+# Lines below are subject to change, depending on whether we change the way
+# package manager operates or not. More specifically, how package manager
+# elegantly signal all LIOTA threads to terminate.
+#
+# Remove this comment upon completion of refactoring.
 
-
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
-
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
-
-setup_logging()
-systemUUID()
+try:
+    while not isinstance(
+        liota.core.package_manager.package_thread,
+        liota.core.package_manager.PackageThread
+    ) or liota.core.package_manager.package_thread.isAlive():
+        sleep(1)
+except (KeyboardInterrupt, SystemExit):
+    pass
+finally:
+    if not liota.core.package_manager.package_message_queue is None:
+        liota.core.package_manager.package_message_queue.put(["terminate"])

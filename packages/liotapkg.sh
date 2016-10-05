@@ -1,3 +1,4 @@
+#!/bin/bash
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
 #  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
@@ -30,51 +31,36 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
+liota_config="/etc/liota/conf/liota.conf"
+package_messenger_pipe=""
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
+if [ ! -f "$liota_config" ]; then
+    echo "ERROR: Configuration file not found" >&2
+    exit -1
+fi
 
+while read line # Read configurations from file
+do
+    if echo $line | grep -F = &>/dev/null
+    then
+        varname=$(echo "$line" | sed "s/^\(..*\)\s*\=\s*..*$/\1/")
+        if [ $varname == "pkg_msg_pipe" ]; then
+            value=$(echo "$line" | sed "s/^..*\s*\=\s*\(..*\)$/\1/")
+            package_messenger_pipe=$value
+        fi
+    fi
+done < $liota_config
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+if [ "$package_messenger_pipe" == "" ]; then
+    echo "ERROR: Pipe path not found in configuration file" >&2
+    exit -2
+fi
 
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+if [ ! -p "$package_messenger_pipe" ]; then
+    echo "ERROR: Pipe path is not a named pipe" >&2
+    exit -3
+fi
 
-setup_logging()
-systemUUID()
+# Echo to named pipe
+echo "Pipe file: $package_messenger_pipe" >&2
+echo "$@" > $package_messenger_pipe

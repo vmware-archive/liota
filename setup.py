@@ -31,13 +31,13 @@
 # ----------------------------------------------------------------------------#
 
 import os
-from setuptools import setup, find_packages
 import pip
 from pip.req import parse_requirements
-requirements = [
-    str(requirement.req)
-    for requirement in parse_requirements('requirements.txt', session=pip.download.PipSession())
-]
+from setuptools import setup, find_packages
+
+
+requirements = [str(requirement.req) for requirement in parse_requirements(
+    'requirements.txt', session=pip.download.PipSession())]
 
 # Get the long description from the README file
 with open('README.md') as f:
@@ -45,7 +45,7 @@ with open('README.md') as f:
 
 setup(
     name='liota',
-    version='0.1.2',
+    version='0.2',
     packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
@@ -81,15 +81,42 @@ setup(
     install_requires=requirements,
 
     # 'data_file'(conf_files) at custom location
-    data_files=[(os.path.abspath(os.sep) + '/../etc/liota/example', ['example/graphite_simulated.py',
-                'example/vrops_graphite_dk300_sample.py',
-                'example/vrops_graphite_DellEdge5K_sample.py',
-                'example/vrops_simulated.py',
-                'example/graphite_withTemp.py',
-                'example/graphite_event_based.py',
-                'example/sampleProp.conf']),
-                (os.path.abspath(os.sep) + '/../etc/liota/conf', ['config/liota.conf', 'config/logging.json']),
-                (os.path.abspath(os.sep) + '/../etc/liota', ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
+    data_files=[(os.path.abspath(os.sep) + '/../etc/liota/examples',
+                 ['examples/simulated_edge_system_graphite.py',
+                  'examples/simulated_graphite_event_based.py',
+                  'examples/simulated_graphite_temp.py',
+                  'examples/dell5k_edge_system_graphite.py',
+                  'examples/dell5k_edge_system_iotcc.py',
+                  'examples/multi_metric_simulated_edge_system_graphite.py',
+                  'examples/dk300_edge_system_iotcc_graphite.py',
+                  'examples/sampleProp.conf']),
+                (os.path.abspath(os.sep) + '/../etc/liota/examples/model_simulated',
+                 ['examples/model_simulated/graphite_bike_simulated.py',
+                  'examples/model_simulated/graphite_thermistor_simulated.py',
+                  'examples/model_simulated/iotcc_bike_simulated.py',
+                  'examples/model_simulated/iotcc_thermistor_simulated.py']),
+                (os.path.abspath(os.sep) + '/../etc/liota/packages',
+                 ['packages/graphite.py',
+                  'packages/iotcc.py',
+                  'packages/sampleProp.conf',
+                  'packages/liotad.py',
+                  'packages/liotapkg.sh',
+                  'packages/packages_auto.txt']),
+                (os.path.abspath(os.sep) + '/../etc/liota/packages/examples',
+                 ['packages/examples/bike_simulator.py',
+                  'packages/examples/iotcc_ram.py',
+                  'packages/examples/graphite_bike_simulated.py',
+                  'packages/examples/iotcc_bike_simulated.py',
+                  'packages/examples/graphite_edge_system_stats.py',
+                  'packages/examples/iotcc_edge_system_stats.py',
+                  'packages/examples/thermistor_simulator.py',
+                  'packages/examples/graphite_thermistor_simulated.py',
+                  'packages/examples/iotcc_thermistor_simulated.py']),
+                (os.path.abspath(os.sep) + '/../etc/liota/packages/edge_systems/dell5k',
+                 ['packages/edge_systems/dell5k/edge_system.py']),
+                (os.path.abspath(os.sep) + '/../etc/liota/conf',
+                 ['config/liota.conf', 'config/logging.json']),
+                (os.path.abspath(os.sep) + '/../etc/liota',
+                 ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
                 (os.path.abspath(os.sep) + '/../var/log/liota', [])]
-      )
-
+)
