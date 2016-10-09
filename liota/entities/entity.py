@@ -30,61 +30,23 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
+from abc import ABCMeta, abstractmethod
+from liota.entities.registered_entity import RegisteredEntity
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath
-
-
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+class Entity:
 
     """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+    Abstract base class for all entities.
+    """
+    __metaclass__ = ABCMeta
 
-def mkdir_log(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
-
-setup_logging()
-systemUUID()
+    @abstractmethod
+    def __init__(self, name, parent, entity_id, entity_type):
+        if not isinstance(name, basestring) \
+                or not isinstance(entity_type, basestring) \
+                or not (parent is None or isinstance(parent, Entity)):
+            raise TypeError()
+        self.name = name
+        self.parent = parent
+        self.entity_id = entity_id
+        self.entity_type = entity_type

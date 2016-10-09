@@ -30,61 +30,36 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
-
-from lib.utilities.utility import systemUUID, LiotaConfigPath
+import pint
+from liota.entities.entity import Entity
+from liota.entities.metrics.registered_metric import RegisteredMetric
+from liota.lib.utilities.utility import systemUUID
 
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+class Metric(Entity):
 
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+    def __init__(self, name, parent, entity_type="Metric",
+                 unit=None,
+                 interval=60,
+                 aggregation_size=1,
+                 sampling_function=None
+                 ):
+        if not (unit is None or isinstance(unit, pint.unit._Unit)) \
+                or not (
+            isinstance(interval, int) or isinstance(interval, float)
+        ) \
+                or not isinstance(aggregation_size, int):
+            raise TypeError()
+        super(Metric, self).__init__(
+            name=name,
+            parent=parent,
+            entity_id=systemUUID().get_uuid(name),
+            entity_type=entity_type
+        )
+        self.unit = unit
+        self.interval = interval
+        self.aggregation_size = aggregation_size
+        self.sampling_function = sampling_function
 
-def mkdir_log(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
-
-setup_logging()
-systemUUID()
+    def register(self, dcc_obj, reg_entity_id):
+        return RegisteredMetric(self, dcc_obj, reg_entity_id)

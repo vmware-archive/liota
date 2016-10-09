@@ -29,62 +29,47 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-
-import ConfigParser
-import errno
-import json
 import logging
-import logging.config
-import os
+from liota.dccs.dcc import DataCenterComponent
+from liota.entities.metrics.registered_metric import RegisteredMetric
+from liota.entities.metrics.metric import Metric
+from liota.entities.registered_entity import RegisteredEntity
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath
+
+log = logging.getLogger(__name__)
 
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+class Graphite(DataCenterComponent):
+    def __init__(self, comms):
+        super(Graphite, self).__init__(
+            comms=comms
+        )
 
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
+    def register(self, entity_obj):
+        if isinstance(entity_obj, Metric):
+            return RegisteredMetric(entity_obj, self, None)
         else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+            return RegisteredEntity(entity_obj, self, None)
 
-def mkdir_log(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
+    def _create_relationship(self, entity_parent, entity_child):
+        pass
 
-setup_logging()
-systemUUID()
+    def _format_data(self, reg_metric):
+        met_cnt = reg_metric.values.qsize()
+        message = ''
+        if met_cnt == 0:
+            return
+        for _ in range(met_cnt):
+            v = reg_metric.values.get(block=True)
+            if v is not None:
+                # Graphite expects time in seconds, not milliseconds. Hence,
+                # dividing by 1000
+                message += '%s %s %d\n' % (reg_metric.ref_entity.name,
+                                           v[1], v[0] / 1000)
+        if message == '':
+            return
+        log.debug("Formatted message: {0}".format(message))
+        return message
+
+    def set_properties(self, reg_entity, properties):
+        raise NotImplementedError

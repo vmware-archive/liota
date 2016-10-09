@@ -30,61 +30,26 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import ConfigParser
-import errno
-import json
-import logging
-import logging.config
-import os
+from liota.core.package_manager import LiotaPackage
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath
-
-
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
-
+class PackageClass(LiotaPackage):
     """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
-        try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+    This package contains specifications of Dell5K and properties to import
+    from configuration file.
+    It registers "system" in package manager's resource registry.
+    """
 
-def mkdir_log(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
+    def run(self, registry):
+        from liota.entities.systems.dell5k_system import Dell5KSystem
 
-setup_logging()
-systemUUID()
+        # getting values from conf file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
+        # Initialize gateway
+        system = Dell5KSystem(config['SystemName'])
+        registry.register("system", system)
+
+    def clean_up(self):
+        pass

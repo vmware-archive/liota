@@ -29,62 +29,42 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-
-import ConfigParser
-import errno
-import json
 import logging
-import logging.config
-import os
+import socket
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath
+from liota.dcc_comms.dcc_comms import DCCComms
 
 
-def setup_logging(default_level=logging.WARNING):
-    """Setup logging configuration
+log = logging.getLogger(__name__)
 
-    """
-    log = logging.getLogger(__name__)
-    config = ConfigParser.RawConfigParser()
-    fullPath = LiotaConfigPath().get_liota_fullpath()
-    if fullPath != '':
+
+class Socket(DCCComms):
+
+    def __init__(self, ip, port):
+        self.ip = ip
+        self.port = port
+        self._connect()
+
+    def _connect(self):
+        self.sock = socket.socket()
+        log.debug("Establishing Socket Connection")
         try:
-            if config.read(fullPath) != []:
-                # now use json file for logging settings
-                try:
-                    log_path = config.get('LOG_PATH', 'log_path')
-                    log_cfg = config.get('LOG_CFG', 'json_path')
-                except ConfigParser.ParsingError as err:
-                    log.error('Could not parse log config file')
-            else:
-                raise IOError('Cannot open configuration file ' + fullPath)
-        except IOError as err:
-            log.error('Could not open log config file')
-        mkdir_log(log_path)
-        if os.path.exists(log_cfg):
-            with open(log_cfg, 'rt') as f:
-                config = json.load(f)
-            logging.config.dictConfig(config)
-            log.info('created logger with ' + log_cfg)
-        else:
-            # missing logging.json file
-            logging.basicConfig(level=default_level)
-            log.warn(
-                'logging.json file missing,created default logger with level = ' +
-                str(default_level))
-    else:
-        # missing config file
-        log.warn('liota.conf file missing')
+            self.sock.connect((self.ip, self.port))
+            log.debug("Socket Created")
+        except Exception as ex:
+            log.exception(
+                "Unable to establish socket connection. Please check the firewall rules and try again.")
+            self.sock.close()
+            self.sock = None
+            raise ex
 
-def mkdir_log(path):
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError as exc:  # Python >2.5
-            if exc.errno == errno.EEXIST and os.path.isdir(path):
-                pass
-            else:
-                raise
+    def _disconnect(self):
+        raise NotImplementedError
 
-setup_logging()
-systemUUID()
+    def send(self, message):
+        log.debug("Publishing message:" + str(message))
+        if self.sock is not None:
+            self.sock.sendall(message)
+
+    def receive(self):
+        raise NotImplementedError
