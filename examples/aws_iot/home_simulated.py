@@ -33,7 +33,7 @@
 from liota.dcc_comms.aws_mqtt_dcc_comms import AWSMQTTDccComms
 from liota.dccs.aws_iot import AWSIoT
 from liota.entities.metrics.metric import Metric
-from liota.entities.devices.device import Device
+from liota.entities.devices.simulated_device import SimulatedDevice
 from AWSIoTPythonSDK.MQTTLib import AWSIoTMQTTClient
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 import random
@@ -134,8 +134,8 @@ if __name__ == '__main__':
     #  at topic 'TestGatewayName/CPUUtilization'
     reg_cpu_utilization.start_collecting()
 
-    #  Creating Device
-    dht_sensor = Device("SimulatedDHTSensor", None)
+    #  Creating Simulated Device
+    dht_sensor = SimulatedDevice("SimulatedDHTSensor")
     #  Registering Device and creating Parent-Child relationship
     reg_dht_sensor = aws.register_entity(reg_edge_system, dht_sensor)
     #  Creating Temperature Metric
@@ -168,8 +168,8 @@ if __name__ == '__main__':
     #  at topic 'TestGatewayName/SimulatedDHTSensor/LivingRoomHumidity'
     reg_hum_metric.start_collecting()
 
-    #  Creating Device
-    light_sensor = Device("SimDigLightSensor", None)
+    #  Creating Simulated Device
+    light_sensor = SimulatedDevice("SimDigLightSensor")
     #  Registering Device and creating Parent-Child relationship
     reg_light_sensor = aws.register_entity(reg_edge_system, light_sensor)
 
