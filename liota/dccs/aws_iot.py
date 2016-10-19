@@ -48,16 +48,18 @@ class AWSIoT(DataCenterComponent):
     """
     DCC for AWS IoT platform. AWSMQTTDccComms is used as transport
     """
-    def __init__(self, con, qos=1):
+    def __init__(self, con, qos=1, enclose_metadata=False):
         """
         :param con: AWSMQTTDccComms Object
         :param qos: 0 or 1
+        :param enclose_metadata: Include Gateway, Device and Metric names as part of payload or not
         """
         super(AWSIoT, self).__init__(con)
         if qos in range(0, 2):
             self.qos = qos
         else:
             raise ValueError("QoS must either be 0 or 1")
+        self.enclose_metadata = enclose_metadata
 
     def register_entity(self, parent_entity, child_entity):
         """
@@ -130,7 +132,6 @@ class AWSIoT(DataCenterComponent):
                 return ""
             else:
                 return extract_topic(reg_entity.parent) + reg_entity.ref_entity.name + '/'
-
         return extract_topic(reg_metric.parent) + reg_metric.ref_entity.name
 
     def _format_data(self, reg_metric):
@@ -138,23 +139,31 @@ class AWSIoT(DataCenterComponent):
         :param reg_metric: Registered Metric Object
         :return: Payload in JSON format
         """
-        list = []
+        _list = []
         met_cnt = reg_metric.values.qsize()
         if met_cnt > 0:
             for _ in range(met_cnt):
                 m = reg_metric.values.get(block=True)
                 if m is not None:
-                    list.append(OrderedDict([('value', m[1]), ('timestamp', m[0])]))
+                    _list.append(OrderedDict([('value', m[1]), ('timestamp', m[0])]))
         payload = OrderedDict()
-        payload['metric_data'] = [_ for _ in list]
+        if self.enclose_metadata:
+            _meta_data = self._get_publish_topic(reg_metric).split("/")
+            if len(_meta_data) == 3:
+                payload['gateway_name'] = _meta_data[0]
+                payload['device_name'] = _meta_data[1]
+                payload['metric_name'] = _meta_data[2]
+            else:
+                payload['gateway_name'] = _meta_data[0]
+                payload['metric_name'] = _meta_data[1]
+        payload['metric_data'] = [_ for _ in _list]
         payload['unit'] = parse_unit(reg_metric.ref_entity.unit)[1]
-
         return json.dumps(payload)
 
     def publish(self, reg_metric):
         """
         Publishes message to AWS IoT in JSON format.
-        :param metric: Registered Metric Object
+        :param reg_metric: Registered Metric Object
         :return: None
         """
         log.debug("Publishing to AWS IoT")

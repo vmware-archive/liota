@@ -114,7 +114,8 @@ if __name__ == '__main__':
 
     #  Initializing AWSMQTTDccComms with AWSIoT client object
     #  Connecting to AWS
-    #  Initializing AWS DCC using AWSMQTTDccComms object. QoS is 1 by default
+    #  Initializing AWS DCC using AWSMQTTDccComms object
+    #  QoS is 1 and enclose_metadata is False by default
     aws = AWSIoT(AWSMQTTDccComms(mqtt_client))
     print "Connected to AWS !"
     #  Registering EdgeSystem
