@@ -45,7 +45,7 @@ import pint
 
 # getting values from conf file
 config = {}
-execfile('sampleProp.conf', config)
+execfile('samplePropMqtt.conf', config)
 
 # Create unit registry
 ureg = pint.UnitRegistry()
@@ -69,6 +69,34 @@ def callback_living_room_temp(client, userdata, message):
 def get_value(queue):
     return queue.get(block=True)
 
+
+# MQTT connection setup to record kitchen and living room temperature values
+def mqtt_subscribe():
+    # Create Edge System identity object with all required certificate details
+    # To connect with a TLS enabled MQTT broker
+    edge_system_identity = Identity(config['cacert'], config['certfile'], config['keyfile'], config['mqtt_username'],
+                           config['mqtt_password'])
+
+    # Encapsulate TLS parameters
+    tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
+
+    # Encapsulate QoS related parameters
+    qos_details = QoSDetails(config['inflight'], config['queue_size'], config['retry'])
+
+    # Create MQTT connection object with required params
+    mqtt_conn = MqttDeviceComms(edge_system_identity, tls_conf, qos_details, config['BrokerIP'], config['BrokerPort'], config['keepalive'], True)
+
+    # Subscribe to channel : "temperature/#" with preferred QoS level 0, 1 or 2
+    # Add network loop method loop_start() to remain on the network in order to receive incoming network data
+    mqtt_conn.subscribe(config['MqttChannel'], 2)
+    mqtt_conn.mqtt_client.client.loop_start()
+
+    # Add callback methods for subchannels (can be defined as MqttSubChannel1, MqttSubChannel2)
+    # "temperature/kitchen" and "temperature/living-room"
+    mqtt_conn.mqtt_client.client.message_callback_add(config['MqttSubChannel1'], callback_kitchen_temp)
+    mqtt_conn.mqtt_client.client.message_callback_add(config['MqttSubChannel2'], callback_living_room_temp)
+
+
 # ------------------------------------------------------------------------------------
 # In this example, we demonstrate how data streaming can be done from MQTT channel
 # to IoTCC using LIOTA setting sampling_interval_sec to zero.
@@ -84,29 +112,9 @@ if __name__ == "__main__":
                              WebSocketDccComms(url=config['WebSocketUrl']))
 
     try:
-        # Create Edge System identity object with all required certificate details
-        # To connect with a TLS enabled MQTT broker
-        edge_system_identity = Identity(config['cacert'], config['certfile'], config['keyfile'], config['mqtt_username'],
-                               config['mqtt_password'])
 
-        # Encapsulate TLS parameters
-        tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
-
-        # Encapsulate QoS related parameters
-        qos_details = QoSDetails(config['inflight'], config['queue_size'], config['retry'])
-
-        # Create MQTT connection object with required params
-        mqtt_conn = MqttDeviceComms(edge_system_identity, tls_conf, qos_details, config['BrokerIP'], config['BrokerPort'], 60, True)
-
-        # Subscribe to channel : "temperature/#" with preferred QoS level 0, 1 or 2
-        # Add network loop method loop_start() to remain on the network in order to receive incoming network data
-        mqtt_conn.subscribe(config['MqttChannel'], 2)
-        mqtt_conn.mqtt_client.client.loop_start()
-
-        # Add callback methods for subchannels (can be defined as MqttSubChannel1, MqttSubChannel2)
-        # "temperature/kitchen" and "temperature/living-room"
-        mqtt_conn.mqtt_client.client.message_callback_add(config['MqttSubChannel1'], callback_kitchen_temp)
-        mqtt_conn.mqtt_client.client.message_callback_add(config['MqttSubChannel2'], callback_living_room_temp)
+        # Get kitchen and living room temperature values using MQTT channel
+        mqtt_subscribe()
 
         # Create an Edge System Dk300
         edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
