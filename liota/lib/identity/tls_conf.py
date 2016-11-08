@@ -30,13 +30,19 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-
 import logging
 
 log = logging.getLogger(__name__)
 
-# Encapsulates TLS configurations
 class TLSConf:
+
+    """
+    This class encapsulates TLS options :
+        - cert_required : defines the certificate requirements
+        - tls_version : version of SSL/TLS protocol to be used
+        - cipher : which encryption ciphers are allowed for connection
+    """
+
     def __init__(self, cert_required, tls_version, cipher):
         self.cert_required = cert_required
         self.tls_version = tls_version

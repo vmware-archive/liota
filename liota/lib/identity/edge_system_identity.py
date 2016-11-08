@@ -30,13 +30,19 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-
 import logging
 
 log = logging.getLogger(__name__)
 
-# Encapsulates edge system identity
 class Identity:
+
+    """
+    This class encapsulates identity details of an Edge System :
+        - CA certificate
+        - Client (Edge System) certificate and key file
+        - Username-Password combination when authentication is required
+    """
+
     def __init__(self, cacert, certfile, keyfile, username, password):
         self.cacert = cacert
         self.certfile = certfile
