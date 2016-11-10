@@ -30,25 +30,35 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
+from numbers import Number
+from liota.lib.utilities.utility import getUTCmillis
+from liota.lib.utilities.filters.filter import Filter
 import logging
 
 log = logging.getLogger(__name__)
 
 
-class Filter:
+class WindowedFilter(Filter):
     """
-    Abstract base class for all Filters.
+    Abstract base class for all filters with windowing scheme.
 
-    Filtering can reduce network bandwidth by trimming off data that we are not interested in.  Also, most of the
-    time systems will be working normally.  Sending all those normal data to DCC is not desired most of the time,
-    as there is always storage and processing overhead involved.
+    It keeps track of a configurable time window.  Even if all values has been filtered out at the
+    end of every time window, collected value is returned so that DCC is aware of it.
     """
-    __metaclass__ = ABCMeta
+    def __init__(self, window_size_sec):
+        """
+        :param window_size_sec: Window size in seconds.
+        """
 
-    @abstractmethod
-    def __init__(self):
-        pass
+        if not isinstance(window_size_sec, Number) or window_size_sec < 0:
+            log.error("window_size_sec must be a non negative number")
+            raise ValueError("window_size_sec must be a non negative number")
+        self.window_size_sec = window_size_sec
+        #  To track whether at-least one sample has been passed after filtering within a window
+        self.sample_passed = True
+        self.next_window_time = 0
+        self._set_next_window_time()
 
     @abstractmethod
     def filter(self, v):
@@ -59,3 +69,39 @@ class Filter:
         :return: Filtered value or None
         """
         pass
+
+    def _window(self, collected_value, filtered_value):
+        """
+        Uses filter() to apply appropriate filter logic.
+
+        :param collected_value: Collected value by sampling function.
+        :param filtered_value: Filtered value by sampling function.
+        :return: Filtered value (or) collected value at the end of every time window.
+        """
+        # Next window time has elapsed.
+        if getUTCmillis() >= self.next_window_time:
+            #  At-least one sample has not passed so far during this window.
+            if not self.sample_passed and filtered_value is None:
+                self._set_next_window_time()
+                log.info("Sending collected value for this window.")
+                return collected_value
+
+            # At-least one sample has (or will be) passed by now.
+            else:
+                self._set_next_window_time()
+                return filtered_value  # Could be filtered-value or None
+
+        # Next window time has not elapsed.
+        else:
+            if filtered_value is not None:
+                self.sample_passed = True  # At-least one sample has passed during this window
+            return filtered_value
+
+    def _set_next_window_time(self):
+        """
+        Sets next time-window.
+        :return: None
+        """
+        self.next_window_time = getUTCmillis() + (self.window_size_sec * 1000)
+        log.info("Resetting window")
+        self.sample_passed = False  # Resetting

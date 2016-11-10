@@ -32,15 +32,20 @@
 
 from liota.core.package_manager import LiotaPackage
 from liota.lib.utilities.filters.range_filter import RangeFilter, Type
+from liota.lib.utilities.filters.windowed_filters.windowed_range_filter import WindowedRangeFilter
 import psutil
 
 dependencies = ["iotcc"]
 
 # Filters to filter data at Sampling Functions
-cpu_pro_filter = RangeFilter(Type.CLOSED_REJECT, 40, 60, 60)  # If no of CPU processes <=5 or >=10
-cpu_util_filter = RangeFilter(Type.AT_LEAST, None, 85, 30)  # CPU util >= 85
-disk_usage_filter = RangeFilter(Type.AT_LEAST, None, 80, 60)  # Disk usage >= 80%
-net_usage_filter = RangeFilter(Type.AT_LEAST, None, 1000000, 30)  # Network usage >= 1Mb
+# Simple filters
+cpu_pro_filter = RangeFilter(Type.CLOSED_REJECT, 5, 10)  # If no of CPU processes <=5 or >=10
+cpu_util_filter = RangeFilter(Type.AT_LEAST, None, 85)  # CPU util >= 85
+disk_usage_filter = RangeFilter(Type.AT_LEAST, None, 80)  # Disk usage >= 80%
+
+# Filters with windowing scheme
+net_usage_filter = WindowedRangeFilter(Type.AT_LEAST, None, 1000000, 30)  # Network usage >= 1Mb
+mem_free_filter = WindowedRangeFilter(Type.AT_MOST, 15, None, 60)  # Memory Free <= 15%
 
 #---------------------------------------------------------------------------
 # User defined methods with RangeFilters

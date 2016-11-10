@@ -29,33 +29,3 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-
-from abc import ABCMeta, abstractmethod
-import logging
-
-log = logging.getLogger(__name__)
-
-
-class Filter:
-    """
-    Abstract base class for all Filters.
-
-    Filtering can reduce network bandwidth by trimming off data that we are not interested in.  Also, most of the
-    time systems will be working normally.  Sending all those normal data to DCC is not desired most of the time,
-    as there is always storage and processing overhead involved.
-    """
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def __init__(self):
-        pass
-
-    @abstractmethod
-    def filter(self, v):
-        """
-        Child classes must implement appropriate filtering logic.
-
-        :param v: Collected value by sampling function.
-        :return: Filtered value or None
-        """
-        pass

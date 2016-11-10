@@ -32,7 +32,7 @@
 
 from numbers import Number
 from aenum import UniqueEnum
-from liota.lib.filters.filter import Filter
+from liota.lib.utilities.filters.filter import Filter
 import logging
 
 log = logging.getLogger(__name__)
@@ -55,8 +55,8 @@ class Type(UniqueEnum):
         *  OPEN_CLOSED_REJECT   - (1, 10] values from 2...10 are rejected
 
     ** Filters bounded at one end:
-        *  LESS_THAN    -  values < 10 are accepted
-        *  AT_MOST      -  values <= 10 are accepted
+        *  LESS_THAN    -  values < 1 are accepted
+        *  AT_MOST      -  values <= 1 are accepted
         *  GREATER_THAN -  values > 10 are accepted
         *  AT_LEAST     -  values >= 10 are accepted
     """
@@ -82,29 +82,24 @@ class RangeFilter(Filter):
     A simple lightweight filter, that filters values based on the specified filter type (range).
     """
 
-    def __init__(self, filter_type=None, lower_bound=None, upper_bound=None, window_size_sec=10):
+    def __init__(self, filter_type=None, lower_bound=None, upper_bound=None):
         """
         :param filter_type: Any one type from Filter Enum.
         :param lower_bound: Lower bound
         :param upper_bound: Upper bound
-        :param window_size_sec: Configurable time window for heartbeat
         """
-
         if filter_type not in Type:
             log.error("Unsupported Filter Type.")
             raise ValueError("Unsupported Filter Type.")
-
-        super(RangeFilter, self).__init__(window_size_sec)
 
         self.filter_type = filter_type
         self._validate(lower_bound, upper_bound)
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
-        self._set_next_window_time()
 
     def _validate(self, lower_bound, upper_bound):
         """
-        Validation of lower_bond and upper_bound value for the specified filter_type.
+        Validation of lower_bound and upper_bound value for the specified filter_type.
 
         :param lower_bound: Lower bound
         :param upper_bound: Upper bound
@@ -126,16 +121,15 @@ class RangeFilter(Filter):
             log.error("upper_bound must be a number")
             raise ValueError("upper_bound must be a number")
 
-    def _filter(self, v):
+    def filter(self, v):
         """
         RangeFilter Implementation. Performs filtering based on specified filter_type.
 
-        :param v: value
-        :return: v or None
+        :param v: Collected value
+        :return: Filtered value or None
         """
         result = None
-        log.info("Applying RangeFilter : " + str(self.filter_type))
-
+        log.info("Applying RangeFilter " + str(self.filter_type))
         if not isinstance(v, Number):
             log.warn("Value is not a number. Returning without applying filter")
             return v
@@ -180,8 +174,8 @@ class RangeFilter(Filter):
             result = v
 
         if result is not None:
-            log.info("Value passed by filter")
+            log.info("Value passed by filter : %s" % str(result))
         else:
-            log.info("Value rejected by filter")
+            log.info("Value rejected by filter : %s" % str(v))
 
         return result

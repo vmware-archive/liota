@@ -30,27 +30,31 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from abc import ABCMeta, abstractmethod
+from liota.lib.utilities.filters.range_filter import RangeFilter
+from liota.lib.utilities.filters.windowed_filters.windowed_filter import WindowedFilter
 import logging
 
 log = logging.getLogger(__name__)
 
 
-class Filter:
+class WindowedRangeFilter(RangeFilter, WindowedFilter):
     """
-    Abstract base class for all Filters.
+    RangeFilter with windowing scheme.
 
-    Filtering can reduce network bandwidth by trimming off data that we are not interested in.  Also, most of the
-    time systems will be working normally.  Sending all those normal data to DCC is not desired most of the time,
-    as there is always storage and processing overhead involved.
+    It keeps track of a configurable time window.  Even if all values has been filtered out at the
+    end of every time window, collected value is returned so that DCC is aware of it.
     """
-    __metaclass__ = ABCMeta
 
-    @abstractmethod
-    def __init__(self):
-        pass
+    def __init__(self, filter_type=None, lower_bound=None, upper_bound=None, window_size_sec=10):
+        """
+        :param filter_type: Any one type from Filter Enum of RangeFilter.
+        :param lower_bound: Lower bound
+        :param upper_bound: Upper bound
+        :param window_size_sec: Configurable time window for heartbeat
+        """
+        RangeFilter.__init__(self, filter_type, lower_bound, upper_bound)
+        WindowedFilter.__init__(self, window_size_sec)
 
-    @abstractmethod
     def filter(self, v):
         """
         Child classes must implement appropriate filtering logic.
@@ -58,4 +62,6 @@ class Filter:
         :param v: Collected value by sampling function.
         :return: Filtered value or None
         """
-        pass
+        log.info("Applying WindowedRangeFilter")
+        return self._window(v, super(WindowedRangeFilter, self).filter(v))
+
