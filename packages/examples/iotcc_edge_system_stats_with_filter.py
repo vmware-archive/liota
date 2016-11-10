@@ -45,7 +45,6 @@ disk_usage_filter = RangeFilter(Type.AT_LEAST, None, 80)  # Disk usage >= 80%
 
 # Filters with windowing scheme
 net_usage_filter = WindowedRangeFilter(Type.AT_LEAST, None, 1000000, 30)  # Network usage >= 1Mb
-mem_free_filter = WindowedRangeFilter(Type.AT_MOST, 15, None, 60)  # Memory Free <= 15%
 
 #---------------------------------------------------------------------------
 # User defined methods with RangeFilters
