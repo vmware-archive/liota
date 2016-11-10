@@ -64,4 +64,3 @@ class WindowedRangeFilter(RangeFilter, WindowedFilter):
         """
         log.info("Applying WindowedRangeFilter")
         return self._window(v, super(WindowedRangeFilter, self).filter(v))
-
