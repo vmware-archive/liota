@@ -56,15 +56,32 @@ It requires a Python 2.7 environment already installed.
 
 
 ## Liota.conf
-Right now there is only one item in the liota.conf, where to find a file called logging.json which holds the dafault initialization parameters for logging. When initializing, liota looks in the current working directory, '.', the user's home directory '~', a LIOTA_CONF environment variable and finally the default location for every installation: /etc/liota/conf for liota.conf.
+Right now there is only one item in the liota.conf, where to find a file called logging.json which holds the 
+* default initialization parameters for logging. 
+* When initializing, liota looks in the current working directory, '.', the user's home directory '~', a LIOTA_CONF environment variable and 
+* finally the default location for every installation: /etc/liota/conf for liota.conf.
 
-Here is the default, v0.7, liota.conf file
+Here is the default liota.conf file:
 
 ```bash
 [LOG_CFG]
 json_path = /etc/liota/conf/logging.json
+
+[LOG_PATH]
+log_path = /var/log/liota
+
+[UUID_PATH]
+uuid_path = /etc/liota/conf/uuid.ini
+
+[IOTCC_PATH]
+iotcc_path = /etc/liota/conf/iotcc.json
+
+[PKG_CFG]
+pkg_path = /etc/liota/packages
+pkg_msg_pipe = /var/tmp/liota/package_messenger.fifo
+pkg_list = /etc/liota/packages/packages_auto.txt
 ```
-Feel free to modify liota.conf and loggin.json as appropriate for your testing.
+Feel free to modify [liota.conf] (https://github.com/vmware/liota/blob/master/config/liota.conf) and [logging.json] (https://github.com/vmware/liota/blob/master/config/logging.json) as appropriate for your testing.
 
 
 ## Examples
