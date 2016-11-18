@@ -77,9 +77,6 @@ uuid_path = /etc/liota/conf/uuid.ini
 [IOTCC_PATH]
 iotcc_path = /etc/liota/conf/iotcc.json
 
-[CORE_CFG]
-collect_thread_pool_size = 30
-
 [PKG_CFG]
 pkg_path = /etc/liota/packages
 pkg_msg_pipe = /var/tmp/liota/package_messenger.fifo
