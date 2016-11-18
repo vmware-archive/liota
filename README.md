@@ -77,6 +77,9 @@ uuid_path = /etc/liota/conf/uuid.ini
 [IOTCC_PATH]
 iotcc_path = /etc/liota/conf/iotcc.json
 
+[CORE_CFG]
+collect_thread_pool_size = 30
+
 [PKG_CFG]
 pkg_path = /etc/liota/packages
 pkg_msg_pipe = /var/tmp/liota/package_messenger.fifo
@@ -104,7 +107,7 @@ GraphitePort = <typically 2003> # You can test easily by sending directly to car
 
 and execute
 ```bash
-  $ sudo nohup python graphite_simulated.py &
+  $ sudo nohup python simulated_graphite_event_based.py &
 ```
 
 If you would like to test against an instance of Project Ice please send an email to us at:
