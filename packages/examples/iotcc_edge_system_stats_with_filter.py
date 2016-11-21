@@ -30,10 +30,10 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+import psutil
 from liota.core.package_manager import LiotaPackage
 from liota.lib.utilities.filters.range_filter import RangeFilter, Type
 from liota.lib.utilities.filters.windowed_filters.windowed_range_filter import WindowedRangeFilter
-import psutil
 
 dependencies = ["iotcc"]
 

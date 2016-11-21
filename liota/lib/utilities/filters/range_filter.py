@@ -30,10 +30,10 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+import logging
 from numbers import Number
 from aenum import UniqueEnum
 from liota.lib.utilities.filters.filter import Filter
-import logging
 
 log = logging.getLogger(__name__)
 

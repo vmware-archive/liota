@@ -32,9 +32,10 @@
 
 from abc import abstractmethod
 from numbers import Number
+import logging
 from liota.lib.utilities.utility import getUTCmillis
 from liota.lib.utilities.filters.filter import Filter
-import logging
+
 
 log = logging.getLogger(__name__)
 

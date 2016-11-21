@@ -30,9 +30,9 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+import logging
 from liota.lib.utilities.filters.range_filter import RangeFilter
 from liota.lib.utilities.filters.windowed_filters.windowed_filter import WindowedFilter
-import logging
 
 log = logging.getLogger(__name__)
 
