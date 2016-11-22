@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import psutil
+
 from liota.core.package_manager import LiotaPackage
 from liota.lib.utilities.filters.range_filter import RangeFilter, Type
 from liota.lib.utilities.filters.windowed_filters.windowed_range_filter import WindowedRangeFilter
@@ -46,7 +47,8 @@ disk_usage_filter = RangeFilter(Type.AT_LEAST, None, 80)  # Disk usage >= 80%
 # Filters with windowing scheme
 net_usage_filter = WindowedRangeFilter(Type.AT_LEAST, None, 1000000, 30)  # Network usage >= 1Mb
 
-#---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # User defined methods with RangeFilters
 
 
@@ -73,7 +75,6 @@ def read_network_bytes_received():
 
 
 class PackageClass(LiotaPackage):
-
     def run(self, registry):
         import copy
         from liota.entities.metrics.metric import Metric
@@ -91,10 +92,10 @@ class PackageClass(LiotaPackage):
         self.metrics = []
         metric_name = "CPU Utilization"
         metric_cpu_utilization = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_cpu_utilization
-                         )
+                                        unit=None, interval=5,
+                                        aggregation_size=1,
+                                        sampling_function=read_cpu_utilization
+                                        )
         reg_metric_cpu_utilization = iotcc.register(metric_cpu_utilization)
         iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_utilization)
         reg_metric_cpu_utilization.start_collecting()
@@ -102,10 +103,10 @@ class PackageClass(LiotaPackage):
 
         metric_name = "CPU Process"
         metric_cpu_procs = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_cpu_procs
-                         )
+                                  unit=None, interval=5,
+                                  aggregation_size=1,
+                                  sampling_function=read_cpu_procs
+                                  )
         reg_metric_cpu_procs = iotcc.register(metric_cpu_procs)
         iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_procs)
         reg_metric_cpu_procs.start_collecting()
@@ -113,10 +114,10 @@ class PackageClass(LiotaPackage):
 
         metric_name = "Disk Usage Stats"
         metric_disk_usage_stats = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_disk_usage_stats
-                         )
+                                         unit=None, interval=5,
+                                         aggregation_size=1,
+                                         sampling_function=read_disk_usage_stats
+                                         )
         reg_metric_disk_usage_stats = iotcc.register(metric_disk_usage_stats)
         iotcc.create_relationship(iotcc_edge_system, reg_metric_disk_usage_stats)
         reg_metric_disk_usage_stats.start_collecting()
@@ -124,10 +125,10 @@ class PackageClass(LiotaPackage):
 
         metric_name = "Network Bytes Received"
         metric_network_bytes_received = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_network_bytes_received
-                         )
+                                               unit=None, interval=5,
+                                               aggregation_size=1,
+                                               sampling_function=read_network_bytes_received
+                                               )
         reg_metric_network_bytes_received = iotcc.register(metric_network_bytes_received)
         iotcc.create_relationship(iotcc_edge_system, reg_metric_network_bytes_received)
         reg_metric_network_bytes_received.start_collecting()

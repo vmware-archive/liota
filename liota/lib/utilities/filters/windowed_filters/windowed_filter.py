@@ -33,9 +33,9 @@
 from abc import abstractmethod
 from numbers import Number
 import logging
+
 from liota.lib.utilities.utility import getUTCmillis
 from liota.lib.utilities.filters.filter import Filter
-
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +47,7 @@ class WindowedFilter(Filter):
     It keeps track of a configurable time window.  Even if all values has been filtered out at the
     end of every time window, collected value is returned so that DCC is aware of it.
     """
+
     def __init__(self, window_size_sec):
         """
         :param window_size_sec: Window size in seconds.

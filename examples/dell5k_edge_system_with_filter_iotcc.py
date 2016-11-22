@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import psutil
+
 from liota.dccs.iotcc import IotControlCenter
 from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
@@ -43,7 +44,6 @@ from liota.lib.utilities.filters.windowed_filters.windowed_range_filter import W
 # getting values from conf file
 config = {}
 execfile('sampleProp.conf', config)
-
 
 # some standard metrics for Linux systems
 # agent classes for different IoT system
@@ -67,7 +67,8 @@ disk_usage_filter = RangeFilter(Type.AT_LEAST, None, 80)  # Disk usage >= 80%
 net_usage_filter = WindowedRangeFilter(Type.AT_LEAST, None, 1000000, 30)  # Network usage >= 1Mb
 mem_free_filter = WindowedRangeFilter(Type.AT_MOST, 15, None, 60)  # Memory Free <= 15%
 
-#---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # User defined methods with RangeFilters
 
 
@@ -96,13 +97,13 @@ def read_network_bytes_received():
 def read_mem_free():
     return mem_free_filter.filter(round((100 - psutil.virtual_memory().percent), 2))
 
-#---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # In this example, we demonstrate how System health and some simluated data
 # can be directed to two data center components (IoTCC and graphite) using Liota.
 # The program illustrates the ease of use Liota brings to IoT application developers.
 
 if __name__ == '__main__':
-
 
     # create a data center object, IoTCC in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc

@@ -32,7 +32,9 @@
 
 import logging
 from numbers import Number
+
 from aenum import UniqueEnum
+
 from liota.lib.utilities.filters.filter import Filter
 
 log = logging.getLogger(__name__)
@@ -134,7 +136,7 @@ class RangeFilter(Filter):
             log.warn("Value is not a number. Returning without applying filter")
             return v
 
-        #  Accept filters - bounded at both ends
+        # Accept filters - bounded at both ends
         elif self.filter_type is Type.CLOSED and (self.lower_bound <= v <= self.upper_bound):
             result = v
 

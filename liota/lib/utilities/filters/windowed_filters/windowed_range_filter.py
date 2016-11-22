@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import logging
+
 from liota.lib.utilities.filters.range_filter import RangeFilter
 from liota.lib.utilities.filters.windowed_filters.windowed_filter import WindowedFilter
 
