@@ -29,10 +29,12 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
 import logging
 import os
-import paho.mqtt.client as paho
 import ssl
+
+import paho.mqtt.client as paho
 
 log = logging.getLogger(__name__)
 
@@ -149,6 +151,9 @@ class Mqtt():
         # Connect with MQTT Broker
         self.client.connect(host=self.url, port=self.port, keepalive= self.keepalive)
 
+        # Start network loop to process incoming and outgoing network data
+        self.client.loop_start()
+
     # Publish Method
     def publish(self, topic, message, qos, retain = False):
         try:
@@ -159,9 +164,10 @@ class Mqtt():
             raise e
 
     # Subscribe Method
-    def subscribe(self, topic, qos):
+    def subscribe(self, topic, qos, callback):
         try:
             subscribe_response = self.client.subscribe(topic, qos)
+            self.client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
         except ValueError as e:
             log.error("Error Ocuured: " + str(e))
@@ -169,6 +175,8 @@ class Mqtt():
 
     # Disconnect Method
     def disconnect(self):
+        # Stop network loop and disconnect
+        self.client.loop_stop()
         self.client.disconnect()
 
 # This class encapsulates configurations parameter related to Quality of Service

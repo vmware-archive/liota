@@ -29,10 +29,11 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
 import logging
 
-from liota.lib.transports.mqtt import Mqtt
 from liota.dcc_comms.dcc_comms import DCCComms
+from liota.lib.transports.mqtt import Mqtt
 
 log = logging.getLogger(__name__)
 
@@ -63,8 +64,8 @@ class MqttDccComms(DCCComms):
         self.mqtt_client.publish(topic, message, qos, retain)
 
     # Subscribe Method
-    def subscribe(self, topic, qos):
-        self.mqtt_client.subscribe(topic, qos)
+    def subscribe(self, topic, qos, callback):
+        self.mqtt_client.subscribe(topic, qos, callback)
 
     def send(self, message):
         raise NotImplementedError
