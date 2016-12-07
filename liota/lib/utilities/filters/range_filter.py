@@ -84,7 +84,7 @@ class RangeFilter(Filter):
     A simple lightweight filter, that filters values based on the specified filter type (range).
     """
 
-    def __init__(self, filter_type=None, lower_bound=None, upper_bound=None):
+    def __init__(self, filter_type, lower_bound=None, upper_bound=None):
         """
         :param filter_type: Any one type from Filter Enum.
         :param lower_bound: Lower bound

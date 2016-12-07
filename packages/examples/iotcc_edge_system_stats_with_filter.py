@@ -34,7 +34,7 @@ import psutil
 
 from liota.core.package_manager import LiotaPackage
 from liota.lib.utilities.filters.range_filter import RangeFilter, Type
-from liota.lib.utilities.filters.windowed_filters.windowed_range_filter import WindowedRangeFilter
+from liota.lib.utilities.filters.windowing_scheme.windowing_scheme import WindowingScheme
 
 dependencies = ["iotcc"]
 
@@ -43,9 +43,10 @@ dependencies = ["iotcc"]
 cpu_pro_filter = RangeFilter(Type.CLOSED_REJECT, 5, 10)  # If no of CPU processes <=5 or >=10
 cpu_util_filter = RangeFilter(Type.AT_LEAST, None, 85)  # CPU util >= 85
 disk_usage_filter = RangeFilter(Type.AT_LEAST, None, 80)  # Disk usage >= 80%
+net_usage_filter = RangeFilter(Type.AT_LEAST, None, 1000000)  # Network usage >= 1Mb
 
 # Filters with windowing scheme
-net_usage_filter = WindowedRangeFilter(Type.AT_LEAST, None, 1000000, 30)  # Network usage >= 1Mb
+net_usage_filter_with_window = WindowingScheme(net_usage_filter, 30)
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +72,7 @@ def read_disk_usage_stats():
 
 
 def read_network_bytes_received():
-    return net_usage_filter.filter(round(psutil.net_io_counters(pernic=False).bytes_recv, 2))
+    return net_usage_filter_with_window.filter(round(psutil.net_io_counters(pernic=False).bytes_recv, 2))
 
 
 class PackageClass(LiotaPackage):
