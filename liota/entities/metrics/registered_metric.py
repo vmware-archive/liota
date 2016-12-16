@@ -104,11 +104,13 @@ class RegisteredMetric(RegisteredEntity):
             self.collected_data = self.ref_entity.sampling_function(1)
         else:
             self.collected_data = self.ref_entity.sampling_function()
-        log.info("{0} Sample Value: {1}".format(
-            self.ref_entity.name, self.collected_data))
         log.debug("Size of the queue {0}".format(self.values.qsize()))
-        no_of_values_added = self.add_collected_data(self.collected_data)
-        self.current_aggregation_size = self.current_aggregation_size + no_of_values_added
+        #  Sampling function might return 'None' because of filtering
+        if self.collected_data is not None:
+            log.info("{0} Sample Value: {1}".format(
+                self.ref_entity.name, self.collected_data))
+            no_of_values_added = self.add_collected_data(self.collected_data)
+            self.current_aggregation_size = self.current_aggregation_size + no_of_values_added
 
     def reset_aggregation_size(self):
         self.current_aggregation_size = 0
