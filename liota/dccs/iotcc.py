@@ -252,7 +252,7 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 	
-	iotcc_path = read_liota_config('IOTCC_PATH', 'iotcc_path', 0)
+	iotcc_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
         path = os.path.dirname(iotcc_path)
         mkdir_log(path)
         try:
@@ -289,7 +289,7 @@ class IotControlCenter(DataCenterComponent):
             f.close()
 
     def store_edge_system_uuid(self, entity_name, reg_entity_id):
-	uuid_path = read_liota_config('UUID_PATH', 'uuid_path', 0)
+	uuid_path = read_liota_config('UUID_PATH', 'uuid_path')
         uuid_config = ConfigParser.RawConfigParser()
         uuid_config.optionxform = str
         uuid_config.add_section('GATEWAY')

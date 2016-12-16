@@ -79,10 +79,10 @@ package_messenger_pipe = None
 
 # Parse Liota configuration file
 package_path = os.path.abspath(
-    read_liota_config('PKG_CFG', 'pkg_path', 0)
+    read_liota_config('PKG_CFG', 'pkg_path')
 )
 package_messenger_pipe = os.path.abspath(
-    read_liota_config('PKG_CFG', 'pkg_msg_pipe', 0)
+    read_liota_config('PKG_CFG', 'pkg_msg_pipe')
 )
 assert(isinstance(package_path, basestring))
 assert(isinstance(package_messenger_pipe, basestring))
@@ -92,7 +92,7 @@ package_startup_list = []
 
 # Parse packages to load at start-up
 package_startup_list_path = os.path.abspath(
-    read_liota_config('PKG_CFG', 'pkg_list', 0)
+    read_liota_config('PKG_CFG', 'pkg_list')
 )
 
 class ResourceRegistryPerPackage:
