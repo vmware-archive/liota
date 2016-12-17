@@ -33,42 +33,57 @@
 import logging
 
 from liota.dcc_comms.dcc_comms import DCCComms
-from liota.lib.transports.mqtt import Mqtt
+from liota.lib.transports.mqtt import Mqtt, MqttMessagingAttributes
 
 log = logging.getLogger(__name__)
 
 
 class MqttDccComms(DCCComms):
 
-    def __init__(self, edge_system_identity, tls_details, qos_details, url, port, keepalive = 60, enable_authentication = True):
+    def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id=None, clean_session=False,
+                 mqtt_mess_attr=None, keep_alive=60, enable_authentication=False):
         self.edge_system_identity = edge_system_identity
+
+        if mqtt_mess_attr is None:
+            #  pub-topic and sub-topic will be auto-generated
+            self.mess_attr = MqttMessagingAttributes(edge_system_identity.edge_system_name)
+        elif isinstance(mqtt_mess_attr, MqttMessagingAttributes):
+            self.mess_attr = mqtt_mess_attr
+        else:
+            raise TypeError("mqtt_mess_attr should either be None or of type MqttMessagingAttributes")
+
         self.tls_details = tls_details
         self.url = url
         self.port = port
-        self.keepalive = keepalive
+        self.client_id = client_id
+        self.clean_session = clean_session
+        self.keep_alive = keep_alive
         self.qos_details = qos_details
         self.enable_authentication = enable_authentication
         self._connect()
 
     # Connect with MQTT broker
     def _connect(self):
-        self.mqtt_client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
-                                self.keepalive, self.enable_authentication)
+        self.client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
+                           self.client_id, self.clean_session, self.keep_alive, self.enable_authentication)
 
     # Disconnect method
     def _disconnect(self):
-        self.mqtt_client.disconnect()
-
-    # Publish Method
-    def publish(self, topic, message, qos, retain = False):
-        self.mqtt_client.publish(topic, message, qos, retain)
+        self.client.disconnect()
 
     # Subscribe Method
-    def subscribe(self, topic, qos, callback):
-        self.mqtt_client.subscribe(topic, qos, callback)
+    def subscribe(self, mess_attr=None):
+        if mess_attr:
+            self.client.subscribe(mess_attr.sub_topic, mess_attr.sub_qos, mess_attr.sub_callback)
+        else:
+            self.client.subscribe(self.mess_attr.sub_topic, self.mess_attr.sub_qos, self.mess_attr.sub_callback)
 
-    def send(self, message):
-        raise NotImplementedError
+    def send(self, message, mess_attr=None):
+        if mess_attr:
+            self.client.publish(mess_attr.pub_topic, message, mess_attr.pub_qos, mess_attr.pub_retain)
+        else:
+            self.client.publish(self.mess_attr.pub_topic, message, self.mess_attr.pub_qos,
+                                self.mess_attr.pub_retain)
 
     def receive(self):
         raise NotImplementedError

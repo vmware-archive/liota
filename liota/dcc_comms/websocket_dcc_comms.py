@@ -50,7 +50,7 @@ class WebSocketDccComms(DCCComms):
     def _disconnect(self):
         raise NotImplementedError
 
-    def send(self, message):
+    def send(self, message, mess_attr=None):
         self.wss.send(message)
 
     def receive(self):

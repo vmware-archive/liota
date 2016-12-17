@@ -61,7 +61,7 @@ class Socket(DCCComms):
     def _disconnect(self):
         raise NotImplementedError
 
-    def send(self, message):
+    def send(self, message, mess_attr=None):
         log.debug("Publishing message:" + str(message))
         if self.sock is not None:
             self.sock.sendall(message)
