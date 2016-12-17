@@ -402,7 +402,3 @@ class MqttMessagingAttributes:
         self.sub_qos = sub_qos
         self.pub_retain = pub_retain
         self.sub_callback = sub_callback
-
-
-
-

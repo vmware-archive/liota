@@ -217,4 +217,3 @@ if __name__ == '__main__':
     reg_light_metric.mess_attr = MqttMessagingAttributes(pub_topic='home/living-room/light')
     #  Publishing Registered Light Metric to AWS
     reg_light_metric.start_collecting()
-

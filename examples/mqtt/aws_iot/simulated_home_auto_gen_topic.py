@@ -208,4 +208,3 @@ if __name__ == '__main__':
     aws.create_relationship(reg_light_sensor, reg_light_metric)
     #  Publishing Registered Light Metric to AWS
     reg_light_metric.start_collecting()
-

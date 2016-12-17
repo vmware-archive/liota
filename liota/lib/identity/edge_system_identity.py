@@ -66,10 +66,10 @@ class Identity:
         if (cert_file is None or key_file is None) and (username is None or password is None):
             raise ValueError("Either cert_file and key_file path or username and password must be provided")
 
+        # NOTE:  Only EdgeSystem's name is stored here.
         self.edge_system_name = edge_system.name
         self.ca_cert = ca_cert
         self.cert_file = cert_file
         self.key_file = key_file
         self.username = username
         self.password = password
-
