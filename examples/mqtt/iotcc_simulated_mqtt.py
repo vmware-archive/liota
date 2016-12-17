@@ -76,17 +76,17 @@ def get_value(queue):
 def mqtt_subscribe():
     # Create Edge System identity object with all required certificate details
     # To connect with a TLS enabled MQTT broker
-    edge_system_identity = Identity(config['cacert'], config['certfile'], config['keyfile'], config['mqtt_username'],
+    edge_system_identity = Identity(config['ca_cert'], config['cert_file'], config['key_file'], config['mqtt_username'],
                            config['mqtt_password'])
 
     # Encapsulate TLS parameters
     tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
 
     # Encapsulate QoS related parameters
-    qos_details = QoSDetails(config['inflight'], config['queue_size'], config['retry'])
+    qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
     # Create MQTT connection object with required params
-    mqtt_conn = MqttDeviceComms(edge_system_identity, tls_conf, qos_details, config['BrokerIP'], config['BrokerPort'], config['keepalive'], True)
+    mqtt_conn = MqttDeviceComms(edge_system_identity, tls_conf, qos_details, config['BrokerIP'], config['BrokerPort'], config['keep_alive'], True)
 
     # Subscribe to channels : "temperature/kitchen" and "temperature/living-room" with preferred QoS level 0, 1 or 2
     # Provide callback function as a parameter for corresponding channel
