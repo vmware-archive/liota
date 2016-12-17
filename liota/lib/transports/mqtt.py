@@ -36,6 +36,9 @@ import ssl
 
 import paho.mqtt.client as paho
 
+from liota.lib.utilities.utility import systemUUID
+
+
 log = logging.getLogger(__name__)
 
 
@@ -59,18 +62,30 @@ class Mqtt():
         if rc != 0:
             raise ValueError("Error: " + paho.connack_string(rc))
         else:
-            log.debug("Connected with result code " + str(rc) + " : " + paho.connack_string(rc))
+            log.info("Connected with result code " + str(rc) + " : " + paho.connack_string(rc))
 
     # Initialization
-    def __init__(self, edge_system_identity, tls_details, qos_details, url, port, keepalive = 60, enable_authentication = True):
+    def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
+                 keep_alive=60, enable_authentication=False):
         self.edge_system_identity = edge_system_identity
         self.tls_details = tls_details
         self.url = url
         self.port = port
-        self.keepalive = keepalive
+        self.keep_alive = keep_alive
         self.qos_details = qos_details
         self.enable_authentication = enable_authentication
-        self.client = paho.Client()
+        if clean_session:
+            # If user passes client_id, it'll be used.  Otherwise, it is left to the underlying paho
+            # to generate random client_id
+            self.client = paho.Client(client_id, clean_session=True)
+        else:
+            #  client_id given by user
+            if client_id is not None and (client_id != ""):
+                self.client = paho.Client(client_id, clean_session=False)
+            else:
+                #  local-uuid of the gateway will be the client name
+                self.client = paho.Client(client_id=systemUUID().get_uuid(edge_system_identity.edge_system_name),
+                                          clean_session=False)
         self.client.on_message = self.on_message
         self.client.on_publish = self.on_publish
         self.client.on_subscribe = self.on_subscribe
@@ -83,15 +98,15 @@ class Mqtt():
         if self.tls_details:
 
             # Validate CA certificate path
-            if self.edge_system_identity.cacert:
-                if not(os.path.exists(self.edge_system_identity.cacert)):
+            if self.edge_system_identity.ca_cert:
+                if not(os.path.exists(self.edge_system_identity.ca_cert)):
                     raise ValueError("Error : Wrong CA certificate path.")
             else:
                 raise ValueError("Error : CA certificate path is missing")
 
             # Validate client certificate path
-            if self.edge_system_identity.certfile:
-                if os.path.exists(self.edge_system_identity.certfile):
+            if self.edge_system_identity.cert_file:
+                if os.path.exists(self.edge_system_identity.cert_file):
                     client_cert_available = True
                 else:
                     raise ValueError("Error : Wrong client certificate path.")
@@ -99,14 +114,13 @@ class Mqtt():
                 client_cert_available = False
 
             # Validate client key file path
-            if self.edge_system_identity.keyfile:
-                if os.path.exists(self.edge_system_identity.keyfile):
+            if self.edge_system_identity.key_file:
+                if os.path.exists(self.edge_system_identity.key_file):
                     client_key_available = True
                 else:
                     raise ValueError("Error : Wrong client key path.")
             else:
                 client_key_available = False
-
 
             '''
                 Multiple conditions for certificate validations
@@ -117,20 +131,23 @@ class Mqtt():
             '''
 
             if client_cert_available and client_key_available:
-                log.debug("Certificates : ", self.edge_system_identity.cacert, self.edge_system_identity.certfile, self.edge_system_identity.keyfile)
+                log.debug("Certificates : ", self.edge_system_identity.ca_cert, self.edge_system_identity.cert_file,
+                          self.edge_system_identity.key_file)
 
-                self.client.tls_set(self.edge_system_identity.cacert, self.edge_system_identity.certfile, self.edge_system_identity.keyfile,
+                self.client.tls_set(self.edge_system_identity.ca_cert, self.edge_system_identity.cert_file,
+                                    self.edge_system_identity.key_file,
                                     cert_reqs=getattr(ssl, self.tls_details.cert_required),
-                                    tls_version=getattr(ssl, self.tls_details.tls_version), ciphers=self.tls_details.cipher)
+                                    tls_version=getattr(ssl, self.tls_details.tls_version),
+                                    ciphers=self.tls_details.cipher)
             elif not client_cert_available and not client_key_available:
-                self.client.tls_set(self.edge_system_identity.cacert,
+                self.client.tls_set(self.edge_system_identity.ca_cert,
                                     cert_reqs=getattr(ssl, self.tls_details.cert_required),
-                                    tls_version=getattr(ssl, self.tls_details.tls_version), ciphers=self.tls_details.cipher)
+                                    tls_version=getattr(ssl, self.tls_details.tls_version),
+                                    ciphers=self.tls_details.cipher)
             elif not client_cert_available and client_key_available:
                 raise ValueError("Error : Client key found, but client certificate not found")
             else:
                 raise ValueError("Error : Client certificate found, but client key not found")
-
             log.info("TLS support is set up.")
 
         # Set up username-password
@@ -144,23 +161,24 @@ class Mqtt():
 
         if self.qos_details:
             # Set QoS parameters
-            self.client.max_inflight_messages_set(self.qos_details.inflight)
+            self.client.max_inflight_messages_set(self.qos_details.in_flight)
             self.client.max_queued_messages_set(self.qos_details.queue_size)
             self.client.message_retry_set(self.qos_details.retry)
 
         # Connect with MQTT Broker
-        self.client.connect(host=self.url, port=self.port, keepalive= self.keepalive)
+        self.client.connect(host=self.url, port=self.port, keepalive=self.keep_alive)
 
-        # Start network loop to process incoming and outgoing network data
+        # Start network loop to handle auto-reconnect
         self.client.loop_start()
 
     # Publish Method
-    def publish(self, topic, message, qos, retain = False):
+    def publish(self, topic, message, qos, retain=False):
         try:
             publish_response = self.client.publish(topic, message, qos, retain)
             log.info("Message Sent with message information: " + str(publish_response))
+            log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
         except ValueError as e:
-            log.error("Error Occured: " + str(e))
+            log.error("Error Occurred: " + str(e))
             raise e
 
     # Subscribe Method
@@ -170,7 +188,7 @@ class Mqtt():
             self.client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
         except ValueError as e:
-            log.error("Error Ocuured: " + str(e))
+            log.error("Error Occurred: " + str(e))
             raise e
 
     # Disconnect Method
@@ -179,9 +197,52 @@ class Mqtt():
         self.client.loop_stop()
         self.client.disconnect()
 
+    def get_client_id(self):
+        return self.client._client_id
+
+
 # This class encapsulates configurations parameter related to Quality of Service
 class QoSDetails:
-    def __init__(self, inflight, queue_size, retry):
-        self.inflight = inflight
+    def __init__(self, in_flight, queue_size, retry):
+        self.in_flight = in_flight
         self.queue_size = queue_size
         self.retry = retry
+
+
+class MqttMessagingAttributes:
+    def __init__(self, gw_name=None, pub_topic=None, sub_topic=None, pub_qos=1, sub_qos=1, pub_retain=False,
+                 sub_callback=None):
+        if gw_name:
+            #  For ProjectICE and Non-ProjectICE, topic will be auto-generated if gw_name is not None
+            self.pub_topic = 'liota/' + systemUUID().get_uuid(gw_name)
+            self.sub_topic = 'liota-resp/' + systemUUID().get_uuid(gw_name)
+        else:
+            #  When gw_name is None, pub_topic or sub_topic must be provided
+            self.pub_topic = pub_topic
+            self.sub_topic = sub_topic
+
+        #  This validation is when MqttMessagingAttributes is initialized for reg_metric
+        #  Client can assign topics for each metrics at metric level
+        #  It will be used either for publishing or subscribing but not both.
+        if self.pub_topic is None and (self.sub_topic or self.sub_callback is None):
+            raise ValueError("Either pub_topic can be None or sub_topic or sub_callback can be None. But not both")
+
+        #  General validation
+        if pub_qos not in range(0, 3) or sub_qos not in range(0, 3):
+            raise ValueError("QoS could either be 0 or 1 or 2")
+        if not isinstance(pub_retain, bool):
+            raise ValueError("pub_retain must be a boolean")
+        if sub_callback is not None:
+            if not callable(sub_callback):
+                raise ValueError("sub_callback should either be None or callable")
+
+        log.info("Pub Topic is:{0}".format(self.pub_topic))
+        log.info("Sub Topic is:{0}".format(self.sub_topic))
+        self.pub_qos = pub_qos
+        self.sub_qos = sub_qos
+        self.pub_retain = pub_retain
+        self.sub_callback = sub_callback
+
+
+
+

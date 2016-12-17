@@ -32,7 +32,10 @@
 
 import logging
 
+from liota.entities.edge_systems.edge_system import EdgeSystem
+
 log = logging.getLogger(__name__)
+
 
 class Identity:
 
@@ -43,9 +46,21 @@ class Identity:
         - Username-Password combination when authentication is required
     """
 
-    def __init__(self, cacert, certfile, keyfile, username, password):
-        self.cacert = cacert
-        self.certfile = certfile
-        self.keyfile  = keyfile
+    def __init__(self, edge_system, ca_cert, cert_file, key_file, username, password):
+        if not isinstance(edge_system, EdgeSystem):
+            raise TypeError("EdgeSystem object is expected")
+
+        if cert_file and key_file:
+            if not ca_cert:
+                raise ValueError("CA certificate path is required, when certification based auth is used")
+
+        if (cert_file is None or key_file is None) and (username is None or password is None):
+            raise ValueError("Either cert_file and key_file path or username and password must be provided")
+
+        self.edge_system_name = edge_system.name
+        self.ca_cert = ca_cert
+        self.cert_file = cert_file
+        self.key_file = key_file
         self.username = username
         self.password = password
+
