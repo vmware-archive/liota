@@ -40,32 +40,35 @@ log = logging.getLogger(__name__)
 
 class MqttDeviceComms(DeviceComms):
 
-    def __init__(self, edge_system_identity, tls_details, qos_details, url, port, keepalive = 60, enable_authentication = True):
+    def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id=None, clean_session=False,
+                 keep_alive=60, enable_authentication=False):
         self.edge_system_identity = edge_system_identity
         self.tls_details = tls_details
         self.url = url
         self.port = port
-        self.keepalive = keepalive
+        self.client_id = client_id
+        self.clean_session = clean_session
+        self.keep_alive = keep_alive
         self.qos_details = qos_details
         self.enable_authentication = enable_authentication
         self._connect()
 
     # Connect with MQTT broker
     def _connect(self):
-        self.mqtt_client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
-                                self.keepalive, self.enable_authentication)
+        self.client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
+                           self.client_id, self.clean_session, self.keep_alive, self.enable_authentication)
 
     # Disconnect method
     def _disconnect(self):
-        self.mqtt_client.disconnect()
+        self.client.disconnect()
 
     # Publish Method
-    def publish(self, topic, message, qos, retain = False):
-        self.mqtt_client.publish(topic, message, qos, retain)
+    def publish(self, topic, message, qos, retain=False):
+        self.client.publish(topic, message, qos, retain)
 
     # Subscribe Method
     def subscribe(self, topic, qos, callback):
-        self.mqtt_client.subscribe(topic, qos, callback)
+        self.client.subscribe(topic, qos, callback)
 
     def send(self, message):
         raise NotImplementedError
