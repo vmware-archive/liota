@@ -389,7 +389,7 @@ class MqttMessagingAttributes:
 
         #  General validation
         if pub_qos not in range(0, 3) or sub_qos not in range(0, 3):
-            raise ValueError("QoS could either be 0 or 1 or 2")
+            raise ValueError("QoS should either be 0 or 1 or 2")
         if not isinstance(pub_retain, bool):
             raise ValueError("pub_retain must be a boolean")
         if sub_callback is not None:
