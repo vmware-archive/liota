@@ -86,7 +86,8 @@ def mqtt_subscribe():
     qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
     # Create MQTT connection object with required params
-    mqtt_conn = MqttDeviceComms(edge_system_identity, tls_conf, qos_details, config['BrokerIP'], config['BrokerPort'], config['keep_alive'], True)
+    mqtt_conn = MqttDeviceComms(edge_system_identity, tls_conf, qos_details, config['BrokerIP'], config['BrokerPort'],
+                                config['keep_alive'], True, )
 
     # Subscribe to channels : "temperature/kitchen" and "temperature/living-room" with preferred QoS level 0, 1 or 2
     # Provide callback function as a parameter for corresponding channel
@@ -122,7 +123,6 @@ if __name__ == "__main__":
         # properties are a key:value store
         reg_edge_system.set_properties(config['SystemPropList'])
 
-
         # Create kitchen device object and register it on IoTCC
         # Add two device names in the configurations as DeviceName1 and DeviceName2
         kitchen_temperature_device = SimulatedDevice(name=config['DeviceName1'])
@@ -139,13 +139,12 @@ if __name__ == "__main__":
             name=metric_name_kitchen_temperature,
             unit=ureg.degC,
             interval=0,
-            sampling_function=lambda:get_value(kitchen_temperature_data)
+            sampling_function=lambda: get_value(kitchen_temperature_data)
         )
 
         reg_kitchen_temp = iotcc.register(kitchen_temperature)
         iotcc.create_relationship(reg_kitchen_temperature_device, reg_kitchen_temp)
         reg_kitchen_temp.start_collecting()
-
 
         # Create living room device object and register it on IoTCC
         living_room_temperature_device = SimulatedDevice(name=config['DeviceName2'])
@@ -168,7 +167,6 @@ if __name__ == "__main__":
         reg_living_room_temp = iotcc.register(living_room_temperature)
         iotcc.create_relationship(reg_living_room_temperature_device, reg_living_room_temp)
         reg_living_room_temp.start_collecting()
-
 
     except RegistrationFailure:
         print "Registration to IOTCC failed"
