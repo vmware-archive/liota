@@ -38,15 +38,24 @@ log = logging.getLogger(__name__)
 
 
 class Identity:
-
     """
     This class encapsulates identity details of an Edge System :
+        - Edge System's name
         - CA certificate
         - Client (Edge System) certificate and key file
         - Username-Password combination when authentication is required
     """
 
     def __init__(self, edge_system, ca_cert, cert_file, key_file, username, password):
+
+        """
+        :param edge_system: EdgeSystem Object
+        :param ca_cert: CA Certificate path
+        :param cert_file: Device certificate path
+        :param key_file: Device certificate's key file
+        :param username: Username
+        :param password: Password
+        """
         if not isinstance(edge_system, EdgeSystem):
             raise TypeError("EdgeSystem object is expected")
 

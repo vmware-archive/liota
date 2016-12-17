@@ -44,37 +44,79 @@ from liota.lib.utilities.utility import systemUUID
 log = logging.getLogger(__name__)
 
 
-# MQTT Class implementation
 class Mqtt():
+    """
+    MQTT Transport implementation for LIOTA. It internally uses Python Paho library.
+    """
 
-    # Invoked when the broker responds to subscribe request
-    def on_subscribe(self, client, userdata, mid, granted_qos):
-        log.debug("Subscribed: {0} {1}".format(str(mid), str(granted_qos)))
-
-    # Invoked when message received on a subscribed topic
-    def on_message(self, client, userdata, msg):
-        log.debug("On Message {0} {1} {2}".format(msg.topic, str(msg.qos), str(msg.payload)))
-
-    # Called when publish transmission completed
-    def on_publish(self, client, userdata, mid):
-        log.debug("mid: {0}".format(str(mid)))
-
-    # Invoked on response from broker to connection request
     def on_connect(self, client, userdata, flags, rc):
+        """
+        Invoked on successful connection to a broker after connection request
+
+        :param client: The client instance for this callback
+        :param userdata: The private user data as set in Client() or userdata_set()
+        :param flags: Response flags sent by the broker
+        :param rc: The connection result
+        :return:
+        """
         self._connect_result_code = rc
         self._disconnect_result_code = sys.maxsize
         log.info("Connected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
 
     def on_disconnect(self, client, userdata, rc):
+        """
+        Invoked when disconnected from broker.  Two scenarios are possible:
+
+        1) Broker rejects a connection request
+        2) Client initiated disconnect
+
+        :param client: The client instance for this callback
+        :param userdata: The private user data as set in Client() or userdata_set()
+        :param rc: The connection result
+        :return:
+        """
         self._connect_result_code = sys.maxsize
         self._disconnect_result_code = rc
         log.info("Disconnected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
 
-    # Initialization
+    def on_message(self, client, userdata, msg):
+        """
+        Invoked when message received on a subscribed topic.
+
+        :param client: The client instance for this callback
+        :param userdata: The private user data as set in Client() or userdata_set()
+        :param msg: An instance of MQTTMessage. This is a class with members topic, payload, qos, retain.
+        :return:
+        """
+        log.debug("On Message {0} {1} {2}".format(msg.topic, str(msg.qos), str(msg.payload)))
+
+    def on_publish(self, client, userdata, mid):
+        """
+        Called when publish transmission is completed.
+
+        :param client: The client instance for this callback
+        :param userdata: The private user data as set in Client() or userdata_set()
+        :param mid: Message ID
+        :return:
+        """
+        log.debug("mid: {0}".format(str(mid)))
+
+    def on_subscribe(self, client, userdata, mid, granted_qos):
+        """
+        Invoked when the broker responds to subscribe request.
+
+        :param client: The client instance for this callback
+        :param userdata: The private user data as set in Client() or userdata_set()
+        :param mid: Message ID
+        :param granted_qos: Greanted QoS by the broker
+        :return:
+        """
+        log.debug("Subscribed: {0} {1}".format(str(mid), str(granted_qos)))
+
     def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
                  keep_alive=60, enable_authentication=False, conn_disconn_timeout=10):
-        """
 
+        """
         :param edge_system_identity: EdgeSystemIdentity object
         :param tls_details: TLSDetails object
         :param qos_details: QoSDetails object
@@ -115,7 +157,6 @@ class Mqtt():
         self._paho_client.on_disconnect = self.on_disconnect
         self.connect_soc()
 
-    # Method for connection establishment
     def connect_soc(self):
         """
         Establishes connection with MQTT Broker
@@ -214,7 +255,6 @@ class Mqtt():
             self._paho_client.loop_stop()
             raise Exception("Connection Error : {0}".format(paho.connack_string(self._connect_result_code)))
 
-    # Publish Method
     def publish(self, topic, message, qos, retain=False):
         """
         Publishes message to the MQTT Broker
@@ -233,7 +273,6 @@ class Mqtt():
             log.error("Error Occurred: " + str(e))
             raise e
 
-    # Subscribe Method
     def subscribe(self, topic, qos, callback):
         """
         Subscribes to a topic with given callback
@@ -251,7 +290,6 @@ class Mqtt():
             log.error("Error Occurred: " + str(e))
             raise e
 
-    # Disconnect Method
     def disconnect(self):
         """
         Disconnects from MQTT Broker
@@ -300,12 +338,42 @@ class QoSDetails:
 
 
 class MqttMessagingAttributes:
-    def __init__(self, gw_name=None, pub_topic=None, sub_topic=None, pub_qos=1, sub_qos=1, pub_retain=False,
+    """
+    Encapsulates MessagingAttributes related to MQTT.
+
+     This class enables the following options for developers in LIOTA
+     ----------------------------------------------------------------
+
+     a) Use single publish and subscribe topic generated by LIOTA for an EdgeSystem, its Devices and its Metrics.
+        - Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system'
+        - Subscribe topic will be 'liota-resp/generated_local_uuid_of_edge_system'
+     b) Use custom single publish and subscribe topic for an EdgeSystem, its Devices and Metrics.
+
+     - In the above two cases, MQTT message's payload MUST be self-descriptive so that subscriber can subscribe
+      process accordingly to a single topic by parsing payload.
+
+     c) Use custom publish and subscribe topics for Metrics.
+     - In this case, MQTT message's payload need not be self-descriptive.  Subscribers can subscribe to
+     appropriate topics accordingly.
+
+     d) Use combination of (a) and (c) or (b) and (c).
+
+    """
+    def __init__(self, edge_system_name=None, pub_topic=None, sub_topic=None, pub_qos=1, sub_qos=1, pub_retain=False,
                  sub_callback=None):
-        if gw_name:
+        """
+        :param edge_system_name: Name of the EdgeSystem
+        :param pub_topic: Publish topic of EdgeSystem or RegisteredMetric
+        :param sub_topic: Subscribe topic of EdgeSystem or RegisteredMetric
+        :param pub_qos: Publish QoS
+        :param sub_qos: Subscribe QoS
+        :param pub_retain: Publish Retain Flag
+        :param sub_callback: Subscribe Callback
+        """
+        if edge_system_name:
             #  For ProjectICE and Non-ProjectICE, topic will be auto-generated if gw_name is not None
-            self.pub_topic = 'liota/' + systemUUID().get_uuid(gw_name)
-            self.sub_topic = 'liota-resp/' + systemUUID().get_uuid(gw_name)
+            self.pub_topic = 'liota/' + systemUUID().get_uuid(edge_system_name)
+            self.sub_topic = 'liota-resp/' + systemUUID().get_uuid(edge_system_name)
         else:
             #  When gw_name is None, pub_topic or sub_topic must be provided
             self.pub_topic = pub_topic

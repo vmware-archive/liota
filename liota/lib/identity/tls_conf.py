@@ -34,16 +34,20 @@ import logging
 
 log = logging.getLogger(__name__)
 
+
 class TLSConf:
 
     """
-    This class encapsulates TLS options :
-        - cert_required : defines the certificate requirements
-        - tls_version : version of SSL/TLS protocol to be used
-        - cipher : which encryption ciphers are allowed for connection
+    This class encapsulates TLS options.
     """
 
     def __init__(self, cert_required, tls_version, cipher):
+        """
+        :param cert_required: Defines the certificate requirements
+        :param tls_version: Version of SSL/TLS protocol to be used
+        :param cipher: Ciphers is a string specifying which encryption ciphers are allowable
+                        for a connection, or None to use the defaults.
+        """
         self.cert_required = cert_required
         self.tls_version = tls_version
         self.cipher = cipher

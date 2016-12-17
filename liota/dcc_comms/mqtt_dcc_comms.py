@@ -39,9 +39,25 @@ log = logging.getLogger(__name__)
 
 
 class MqttDccComms(DCCComms):
+    """
+    DccComms for MQTT Transport
+    """
 
     def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id=None, clean_session=False,
                  mqtt_mess_attr=None, keep_alive=60, enable_authentication=False, conn_disconn_timeout=10):
+
+        """
+        :param edge_system_identity: EdgeSystemIdentity object
+        :param tls_details: TLSDetails object
+        :param qos_details: QoSDetails object
+        :param url: MQTT Broker URL or IP
+        :param port: MQTT Broker Port
+        :param client_id: Client ID
+        :param clean_session: Connect with Clean session or not
+        :param keep_alive: KeepAliveInterval
+        :param enable_authentication: Enable user-name password authentication or not
+        :param conn_disconn_timeout: Connect-Disconnect-Timeout
+        """
         self.edge_system_identity = edge_system_identity
 
         if mqtt_mess_attr is None:
@@ -63,24 +79,43 @@ class MqttDccComms(DCCComms):
         self.conn_disconn_timeout = conn_disconn_timeout
         self._connect()
 
-    # Connect with MQTT broker
     def _connect(self):
+        """
+        Initializes Mqtt Transport and connects to MQTT broker.
+        :return:
+        """
         self.client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
                            self.client_id, self.clean_session, self.keep_alive,
                            self.enable_authentication, self.conn_disconn_timeout)
 
-    # Disconnect method
     def _disconnect(self):
+        """
+        Disconnects from MQTT broker.
+        :return:
+        """
         self.client.disconnect()
 
-    # Subscribe Method
     def subscribe(self, mess_attr=None):
+        """
+        Subscribes to a topic with specified QoS and callback.
+
+        :param mess_attr: MqttMessagingAttributes Object
+        :return:
+        """
         if mess_attr:
             self.client.subscribe(mess_attr.sub_topic, mess_attr.sub_qos, mess_attr.sub_callback)
         else:
             self.client.subscribe(self.mess_attr.sub_topic, self.mess_attr.sub_qos, self.mess_attr.sub_callback)
 
     def send(self, message, mess_attr=None):
+        """
+        Publishes message to MQTT broker.
+        If mess_attr is None, then self.mess_attr will be used.
+
+        :param message: Message to be published
+        :param mess_attr: MqttMessagingAttributes Object
+        :return:
+        """
         if mess_attr:
             self.client.publish(mess_attr.pub_topic, message, mess_attr.pub_qos, mess_attr.pub_retain)
         else:
