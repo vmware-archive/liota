@@ -253,7 +253,7 @@ class Mqtt():
             log.error("Connection error with result code : {0} : {1} ".
                       format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
             self._paho_client.loop_stop()
-            raise Exception("Connection Error : {0}".format(paho.connack_string(self._connect_result_code)))
+            sys.exit(0)  # successful termination
 
     def publish(self, topic, message, qos, retain=False):
         """
@@ -269,9 +269,10 @@ class Mqtt():
             mess_info = self._paho_client.publish(topic, message, qos, retain)
             log.info("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
             log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
-        except ValueError as e:
-            log.error("Error Occurred: " + str(e))
-            raise e
+        except Exception:
+            log.exception("MQTT Publish exception traceback..")
+            self.disconnect()
+            sys.exit(0)  # successful termination
 
     def subscribe(self, topic, qos, callback):
         """
@@ -286,9 +287,10 @@ class Mqtt():
             subscribe_response = self._paho_client.subscribe(topic, qos)
             self._paho_client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
-        except ValueError as e:
-            log.error("Error Occurred: " + str(e))
-            raise e
+        except Exception:
+            log.exception("MQTT subscribe exception traceback..")
+            self.disconnect()
+            sys.exit(0)  # successful termination
 
     def disconnect(self):
         """
@@ -311,7 +313,7 @@ class Mqtt():
             log.error("Disconnect error with result code : {0} : {1} ".
                       format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
             self._paho_client.loop_stop()
-            raise Exception("Disconnect error : {0}".format(paho.connack_string(self._connect_result_code)))
+            sys.exit(-1)  # unsuccessful termination
 
     def get_client_id(self):
         """
