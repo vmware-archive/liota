@@ -299,7 +299,7 @@ class Mqtt():
         """
         self._paho_client.disconnect()
         ten_ms_count = 0
-        while (ten_ms_count != self._conn_disconn_timeout * 100) and (self._connect_result_code == sys.maxsize):
+        while (ten_ms_count != self._conn_disconn_timeout * 100) and (self._disconnect_result_code == sys.maxsize):
             ten_ms_count += 1
             time.sleep(0.01)
         if self._disconnect_result_code == sys.maxsize:
@@ -311,7 +311,7 @@ class Mqtt():
             self._paho_client.loop_stop()
         else:
             log.error("Disconnect error with result code : {0} : {1} ".
-                      format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
+                      format(str(self._disconnect_result_code), paho.connack_string(self._disconnect_result_code)))
             self._paho_client.loop_stop()
             sys.exit(-1)  # unsuccessful termination
 
