@@ -74,7 +74,10 @@ class DataCenterComponent:
         if not isinstance(reg_metric, RegisteredMetric):
             raise TypeError
         message = self._format_data(reg_metric)
-        self.comms.send(message)
+        if hasattr(reg_metric, 'mess_attr'):
+            self.comms.send(message, reg_metric.mess_attr)
+        else:
+            self.comms.send(message, None)
 
     @abstractmethod
     def set_properties(self, reg_entity, properties):
