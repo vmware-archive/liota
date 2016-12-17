@@ -33,6 +33,8 @@
 import logging
 import os
 import ssl
+import sys
+import time
 
 import paho.mqtt.client as paho
 
@@ -59,14 +61,31 @@ class Mqtt():
 
     # Invoked on response from broker to connection request
     def on_connect(self, client, userdata, flags, rc):
-        if rc != 0:
-            raise ValueError("Error: " + paho.connack_string(rc))
-        else:
-            log.info("Connected with result code " + str(rc) + " : " + paho.connack_string(rc))
+        self._connect_result_code = rc
+        self._disconnect_result_code = sys.maxsize
+        log.info("Connected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
+
+    def on_disconnect(self, client, userdata, rc):
+        self._connect_result_code = sys.maxsize
+        self._disconnect_result_code = rc
+        log.info("Disconnected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
 
     # Initialization
     def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
-                 keep_alive=60, enable_authentication=False):
+                 keep_alive=60, enable_authentication=False, conn_disconn_timeout=10):
+        """
+
+        :param edge_system_identity: EdgeSystemIdentity object
+        :param tls_details: TLSDetails object
+        :param qos_details: QoSDetails object
+        :param url: MQTT Broker URL or IP
+        :param port: MQTT Broker Port
+        :param client_id: Client ID
+        :param clean_session: Connect with Clean session or not
+        :param keep_alive: KeepAliveInterval
+        :param enable_authentication: Enable user-name password authentication or not
+        :param conn_disconn_timeout: Connect-Disconnect-Timeout
+        """
         self.edge_system_identity = edge_system_identity
         self.tls_details = tls_details
         self.url = url
@@ -74,26 +93,34 @@ class Mqtt():
         self.keep_alive = keep_alive
         self.qos_details = qos_details
         self.enable_authentication = enable_authentication
+        self._conn_disconn_timeout = conn_disconn_timeout
         if clean_session:
             # If user passes client_id, it'll be used.  Otherwise, it is left to the underlying paho
             # to generate random client_id
-            self.client = paho.Client(client_id, clean_session=True)
+            self._paho_client = paho.Client(client_id, clean_session=True)
         else:
             #  client_id given by user
             if client_id is not None and (client_id != ""):
-                self.client = paho.Client(client_id, clean_session=False)
+                self._paho_client = paho.Client(client_id, clean_session=False)
             else:
                 #  local-uuid of the gateway will be the client name
-                self.client = paho.Client(client_id=systemUUID().get_uuid(edge_system_identity.edge_system_name),
-                                          clean_session=False)
-        self.client.on_message = self.on_message
-        self.client.on_publish = self.on_publish
-        self.client.on_subscribe = self.on_subscribe
-        self.client.on_connect = self.on_connect
+                self._paho_client = paho.Client(client_id=systemUUID().get_uuid(edge_system_identity.edge_system_name),
+                                                clean_session=False)
+        self._connect_result_code = sys.maxsize
+        self._disconnect_result_code = sys.maxsize
+        self._paho_client.on_message = self.on_message
+        self._paho_client.on_publish = self.on_publish
+        self._paho_client.on_subscribe = self.on_subscribe
+        self._paho_client.on_connect = self.on_connect
+        self._paho_client.on_disconnect = self.on_disconnect
         self.connect_soc()
 
     # Method for connection establishment
     def connect_soc(self):
+        """
+        Establishes connection with MQTT Broker
+        :return:
+        """
         # Set up TLS support
         if self.tls_details:
 
@@ -134,16 +161,16 @@ class Mqtt():
                 log.debug("Certificates : ", self.edge_system_identity.ca_cert, self.edge_system_identity.cert_file,
                           self.edge_system_identity.key_file)
 
-                self.client.tls_set(self.edge_system_identity.ca_cert, self.edge_system_identity.cert_file,
-                                    self.edge_system_identity.key_file,
-                                    cert_reqs=getattr(ssl, self.tls_details.cert_required),
-                                    tls_version=getattr(ssl, self.tls_details.tls_version),
-                                    ciphers=self.tls_details.cipher)
+                self._paho_client.tls_set(self.edge_system_identity.ca_cert, self.edge_system_identity.cert_file,
+                                          self.edge_system_identity.key_file,
+                                          cert_reqs=getattr(ssl, self.tls_details.cert_required),
+                                          tls_version=getattr(ssl, self.tls_details.tls_version),
+                                          ciphers=self.tls_details.cipher)
             elif not client_cert_available and not client_key_available:
-                self.client.tls_set(self.edge_system_identity.ca_cert,
-                                    cert_reqs=getattr(ssl, self.tls_details.cert_required),
-                                    tls_version=getattr(ssl, self.tls_details.tls_version),
-                                    ciphers=self.tls_details.cipher)
+                self._paho_client.tls_set(self.edge_system_identity.ca_cert,
+                                          cert_reqs=getattr(ssl, self.tls_details.cert_required),
+                                          tls_version=getattr(ssl, self.tls_details.tls_version),
+                                          ciphers=self.tls_details.cipher)
             elif not client_cert_available and client_key_available:
                 raise ValueError("Error : Client key found, but client certificate not found")
             else:
@@ -157,25 +184,50 @@ class Mqtt():
             elif not self.edge_system_identity.password:
                 raise ValueError("Password not found")
             else:
-                self.client.username_pw_set(self.edge_system_identity.username, self.edge_system_identity.password)
+                self._paho_client.username_pw_set(self.edge_system_identity.username, self.edge_system_identity.password)
 
         if self.qos_details:
             # Set QoS parameters
-            self.client.max_inflight_messages_set(self.qos_details.in_flight)
-            self.client.max_queued_messages_set(self.qos_details.queue_size)
-            self.client.message_retry_set(self.qos_details.retry)
+            self._paho_client.max_inflight_messages_set(self.qos_details.in_flight)
+            self._paho_client.max_queued_messages_set(self.qos_details.queue_size)
+            self._paho_client.message_retry_set(self.qos_details.retry)
 
         # Connect with MQTT Broker
-        self.client.connect(host=self.url, port=self.port, keepalive=self.keep_alive)
+        self._paho_client.connect(host=self.url, port=self.port, keepalive=self.keep_alive)
 
         # Start network loop to handle auto-reconnect
-        self.client.loop_start()
+        self._paho_client.loop_start()
+        ten_ms_count = 0
+        while (ten_ms_count != self._conn_disconn_timeout * 100) and (self._connect_result_code == sys.maxsize):
+            ten_ms_count += 1
+            time.sleep(0.01)
+        if self._connect_result_code == sys.maxsize:
+            log.error("Connection timeout.")
+            self._paho_client.loop_stop()
+            raise Exception("Connection Timeout")
+        elif self._connect_result_code == 0:
+            log.info("Connected to MQTT Broker.")
+            log.info("Connect time consumption: " + str(float(ten_ms_count) * 10) + "ms.")
+        else:
+            log.error("Connection error with result code : {0} : {1} ".
+                      format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
+            self._paho_client.loop_stop()
+            raise Exception("Connection Error : {0}".format(paho.connack_string(self._connect_result_code)))
 
     # Publish Method
     def publish(self, topic, message, qos, retain=False):
+        """
+        Publishes message to the MQTT Broker
+
+        :param topic: Publish topic
+        :param message: Message to be published
+        :param qos: Publish QoS
+        :param retain: Message to be retained or not
+        :return:
+        """
         try:
-            publish_response = self.client.publish(topic, message, qos, retain)
-            log.info("Message Sent with message information: " + str(publish_response))
+            mess_info = self._paho_client.publish(topic, message, qos, retain)
+            log.info("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
             log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
         except ValueError as e:
             log.error("Error Occurred: " + str(e))
@@ -183,9 +235,17 @@ class Mqtt():
 
     # Subscribe Method
     def subscribe(self, topic, qos, callback):
+        """
+        Subscribes to a topic with given callback
+
+        :param topic: Subscribe topic
+        :param qos: Subscribe QoS
+        :param callback:  Callback for the topic
+        :return:
+        """
         try:
-            subscribe_response = self.client.subscribe(topic, qos)
-            self.client.message_callback_add(topic, callback)
+            subscribe_response = self._paho_client.subscribe(topic, qos)
+            self._paho_client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
         except ValueError as e:
             log.error("Error Occurred: " + str(e))
@@ -193,17 +253,47 @@ class Mqtt():
 
     # Disconnect Method
     def disconnect(self):
-        # Stop network loop and disconnect
-        self.client.loop_stop()
-        self.client.disconnect()
+        """
+        Disconnects from MQTT Broker
+        :return:
+        """
+        self._paho_client.disconnect()
+        ten_ms_count = 0
+        while (ten_ms_count != self._conn_disconn_timeout * 100) and (self._connect_result_code == sys.maxsize):
+            ten_ms_count += 1
+            time.sleep(0.01)
+        if self._disconnect_result_code == sys.maxsize:
+            log.error("Disconnect timeout.")
+            raise Exception("Disconnection Timeout")
+        elif self._disconnect_result_code == 0:
+            log.info("Disconnected from MQTT Broker.")
+            log.info("Disconnect time consumption: " + str(float(ten_ms_count) * 10) + "ms.")
+            self._paho_client.loop_stop()
+        else:
+            log.error("Disconnect error with result code : {0} : {1} ".
+                      format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
+            self._paho_client.loop_stop()
+            raise Exception("Disconnect error : {0}".format(paho.connack_string(self._connect_result_code)))
 
     def get_client_id(self):
-        return self.client._client_id
+        """
+        Returns client-id
+        :return:
+        """
+        return self._paho_client._client_id
 
 
-# This class encapsulates configurations parameter related to Quality of Service
 class QoSDetails:
+    """
+    Encapsulates config params related to Quality of Service
+    """
     def __init__(self, in_flight, queue_size, retry):
+        """
+        :param in_flight: Set maximum no. of messages with QoS>0 that can be part way
+                          through their network flow at once. Default is 20.
+        :param queue_size: Set the maximum number of messages in the outgoing message queue. 0 means unlimited.
+        :param retry: Set the timeout in seconds before a message with QoS>0 is retried. 20 seconds by default.
+        """
         self.in_flight = in_flight
         self.queue_size = queue_size
         self.retry = retry

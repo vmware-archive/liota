@@ -32,6 +32,7 @@
 
 import json
 import logging
+from collections import OrderedDict
 
 from liota.dccs.dcc import DataCenterComponent
 from liota.entities.edge_systems.edge_system import EdgeSystem
@@ -40,7 +41,7 @@ from liota.entities.metrics.metric import Metric
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
 from liota.lib.utilities.si_unit import parse_unit
-from collections import OrderedDict
+
 
 log = logging.getLogger(__name__)
 

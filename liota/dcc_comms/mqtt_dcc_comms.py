@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 class MqttDccComms(DCCComms):
 
     def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id=None, clean_session=False,
-                 mqtt_mess_attr=None, keep_alive=60, enable_authentication=False):
+                 mqtt_mess_attr=None, keep_alive=60, enable_authentication=False, conn_disconn_timeout=10):
         self.edge_system_identity = edge_system_identity
 
         if mqtt_mess_attr is None:
@@ -60,12 +60,14 @@ class MqttDccComms(DCCComms):
         self.keep_alive = keep_alive
         self.qos_details = qos_details
         self.enable_authentication = enable_authentication
+        self.conn_disconn_timeout = conn_disconn_timeout
         self._connect()
 
     # Connect with MQTT broker
     def _connect(self):
         self.client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
-                           self.client_id, self.clean_session, self.keep_alive, self.enable_authentication)
+                           self.client_id, self.clean_session, self.keep_alive,
+                           self.enable_authentication, self.conn_disconn_timeout)
 
     # Disconnect method
     def _disconnect(self):

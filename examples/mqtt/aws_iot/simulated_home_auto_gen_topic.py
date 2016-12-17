@@ -125,7 +125,8 @@ if __name__ == '__main__':
 
     #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system'
     aws = AWSIoT(MqttDccComms(edge_system_identity, tls_conf, None, config['AWSEndpoint'],
-                              config['AWSPort'], clean_session=True), enclose_metadata=True)
+                              config['AWSPort'], clean_session=True,
+                              conn_disconn_timeout=config['ConnectDisconnectTimeout']), enclose_metadata=True)
     #  Registering EdgeSystem
     reg_edge_system = aws.register(edge_system)
 
