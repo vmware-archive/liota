@@ -87,7 +87,7 @@ def mqtt_subscribe():
 
     # Create MQTT connection object with required params
     mqtt_conn = MqttDeviceComms(edge_system_identity, tls_conf, qos_details, config['BrokerIP'], config['BrokerPort'],
-                                config['keep_alive'], True, )
+                                config['keep_alive'], enable_authentication=True)
 
     # Subscribe to channels : "temperature/kitchen" and "temperature/living-room" with preferred QoS level 0, 1 or 2
     # Provide callback function as a parameter for corresponding channel
