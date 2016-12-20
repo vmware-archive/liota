@@ -44,7 +44,8 @@ class MqttDeviceComms(DeviceComms):
     """
 
     def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id=None, clean_session=False,
-                 keep_alive=60, enable_authentication=False, conn_disconn_timeout=10):
+                 userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60, enable_authentication=False,
+                 conn_disconn_timeout=10):
         """
         :param edge_system_identity: EdgeSystemIdentity object
         :param tls_details: TLSDetails object
@@ -53,6 +54,13 @@ class MqttDeviceComms(DeviceComms):
         :param port: MQTT Broker Port
         :param client_id: Client ID
         :param clean_session: Connect with Clean session or not
+        :param userdata: userdata is user defined data of any type that is passed as the "userdata"
+                         parameter to callbacks.
+
+        :param protocol: allows explicit setting of the MQTT version to use for this client
+        :param transport: Set transport to "websockets" to use WebSockets as the transport
+                          mechanism. Set to "tcp" to use raw TCP, which is the default.
+
         :param keep_alive: KeepAliveInterval
         :param enable_authentication: Enable user-name password authentication or not
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
@@ -63,6 +71,9 @@ class MqttDeviceComms(DeviceComms):
         self.port = port
         self.client_id = client_id
         self.clean_session = clean_session
+        self.userdata = userdata
+        self.protocol = protocol
+        self.transport = transport
         self.keep_alive = keep_alive
         self.qos_details = qos_details
         self.enable_authentication = enable_authentication
@@ -75,8 +86,8 @@ class MqttDeviceComms(DeviceComms):
         :return:
         """
         self.client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
-                           self.client_id, self.clean_session, self.keep_alive,
-                           self.enable_authentication, self.conn_disconn_timeout)
+                           self.client_id, self.clean_session, self.userdata, self.protocol, self.transport,
+                           self.keep_alive, self.enable_authentication, self.conn_disconn_timeout)
 
     def _disconnect(self):
         """

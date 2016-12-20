@@ -44,7 +44,8 @@ class MqttDccComms(DCCComms):
     """
 
     def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id=None, clean_session=False,
-                 mqtt_mess_attr=None, keep_alive=60, enable_authentication=False, conn_disconn_timeout=10):
+                 userdata=None, protocol="MQTTv311", transport="tcp", mqtt_msg_attr=None, keep_alive=60,
+                 enable_authentication=False, conn_disconn_timeout=10):
 
         """
         :param edge_system_identity: EdgeSystemIdentity object
@@ -54,17 +55,25 @@ class MqttDccComms(DCCComms):
         :param port: MQTT Broker Port
         :param client_id: Client ID
         :param clean_session: Connect with Clean session or not
+        :param userdata: userdata is user defined data of any type that is passed as the "userdata"
+                         parameter to callbacks.
+
+        :param protocol: allows explicit setting of the MQTT version to use for this client
+        :param transport: Set transport to "websockets" to use WebSockets as the transport
+                          mechanism. Set to "tcp" to use raw TCP, which is the default.
+
+        :param mqtt_msg_attr: MqttMessagingAttributes object or None
         :param keep_alive: KeepAliveInterval
         :param enable_authentication: Enable user-name password authentication or not
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
         """
         self.edge_system_identity = edge_system_identity
 
-        if mqtt_mess_attr is None:
+        if mqtt_msg_attr is None:
             #  pub-topic and sub-topic will be auto-generated
-            self.mess_attr = MqttMessagingAttributes(edge_system_identity.edge_system_name)
-        elif isinstance(mqtt_mess_attr, MqttMessagingAttributes):
-            self.mess_attr = mqtt_mess_attr
+            self.msg_attr = MqttMessagingAttributes(edge_system_identity.edge_system_name)
+        elif isinstance(mqtt_msg_attr, MqttMessagingAttributes):
+            self.msg_attr = mqtt_msg_attr
         else:
             raise TypeError("mqtt_mess_attr should either be None or of type MqttMessagingAttributes")
 
@@ -73,6 +82,9 @@ class MqttDccComms(DCCComms):
         self.port = port
         self.client_id = client_id
         self.clean_session = clean_session
+        self.userdata = userdata
+        self.protocol = protocol
+        self.transport = transport
         self.keep_alive = keep_alive
         self.qos_details = qos_details
         self.enable_authentication = enable_authentication
@@ -85,8 +97,8 @@ class MqttDccComms(DCCComms):
         :return:
         """
         self.client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
-                           self.client_id, self.clean_session, self.keep_alive,
-                           self.enable_authentication, self.conn_disconn_timeout)
+                           self.client_id, self.clean_session, self.userdata, self.protocol, self.transport,
+                           self.keep_alive, self.enable_authentication, self.conn_disconn_timeout)
 
     def _disconnect(self):
         """
@@ -105,22 +117,22 @@ class MqttDccComms(DCCComms):
         if mess_attr:
             self.client.subscribe(mess_attr.sub_topic, mess_attr.sub_qos, mess_attr.sub_callback)
         else:
-            self.client.subscribe(self.mess_attr.sub_topic, self.mess_attr.sub_qos, self.mess_attr.sub_callback)
+            self.client.subscribe(self.msg_attr.sub_topic, self.msg_attr.sub_qos, self.msg_attr.sub_callback)
 
-    def send(self, message, mess_attr=None):
+    def send(self, message, msg_attr=None):
         """
         Publishes message to MQTT broker.
         If mess_attr is None, then self.mess_attr will be used.
 
         :param message: Message to be published
-        :param mess_attr: MqttMessagingAttributes Object
+        :param msg_attr: MqttMessagingAttributes Object
         :return:
         """
-        if mess_attr:
-            self.client.publish(mess_attr.pub_topic, message, mess_attr.pub_qos, mess_attr.pub_retain)
+        if msg_attr:
+            self.client.publish(msg_attr.pub_topic, message, msg_attr.pub_qos, msg_attr.pub_retain)
         else:
-            self.client.publish(self.mess_attr.pub_topic, message, self.mess_attr.pub_qos,
-                                self.mess_attr.pub_retain)
+            self.client.publish(self.msg_attr.pub_topic, message, self.msg_attr.pub_qos,
+                                self.msg_attr.pub_retain)
 
     def receive(self):
         raise NotImplementedError

@@ -114,7 +114,8 @@ class Mqtt():
         log.debug("Subscribed: {0} {1}".format(str(mid), str(granted_qos)))
 
     def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
-                 keep_alive=60, enable_authentication=False, conn_disconn_timeout=10):
+                 userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60, enable_authentication=False,
+                 conn_disconn_timeout=10):
 
         """
         :param edge_system_identity: EdgeSystemIdentity object
@@ -124,6 +125,13 @@ class Mqtt():
         :param port: MQTT Broker Port
         :param client_id: Client ID
         :param clean_session: Connect with Clean session or not
+        :param userdata: userdata is user defined data of any type that is passed as the "userdata"
+                         parameter to callbacks.
+
+        :param protocol: allows explicit setting of the MQTT version to use for this client
+        :param transport: Set transport to "websockets" to use WebSockets as the transport
+                          mechanism. Set to "tcp" to use raw TCP, which is the default.
+
         :param keep_alive: KeepAliveInterval
         :param enable_authentication: Enable user-name password authentication or not
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
@@ -139,7 +147,8 @@ class Mqtt():
         if clean_session:
             # If user passes client_id, it'll be used.  Otherwise, it is left to the underlying paho
             # to generate random client_id
-            self._paho_client = paho.Client(client_id, clean_session=True)
+            self._paho_client = paho.Client(client_id, clean_session=True, userdata=userdata,
+                                            protocol=getattr(paho, protocol), transport=transport)
         else:
             #  client_id given by user
             if client_id is not None and (client_id != ""):
@@ -147,7 +156,8 @@ class Mqtt():
             else:
                 #  local-uuid of the gateway will be the client name
                 self._paho_client = paho.Client(client_id=systemUUID().get_uuid(edge_system_identity.edge_system_name),
-                                                clean_session=False)
+                                                clean_session=False, userdata=userdata,
+                                                protocol=getattr(paho, protocol), transport=transport)
         self._connect_result_code = sys.maxsize
         self._disconnect_result_code = sys.maxsize
         self._paho_client.on_message = self.on_message
