@@ -394,16 +394,20 @@ class MqttMessagingAttributes:
         #  This validation is when MqttMessagingAttributes is initialized for reg_metric
         #  Client can assign topics for each metrics at metric level
         #  It will be used either for publishing or subscribing but not both.
-        if self.pub_topic is None and (self.sub_topic or self.sub_callback is None):
-            raise ValueError("Either pub_topic can be None or sub_topic or sub_callback can be None. But not both")
+        if self.pub_topic is None and (self.sub_topic is None or sub_callback is None):
+            log.error("Either (pub_topic can be None) or (sub_topic and sub_callback) can be None. But not both")
+            raise ValueError("Either (pub_topic can be None) or (sub_topic and sub_callback) can be None. But not both")
 
         #  General validation
         if pub_qos not in range(0, 3) or sub_qos not in range(0, 3):
+            log.error("QoS should either be 0 or 1 or 2")
             raise ValueError("QoS should either be 0 or 1 or 2")
         if not isinstance(pub_retain, bool):
+            log.error("pub_retain must be a boolean")
             raise ValueError("pub_retain must be a boolean")
         if sub_callback is not None:
             if not callable(sub_callback):
+                log.error("sub_callback should either be None or callable")
                 raise ValueError("sub_callback should either be None or callable")
 
         log.info("Pub Topic is:{0}".format(self.pub_topic))
