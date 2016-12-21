@@ -113,6 +113,17 @@ class Mqtt():
         """
         log.debug("Subscribed: {0} {1}".format(str(mid), str(granted_qos)))
 
+    def on_unsubscribe(self, client, userdata, mid):
+        """
+        Invoked when the broker responds to an unsubscribe request.
+
+        :param client: The client instance for this callback
+        :param userdata: The private user data as set in Client() or userdata_set()
+        :param mid: Message ID
+        :return:
+        """
+        log.debug("Unsubscribed: {0}".format(str(mid)))
+
     def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
                  userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60, enable_authentication=False,
                  conn_disconn_timeout=10):
@@ -254,6 +265,7 @@ class Mqtt():
             time.sleep(0.01)
         if self._connect_result_code == sys.maxsize:
             log.error("Connection timeout.")
+            #  Stopping background network loop as connection establishment failed.
             self._paho_client.loop_stop()
             raise Exception("Connection Timeout")
         elif self._connect_result_code == 0:
@@ -262,8 +274,10 @@ class Mqtt():
         else:
             log.error("Connection error with result code : {0} : {1} ".
                       format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
+            #  Stopping background network loop as connection establishment failed.
             self._paho_client.loop_stop()
-            sys.exit(0)  # successful termination
+            raise Exception("Connection error with result code : {0} : {1} ".
+                      format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
 
     def publish(self, topic, message, qos, retain=False):
         """
@@ -281,8 +295,6 @@ class Mqtt():
             log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
         except Exception:
             log.exception("MQTT Publish exception traceback..")
-            self.disconnect()
-            sys.exit(0)  # successful termination
 
     def subscribe(self, topic, qos, callback):
         """
@@ -299,8 +311,6 @@ class Mqtt():
             log.info("Topic subscribed with information: " + str(subscribe_response))
         except Exception:
             log.exception("MQTT subscribe exception traceback..")
-            self.disconnect()
-            sys.exit(0)  # successful termination
 
     def disconnect(self):
         """
@@ -318,12 +328,13 @@ class Mqtt():
         elif self._disconnect_result_code == 0:
             log.info("Disconnected from MQTT Broker.")
             log.info("Disconnect time consumption: " + str(float(ten_ms_count) * 10) + "ms.")
+            #  Disconnect is successful.  Stopping background network loop.
             self._paho_client.loop_stop()
         else:
             log.error("Disconnect error with result code : {0} : {1} ".
                       format(str(self._disconnect_result_code), paho.connack_string(self._disconnect_result_code)))
-            self._paho_client.loop_stop()
-            sys.exit(-1)  # unsuccessful termination
+            raise Exception("Disconnect error with result code : {0} : {1} ".
+                      format(str(self._disconnect_result_code), paho.connack_string(self._disconnect_result_code)))
 
     def get_client_id(self):
         """
