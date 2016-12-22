@@ -30,7 +30,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import psutil
+from linux_metrics import cpu_stat,disk_stat,net_stat
 
 from liota.core.package_manager import LiotaPackage
 from liota.lib.utilities.filters.range_filter import RangeFilter, Type
@@ -52,27 +52,22 @@ net_usage_filter_with_window = WindowingScheme(net_usage_filter, 30)
 # ---------------------------------------------------------------------------
 # User defined methods with RangeFilters
 
-
 def read_cpu_procs():
-    cnt = 0
-    procs = psutil.pids()
-    for i in procs[:]:
-        p = psutil.Process(i)
-        if p.status() == 'running':
-            cnt += 1
+    cnt = cpu_stat.procs_running()
     return cpu_pro_filter.filter(cnt)
 
 
 def read_cpu_utilization(sample_duration_sec=1):
-    return cpu_util_filter.filter(round(psutil.cpu_percent(interval=sample_duration_sec), 2))
+    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
+    return cpu_util_filter.filter(round((100 - cpu_pcts['idle']), 2))
 
 
 def read_disk_usage_stats():
-    return disk_usage_filter.filter(round(psutil.disk_usage('/').percent, 2))
+    return disk_usage_filter.filter(round(disk_stat.disk_reads_writes('sda')[0], 2))
 
 
 def read_network_bytes_received():
-    return net_usage_filter_with_window.filter(round(psutil.net_io_counters(pernic=False).bytes_recv, 2))
+    return net_usage_filter_with_window.filter(round(net_stat.rx_tx_bytes('eth0')[0], 2))
 
 
 class PackageClass(LiotaPackage):

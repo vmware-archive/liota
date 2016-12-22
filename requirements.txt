@@ -1,4 +1,4 @@
 websocket-client==0.37.0
-psutil==4.3.1
+linux-metrics==0.1.4
 pint==0.7.2
 aenum==1.4.5

@@ -30,7 +30,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import psutil
+from linux_metrics import cpu_stat,disk_stat,net_stat,mem_stat
 from liota.dccs.iotcc import IotControlCenter
 from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
@@ -56,30 +56,31 @@ execfile('sampleProp.conf', config)
 # from the device or system associated to the metric.
 
 def read_cpu_procs():
-    cnt = 0
-    procs = psutil.pids()
-    for i in procs[:]:
-        p = psutil.Process(i)
-        if p.status() == 'running':
-            cnt += 1
-    return cnt
+    return cpu_stat.procs_running()
 
 
 def read_cpu_utilization(sample_duration_sec=1):
-    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
-
+    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
+    return round((100 - cpu_pcts['idle']), 2)
+    
 
 def read_disk_usage_stats():
-    return round(psutil.disk_usage('/').percent, 2)
+    return round(disk_stat.disk_reads_writes('sda')[0], 2)
 
 
 def read_network_bytes_received():
-    return round(psutil.net_io_counters(pernic=False).bytes_recv, 2)
+    return round(net_stat.rx_tx_bytes('eth0')[0], 2)
 
 
 def read_mem_free():
-    return round((100 - psutil.virtual_memory().percent), 2)
+    total_mem = round(mem_stat.mem_stats()[1],4)
+    free_mem = round(mem_stat.mem_stats()[3],4)
+    cached_mem = round(mem_stat.mem_stats()[2],4)
+    used_mem = total_mem - (free_mem + cached_mem)
+    mem_free_percent = ((total_mem-used_mem)/total_mem)*100
+    return round(mem_free_percent, 2)
 
+    
 #---------------------------------------------------------------------------
 # In this example, we demonstrate how System health and some simluated data
 # can be directed to two data center components (IoTCC and graphite) using Liota.

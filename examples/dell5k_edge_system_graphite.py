@@ -30,7 +30,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import psutil
+from linux_metrics import cpu_stat
 from liota.dcc_comms.socket_comms import Socket
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
@@ -40,9 +40,9 @@ from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 config = {}
 execfile('sampleProp.conf', config)
 
-
 def read_cpu_utilization(sample_duration_sec=1):
-    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
+    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
+    return round((100 - cpu_pcts['idle']), 2)
 
 # ---------------------------------------------------------------------------
 # In this example, we demonstrate how a Dell5000 Gateway metric (e.g.,
