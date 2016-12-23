@@ -46,16 +46,16 @@ class SocketDccComms(DCCComms):
         self._connect()
 
     def _connect(self):
-        self.sock = socket.socket()
+        self.client = socket.socket()
         log.info("Establishing Socket Connection")
         try:
-            self.sock.connect((self.ip, self.port))
+            self.client.connect((self.ip, self.port))
             log.info("Socket Created")
         except Exception as ex:
             log.exception(
                 "Unable to establish socket connection. Please check the firewall rules and try again.")
-            self.sock.close()
-            self.sock = None
+            self.client.close()
+            self.client = None
             raise ex
 
     def _disconnect(self):
@@ -63,8 +63,8 @@ class SocketDccComms(DCCComms):
 
     def send(self, message, msg_attr=None):
         log.debug("Publishing message:" + str(message))
-        if self.sock is not None:
-            self.sock.sendall(message)
+        if self.client is not None:
+            self.client.sendall(message)
 
     def receive(self):
         raise NotImplementedError

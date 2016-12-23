@@ -31,7 +31,8 @@
 # ----------------------------------------------------------------------------#
 
 import logging
-
+import json
+import time
 
 PROTOCOL_VERSION = "2.7"
 log = logging.getLogger(__name__)
@@ -52,8 +53,7 @@ def require_field(container, field):
 
 
 class HelixProtocol:
-
-    """ 
+    """
     Simple state machine for protocol to IoT Control Center adapter.
     States and messages:
 
@@ -96,12 +96,10 @@ class HelixProtocol:
         # `HandshakeAwaitingState.__init__` may be using `self.state`,
         # so initialize it.
         self.state = None
-        self.state = HandshakeAwaitingState(None, self)
+        self.state = HandshakeRequestedState(None, self)
+        print self.state
 
     def on_receive(self, msg):
-        require_field(msg, "type")
-        require_field(msg, "body")
-
         if not self.state.on_receive(msg):
             raise HelixProtocolError("Unexpected Message " + msg["type"]
                                      + " during " + self.state.name)
@@ -112,7 +110,6 @@ class HelixProtocol:
 
 
 class State:
-
     def __init__(self, previous, proto=None):
         if proto is None:
             proto = previous.proto
@@ -128,30 +125,33 @@ class State:
         return self == self.proto.state
 
 
-class HandshakeAwaitingState(State):
-
+class HandshakeRequestedState(State):
     def __init__(self, previous, proto=None):
         State.__init__(self, previous, proto)
-        self.name = "HandshakeAwaitingState"
+        self.name = "HandshakeRequestedState"
+        # require_field(msg, "transactionID")
+        log.info("Sending message")
+        self.con.send({
+            "type": "hello"
+        })
 
     def on_receive(self, msg):
-        log.debug(
-            "Received message in HandshakeAwaitingState: {0}".format(msg))
-        if msg["type"] == "connection_request":
-            HandshakeRequestedState(self, msg)
+        log.debug("Received message in HandshakeRequestedState: {0}".format(msg))
+        if msg["type"] == "hello":
+            log.info("connection requested")
+            HandshakeAwaitingState(self, msg)
             return True
         else:
             return False
 
 
-class HandshakeRequestedState(State):
-
+class HandshakeAwaitingState(State):
     def __init__(self, previous, msg, proto=None):
         State.__init__(self, previous, proto)
-        self.name = "HandshakeRequestedState"
+        self.name = "HandshakeAwaitingState"
         require_field(msg, "transactionID")
         self.con.send({
-            "type": "connection_response",
+            "type": "connection_request",
             "transactionID": msg["transactionID"],
             "body": {
                 "version": PROTOCOL_VERSION,
@@ -161,92 +161,9 @@ class HandshakeRequestedState(State):
         })
 
     def on_receive(self, msg):
-        log.debug(
-            "Received message in HandshakeRequestedState: {0}".format(msg))
-        if msg["type"] == "connection_verified":
+        log.debug("Received message in HandshakeAwaitingState: {0}".format(msg))
+        if msg["type"] == "connection_response":
             require_field(msg["body"], "result")
-
-            if msg["body"]["result"] == "succeeded":
-                HandshakeVerifiedState(self)
-                return True
-            else:
-                raise HelixInitializationError("Handshake Failed")
-                log.error("Handshake Failed")
-        else:
-            return False
-
-
-class HandshakeVerifiedState(State):
-
-    def __init__(self, previous, proto=None):
-        State.__init__(self, previous, proto)
-        self.name = "HandshakeVerifiedState"
-        log.info("Handshake Verified with DCC")
-        SteadyState(self)
-
-    def on_receive(self, msg):
-        if msg["type"] == "create_resource_kind_response":
-            require_field(msg["body"], "result")
-            require_field(msg, "transactionID")
-
-            if msg["body"]["result"] == "succeeded" or msg["body"]["result"] \
-                    == "exists":
-                search = [obj for obj in self.obj_list
-                          if obj.extra.get("kind_req") == msg["transactionID"]]
-                if search:
-                    search[0].extra["kind_registered"] = True
-                    search[0].extra["kind_req"] = None
-                    self.pending_kinds -= 1
-                    if self.pending_kinds == 0:
-                        SteadyState(self)
-                return True
-            elif msg["body"]["result"] == "pending":
-                search = [obj for obj in self.obj_list
-                          if obj.extra.get("kind_req") == msg["transactionID"]]
-                if search:
-                    search[0].extra["kind_req"] = None
-                return True
-            else:
-                raise HelixInitializationError("Resource Kind Creation Failed")
-                log.error("Resource Kind Creation Failed")
-        return False
-
-
-class SteadyState(State):
-
-    def __init__(self, previous, proto=None):
-        State.__init__(self, previous, proto)
-        self.name = "SteadyState"
-        self.action_map = {}
-        log.debug("Entered steady state")
-
-    def trigger_action(self, uuid, value):
-        if uuid not in self.action_map:
-            # ignore unknown actions
-            pass
-        else:
-            handler = self.action_map[uuid]
-            handler.on_change(value)
-
-    def on_receive(self, msg):
-        log.debug("IN ON_RECEIVE")
-        if msg["type"] == "create_or_find_resource_response":
-            require_field(msg["body"], "uuid")
-            require_field(msg, "transactionID")
-
-            res_uuid = msg["body"]["uuid"]
             return True
-
-        elif msg["type"] == "action":
-            require_field(msg["body"], "uuid")
-            require_field(msg["body"], "code")
-
-            self.trigger_action(msg["body"]["uuid"], msg["body"]["code"])
-            return True
-
-        elif msg["type"] == "create_relationship_response":
-            # Not checked right now
-            return True
-
         else:
             return False

@@ -36,6 +36,8 @@ import os
 import ssl
 import sys
 from websocket import create_connection
+import Queue
+import traceback
 
 log = logging.getLogger(__name__)
 
@@ -47,6 +49,7 @@ class WebSocket():
 
     def __init__(self, url):
         self.url = url
+        self.queue = Queue.Queue()
         self.connect_soc()
 
     def connect_soc(self):
@@ -55,10 +58,10 @@ class WebSocket():
             log.info("Connection Successful")
         except Exception:
             log.exception("WebSocket exception, please check the WebSocket address and try again.")
-            sys.exit(0)
+            #sys.exit(0)
 
     # CERTPATH to be taken in consideration later
-    def WebSocketConnection(self, host, verify_cert=True, CERTPATH="/etc/liota/cert"):
+    def WebSocketConnection(self, host, verify_cert=False, CERTPATH="/etc/liota/cert"):
         self.counter = 0
         if not verify_cert:
             self.ws = None
@@ -76,22 +79,21 @@ class WebSocket():
             if self.ws is None:
                 raise (IOError("Couldn't verify host certificate"))
 
-    def run(self):
+    def receive(self, queue):
         try:
             log.info("Stream Opened")
             while True:
                 msg = self.ws.recv()
                 log.debug("Message received while running {0}".format(msg))
-                if msg is "":
-                    log.error("Stream Closed")
-                    raise Exception("No message received from the server, please check the connection and the DCC credentials.")
+                # if msg is "":
+                #     log.error("Stream Closed")
+                #     raise Exception("No message received from the server, please check the connection.")
                 log.debug("RX {0}".format(msg))
-                if self.on_receive is not None:
-                    self.on_receive(msg)
+                queue.put(msg)
         except Exception:
             log.exception("Exception on receiving the response from Server, please check the connection and try again.")
             self.close()
-            os._exit(0) # need to revisit this
+            # os._exit(0) # need to revisit this
 
     def send(self, msg):
         request_calls = ['request', 'response']
@@ -120,18 +122,9 @@ class WebSocket():
                             # os._exit used as websocket connection is not created even after the fourth retry
                             log.exception("Exception while sending data, please check the connection and try again.")
                             self.close()
-                            os._exit(0)
+                            #os._exit(0) # need to revisit this
             else:
                 log.exception("Exception while sending data, please check the connection and try again.")
                 self.close()
-                sys.exit(0)
+                #sys.exit(0)
 
-    def next_id(self):
-        self.counter = (self.counter + 1) & 0xffffff
-        # Enforce even IDs
-        return self.counter * 2
-
-    def close(self):
-        if self.ws is not None:
-            self.ws.close()
-        log.debug("Connection closed, cleanup done")

@@ -45,13 +45,13 @@ class WebSocketDccComms(DCCComms):
         self._connect()
 
     def _connect(self):
-        self.wss = WebSocket(self.url)
+        self.client = WebSocket(self.url)
 
     def _disconnect(self):
         raise NotImplementedError
 
     def send(self, message, msg_attr=None):
-        self.wss.send(message)
+        self.client.send(message)
 
-    def receive(self):
-        raise NotImplementedError
+    def receive(self,queue):
+        self.client.receive(queue)
