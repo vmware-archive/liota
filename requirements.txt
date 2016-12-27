@@ -1,3 +1,4 @@
 websocket-client==0.37.0
 psutil==4.3.1
 pint==0.7.2
+paho-mqtt==1.2
