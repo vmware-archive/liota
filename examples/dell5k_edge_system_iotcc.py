@@ -75,9 +75,7 @@ def read_network_bytes_received():
 def read_mem_free():
     total_mem = round(mem_stat.mem_stats()[1],4)
     free_mem = round(mem_stat.mem_stats()[3],4)
-    cached_mem = round(mem_stat.mem_stats()[2],4)
-    used_mem = total_mem - (free_mem + cached_mem)
-    mem_free_percent = ((total_mem-used_mem)/total_mem)*100
+    mem_free_percent = ((total_mem-free_mem)/total_mem)*100
     return round(mem_free_percent, 2)
 
     
