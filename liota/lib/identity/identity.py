@@ -37,39 +37,48 @@ from liota.entities.edge_systems.edge_system import EdgeSystem
 log = logging.getLogger(__name__)
 
 
-class Identity:
+class DccIdentity:
     """
-    This class encapsulates identity details of an Edge System :
-        - Edge System's name
-        - CA certificate
-        - Client (Edge System) certificate and key file
+    This encapsulates identity details used to connect to a remote systems both at Dcc and Device side.
+        - CA certificate path
         - Username-Password combination when authentication is required
     """
 
-    def __init__(self, edge_system, ca_cert, cert_file, key_file, username, password):
+    def __init__(self, root_ca_cert, username, password):
+
+        """
+        :param root_ca_cert: Root CA certificate path
+        :param username: Username
+        :param password: Corresponding password
+        """
+        if (root_ca_cert is None) and (username is None or password is None):
+            log.error("Either root_ca_cert or username and password must be provided")
+            raise ValueError("Either root_ca_cert or username and password must be provided")
+
+        self.root_ca_cert = root_ca_cert
+        self.username = username
+        self.password = password
+
+
+class EdgeSystemIdentity:
+    """
+    This class encapsulates identity details of an Edge System.
+        - Edge System's name
+        - Client (Edge System) certificate and key file
+    """
+
+    def __init__(self, edge_system, cert_file, key_file):
 
         """
         :param edge_system: EdgeSystem Object
-        :param ca_cert: CA Certificate path
         :param cert_file: Device certificate path
-        :param key_file: Device certificate's key file
-        :param username: Username
-        :param password: Password
+        :param key_file: Device certificate key file
         """
         if not isinstance(edge_system, EdgeSystem):
+            log.error("EdgeSystem object is expected.")
             raise TypeError("EdgeSystem object is expected")
-
-        if cert_file and key_file:
-            if not ca_cert:
-                raise ValueError("CA certificate path is required, when certification based auth is used")
-
-        if (cert_file is None or key_file is None) and (username is None or password is None):
-            raise ValueError("Either cert_file and key_file path or username and password must be provided")
 
         # NOTE:  Only EdgeSystem's name is stored here.
         self.edge_system_name = edge_system.name
-        self.ca_cert = ca_cert
         self.cert_file = cert_file
         self.key_file = key_file
-        self.username = username
-        self.password = password

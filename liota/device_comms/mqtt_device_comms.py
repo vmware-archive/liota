@@ -40,13 +40,14 @@ log = logging.getLogger(__name__)
 
 class MqttDeviceComms(DeviceComms):
     """
-    DccComms for MQTT Transport
+    DeviceComms for MQTT Transport
     """
 
-    def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id=None, clean_session=False,
-                 userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60, enable_authentication=False,
-                 conn_disconn_timeout=10):
+    def __init__(self, dcc_identity, edge_system_identity, tls_details, qos_details, url, port, client_id=None,
+                 clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
+                 enable_authentication=False, conn_disconn_timeout=10):
         """
+        :param dcc_identity: DccIdentity object
         :param edge_system_identity: EdgeSystemIdentity object
         :param tls_details: TLSDetails object
         :param qos_details: QoSDetails object
@@ -65,6 +66,7 @@ class MqttDeviceComms(DeviceComms):
         :param enable_authentication: Enable user-name password authentication or not
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
         """
+        self.dcc_identity = dcc_identity
         self.edge_system_identity = edge_system_identity
         self.tls_details = tls_details
         self.url = url
@@ -85,8 +87,8 @@ class MqttDeviceComms(DeviceComms):
         Initializes Mqtt Transport and connects to MQTT broker.
         :return:
         """
-        self.client = Mqtt(self.edge_system_identity, self.tls_details, self.qos_details, self.url, self.port,
-                           self.client_id, self.clean_session, self.userdata, self.protocol, self.transport,
+        self.client = Mqtt(self.dcc_identity, self.edge_system_identity, self.tls_details, self.qos_details, self.url,
+                           self.port, self.client_id, self.clean_session, self.userdata, self.protocol, self.transport,
                            self.keep_alive, self.enable_authentication, self.conn_disconn_timeout)
 
     def _disconnect(self):

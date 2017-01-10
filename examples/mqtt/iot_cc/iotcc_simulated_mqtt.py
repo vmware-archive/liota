@@ -41,7 +41,8 @@ from liota.device_comms.mqtt_device_comms import MqttDeviceComms
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.entities.metrics.metric import Metric
-from liota.lib.identity.edge_system_identity import Identity
+from liota.lib.identity.identity import DccIdentity
+from liota.lib.identity.identity import EdgeSystemIdentity
 from liota.lib.identity.tls_conf import TLSConf
 from liota.lib.transports.mqtt import QoSDetails
 
@@ -72,35 +73,73 @@ def get_value(queue):
     return queue.get(block=True)
 
 
-# MQTT connection setup to record kitchen and living room temperature values
-def mqtt_subscribe():
-    # Create Edge System identity object with all required certificate details
-    # To connect with a TLS enabled MQTT broker
-    edge_system_identity = Identity(config['ca_cert'], config['cert_file'], config['key_file'], config['mqtt_username'],
-                           config['mqtt_password'])
-
-    # Encapsulate TLS parameters
-    tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
-
-    # Encapsulate QoS related parameters
-    qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
-
-    # Create MQTT connection object with required params
-    mqtt_conn = MqttDeviceComms(edge_system_identity, tls_conf, qos_details, config['BrokerIP'], config['BrokerPort'],
-                                config['keep_alive'], enable_authentication=True)
-
-    # Subscribe to channels : "temperature/kitchen" and "temperature/living-room" with preferred QoS level 0, 1 or 2
-    # Provide callback function as a parameter for corresponding channel
-    mqtt_conn.subscribe(config['MqttChannel1'], 2, callback_kitchen_temp)
-    mqtt_conn.subscribe(config['MqttChannel2'], 2, callback_living_room_temp)
-
-# ------------------------------------------------------------------------------------
-# In this example, we demonstrate how data streaming can be done from MQTT channel
-# to IoTCC using LIOTA setting sampling_interval_sec to zero.
-# Here we have two different temperature sensors for two rooms (kitchen and living)
+# ---------------------------------------------------------------------------------
+# In this example, we demonstrate how data from two different Mqtt Channels (topics)
+# can be collected and sent to IoTCC Dcc using Liota.
+#
+#
+#                               IoTCC DCC
+#                                  /|\
+#                                   |
+#                                   |
+#                                   |  WebSocket
+#                                   |
+#                                   |
+#                            Dell5kEdgeSystem
+#                              /|\       /|\
+#                               |         |
+#             mqtt subscribe    |         |   mqtt subscribe
+#          (temperature/kitchen)|         | (temperature/living-room)
+#                               |         |
+#                       --------------------------
+#                      |                          |
+#                      |        MQTT Broker       |
+#                       --------------------------
+#                       /|\                    /|\
+#                        |                      |
+#          mqtt publish  |                      |  mqtt publish
+#  (temperature/kitchen) |                      | (temperature/living-room)
+#                        |                      |
+#                 Temperature Sensor       Temperature Sensor
+#                   at Kitchen                at Living room
+#
+#
+# Data streaming can be done from MQTT channel to IoTCC using LIOTA setting
+# sampling_interval_sec to zero.
+#
 # Temperature values from sensor will be collected using MQTT channel and redirected
 # to IoTCC data center component
 # ------------------------------------------------------------------------------------
+
+
+# MQTT connection setup to record kitchen and living room temperature values
+def mqtt_subscribe(edge_system_object):
+    # DccIdentity Object to connect with broker used in DeviceComms
+    dcc_identity = DccIdentity(root_ca_cert=config['broker_root_ca_cert'], username=config['broker_username'],
+                               password=['broker_password'])
+
+    # Create Edge System identity object with all required certificate details
+    edge_system_identity = EdgeSystemIdentity(edge_system=edge_system_object, cert_file=config['edge_system_cert_file'],
+                                              key_file=config['edge_system_key_file'])
+
+    # Encapsulate TLS parameters
+    tls_conf = TLSConf(cert_required=config['cert_required'], tls_version=config['tls_version'],
+                       cipher=config['cipher'])
+
+    # Encapsulate QoS related parameters
+    qos_details = QoSDetails(in_flight=config['in_flight'], queue_size=config['queue_size'], retry=config['retry'])
+
+    # Create MQTT connection object with required params
+    mqtt_conn = MqttDeviceComms(dcc_identity=dcc_identity, edge_system_identity=edge_system_identity,
+                                tls_details=tls_conf, qos_details=None, url=config['BrokerIP'], clean_session=True,
+                                port=config['BrokerPort'], keep_alive=config['keep_alive'], enable_authentication=True)
+
+    # Subscribe to channels : "temperature/kitchen" and "temperature/living-room" with preferred QoS level 0, 1 or 2
+    # Provide callback function as a parameter for corresponding channel
+    mqtt_conn.subscribe(config['MqttChannel1'], 1, callback_kitchen_temp)
+    mqtt_conn.subscribe(config['MqttChannel2'], 1, callback_living_room_temp)
+
+
 if __name__ == "__main__":
 
     # Create DCC object IoTCC using websocket transport
@@ -110,11 +149,11 @@ if __name__ == "__main__":
 
     try:
 
-        # Get kitchen and living room temperature values using MQTT channel
-        mqtt_subscribe()
-
         # Create an Edge System Dk300
         edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
+
+        # Get kitchen and living room temperature values using MQTT channel
+        mqtt_subscribe(edge_system)
 
         # Register Edge System with IoT control center
         reg_edge_system = iotcc.register(edge_system)
@@ -131,7 +170,7 @@ if __name__ == "__main__":
         iotcc.create_relationship(reg_edge_system, reg_kitchen_temperature_device)
         reg_kitchen_temperature_device.set_properties(config['DevicePropList'])
 
-        # Publish data
+        # Metric Name
         metric_name_kitchen_temperature = "temperature.kitchen"
 
         # Create metric for kitchen temperature
@@ -153,7 +192,7 @@ if __name__ == "__main__":
         iotcc.create_relationship(reg_edge_system, reg_living_room_temperature_device)
         reg_living_room_temperature_device.set_properties(config['DevicePropList'])
 
-        # Publish living room temperature
+        # Metric Name
         metric_name_living_room_temperature = "temperature.living"
 
         # Create metric for living room temperature
@@ -170,3 +209,4 @@ if __name__ == "__main__":
 
     except RegistrationFailure:
         print "Registration to IOTCC failed"
+

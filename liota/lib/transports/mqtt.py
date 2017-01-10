@@ -124,11 +124,12 @@ class Mqtt():
         """
         log.debug("Unsubscribed: {0}".format(str(mid)))
 
-    def __init__(self, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
+    def __init__(self, dcc_identity, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
                  userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60, enable_authentication=False,
                  conn_disconn_timeout=10):
 
         """
+        :param dcc_identity: DccIdentity object
         :param edge_system_identity: EdgeSystemIdentity object
         :param tls_details: TLSDetails object
         :param qos_details: QoSDetails object
@@ -147,6 +148,7 @@ class Mqtt():
         :param enable_authentication: Enable user-name password authentication or not
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
         """
+        self.dcc_identity = dcc_identity
         self.edge_system_identity = edge_system_identity
         self.tls_details = tls_details
         self.url = url
@@ -187,10 +189,12 @@ class Mqtt():
         if self.tls_details:
 
             # Validate CA certificate path
-            if self.edge_system_identity.ca_cert:
-                if not(os.path.exists(self.edge_system_identity.ca_cert)):
+            if self.dcc_identity.root_ca_cert:
+                if not(os.path.exists(self.dcc_identity.root_ca_cert)):
+                    log.error("Error : Wrong CA certificate path.")
                     raise ValueError("Error : Wrong CA certificate path.")
             else:
+                log.error("Error : Wrong CA certificate path.")
                 raise ValueError("Error : CA certificate path is missing")
 
             # Validate client certificate path
@@ -198,6 +202,7 @@ class Mqtt():
                 if os.path.exists(self.edge_system_identity.cert_file):
                     client_cert_available = True
                 else:
+                    log.error("Error : Wrong client certificate path.")
                     raise ValueError("Error : Wrong client certificate path.")
             else:
                 client_cert_available = False
@@ -207,6 +212,7 @@ class Mqtt():
                 if os.path.exists(self.edge_system_identity.key_file):
                     client_key_available = True
                 else:
+                    log.error("Error : Wrong client key path.")
                     raise ValueError("Error : Wrong client key path.")
             else:
                 client_key_available = False
@@ -220,33 +226,37 @@ class Mqtt():
             '''
 
             if client_cert_available and client_key_available:
-                log.debug("Certificates : ", self.edge_system_identity.ca_cert, self.edge_system_identity.cert_file,
+                log.debug("Certificates : ", self.dcc_identity.root_ca_cert, self.edge_system_identity.cert_file,
                           self.edge_system_identity.key_file)
 
-                self._paho_client.tls_set(self.edge_system_identity.ca_cert, self.edge_system_identity.cert_file,
+                self._paho_client.tls_set(self.dcc_identity.root_ca_cert, self.edge_system_identity.cert_file,
                                           self.edge_system_identity.key_file,
                                           cert_reqs=getattr(ssl, self.tls_details.cert_required),
                                           tls_version=getattr(ssl, self.tls_details.tls_version),
                                           ciphers=self.tls_details.cipher)
             elif not client_cert_available and not client_key_available:
-                self._paho_client.tls_set(self.edge_system_identity.ca_cert,
+                self._paho_client.tls_set(self.dcc_identity.root_ca_cert,
                                           cert_reqs=getattr(ssl, self.tls_details.cert_required),
                                           tls_version=getattr(ssl, self.tls_details.tls_version),
                                           ciphers=self.tls_details.cipher)
             elif not client_cert_available and client_key_available:
+                log.error("Error : Client key found, but client certificate not found")
                 raise ValueError("Error : Client key found, but client certificate not found")
             else:
+                log.error("Error : Client key found, but client certificate not found")
                 raise ValueError("Error : Client certificate found, but client key not found")
             log.info("TLS support is set up.")
 
         # Set up username-password
         if self.enable_authentication:
-            if not self.edge_system_identity.username:
+            if not self.dcc_identity.username:
+                log.error("Username not found")
                 raise ValueError("Username not found")
-            elif not self.edge_system_identity.password:
+            elif not self.dcc_identity.password:
+                log.error("Password not found")
                 raise ValueError("Password not found")
             else:
-                self._paho_client.username_pw_set(self.edge_system_identity.username, self.edge_system_identity.password)
+                self._paho_client.username_pw_set(self.dcc_identity.username, self.dcc_identity.password)
 
         if self.qos_details:
             # Set QoS parameters
@@ -346,7 +356,7 @@ class Mqtt():
 
 class QoSDetails:
     """
-    Encapsulates config params related to Quality of Service
+    Encapsulates config parameters related to Quality of Service
     """
     def __init__(self, in_flight, queue_size, retry):
         """
@@ -394,7 +404,7 @@ class MqttMessagingAttributes:
         :param sub_callback: Subscribe Callback
         """
         if edge_system_name:
-            #  For ProjectICE and Non-ProjectICE, topic will be auto-generated if gw_name is not None
+            #  For ProjectICE and Non-ProjectICE, topics will be auto-generated if gw_name is not None
             self.pub_topic = 'liota/' + systemUUID().get_uuid(edge_system_name)
             self.sub_topic = 'liota-resp/' + systemUUID().get_uuid(edge_system_name)
         else:
