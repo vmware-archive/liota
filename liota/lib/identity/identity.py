@@ -40,7 +40,7 @@ log = logging.getLogger(__name__)
 class DccIdentity:
     """
     This encapsulates identity details used to connect to a remote systems both at Dcc and Device side.
-        - CA certificate path
+        - CA certificate path or Self-signed certificate path
         - Username-Password combination when authentication is required
     """
 
