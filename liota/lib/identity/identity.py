@@ -40,14 +40,14 @@ log = logging.getLogger(__name__)
 class RemoteSystemIdentity:
     """
     This encapsulates identity details used to connect to a remote systems both at Dcc and Device side.
-        - CA certificate path or Self-signed certificate path
+        - CA certificate path or Self-signed server certificate path
         - Username-Password combination when authentication is required
     """
 
     def __init__(self, root_ca_cert, username, password):
 
         """
-        :param root_ca_cert: Root CA certificate path or Self-signed certificate path
+        :param root_ca_cert: Root CA certificate path or Self-signed server certificate path
         :param username: Username
         :param password: Corresponding password
         """
