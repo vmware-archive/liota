@@ -47,7 +47,7 @@ class DccIdentity:
     def __init__(self, root_ca_cert, username, password):
 
         """
-        :param root_ca_cert: Root CA certificate path
+        :param root_ca_cert: Root CA certificate path or Self-signed certificate path
         :param username: Username
         :param password: Corresponding password
         """
