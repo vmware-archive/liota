@@ -37,7 +37,7 @@ from liota.entities.edge_systems.edge_system import EdgeSystem
 log = logging.getLogger(__name__)
 
 
-class DccIdentity:
+class RemoteSystemIdentity:
     """
     This encapsulates identity details used to connect to a remote systems both at Dcc and Device side.
         - CA certificate path or Self-signed certificate path

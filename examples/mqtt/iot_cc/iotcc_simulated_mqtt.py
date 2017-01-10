@@ -41,7 +41,7 @@ from liota.device_comms.mqtt_device_comms import MqttDeviceComms
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.entities.metrics.metric import Metric
-from liota.lib.identity.identity import DccIdentity
+from liota.lib.identity.identity import RemoteSystemIdentity
 from liota.lib.identity.identity import EdgeSystemIdentity
 from liota.lib.identity.tls_conf import TLSConf
 from liota.lib.transports.mqtt import QoSDetails
@@ -114,9 +114,9 @@ def get_value(queue):
 
 # MQTT connection setup to record kitchen and living room temperature values
 def mqtt_subscribe(edge_system_object):
-    # DccIdentity Object to connect with broker used in DeviceComms
-    dcc_identity = DccIdentity(root_ca_cert=config['broker_root_ca_cert'], username=config['broker_username'],
-                               password=['broker_password'])
+    # RemoteSystemIdentity Object to connect with broker used in DeviceComms
+    remote_system_identity = RemoteSystemIdentity(root_ca_cert=config['broker_root_ca_cert'],
+                                                  username=config['broker_username'], password=['broker_password'])
 
     # Create Edge System identity object with all required certificate details
     edge_system_identity = EdgeSystemIdentity(edge_system=edge_system_object, cert_file=config['edge_system_cert_file'],
@@ -130,7 +130,7 @@ def mqtt_subscribe(edge_system_object):
     qos_details = QoSDetails(in_flight=config['in_flight'], queue_size=config['queue_size'], retry=config['retry'])
 
     # Create MQTT connection object with required params
-    mqtt_conn = MqttDeviceComms(dcc_identity=dcc_identity, edge_system_identity=edge_system_identity,
+    mqtt_conn = MqttDeviceComms(remote_system_identity=remote_system_identity, edge_system_identity=edge_system_identity,
                                 tls_details=tls_conf, qos_details=None, url=config['BrokerIP'], clean_session=True,
                                 port=config['BrokerPort'], keep_alive=config['keep_alive'], enable_authentication=True)
 

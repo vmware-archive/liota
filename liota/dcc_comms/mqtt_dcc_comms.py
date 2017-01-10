@@ -48,7 +48,7 @@ class MqttDccComms(DCCComms):
                  enable_authentication=False, conn_disconn_timeout=10):
 
         """
-        :param dcc_identity: DccIdentity object
+        :param dcc_identity: RemoteSystemIdentity object
         :param edge_system_identity: EdgeSystemIdentity object
         :param tls_details: TLSDetails object
         :param qos_details: QoSDetails object

@@ -124,12 +124,12 @@ class Mqtt():
         """
         log.debug("Unsubscribed: {0}".format(str(mid)))
 
-    def __init__(self, dcc_identity, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
+    def __init__(self, remote_system_identity, edge_system_identity, tls_details, qos_details, url, port, client_id="", clean_session=False,
                  userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60, enable_authentication=False,
                  conn_disconn_timeout=10):
 
         """
-        :param dcc_identity: DccIdentity object
+        :param remote_system_identity: remote_system_identity object
         :param edge_system_identity: EdgeSystemIdentity object
         :param tls_details: TLSDetails object
         :param qos_details: QoSDetails object
@@ -148,7 +148,7 @@ class Mqtt():
         :param enable_authentication: Enable user-name password authentication or not
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
         """
-        self.dcc_identity = dcc_identity
+        self.remote_system_identity = remote_system_identity
         self.edge_system_identity = edge_system_identity
         self.tls_details = tls_details
         self.url = url
@@ -189,8 +189,8 @@ class Mqtt():
         if self.tls_details:
 
             # Validate CA certificate path
-            if self.dcc_identity.root_ca_cert:
-                if not(os.path.exists(self.dcc_identity.root_ca_cert)):
+            if self.remote_system_identity.root_ca_cert:
+                if not(os.path.exists(self.remote_system_identity.root_ca_cert)):
                     log.error("Error : Wrong CA certificate path.")
                     raise ValueError("Error : Wrong CA certificate path.")
             else:
@@ -226,16 +226,16 @@ class Mqtt():
             '''
 
             if client_cert_available and client_key_available:
-                log.debug("Certificates : ", self.dcc_identity.root_ca_cert, self.edge_system_identity.cert_file,
+                log.debug("Certificates : ", self.remote_system_identity.root_ca_cert, self.edge_system_identity.cert_file,
                           self.edge_system_identity.key_file)
 
-                self._paho_client.tls_set(self.dcc_identity.root_ca_cert, self.edge_system_identity.cert_file,
+                self._paho_client.tls_set(self.remote_system_identity.root_ca_cert, self.edge_system_identity.cert_file,
                                           self.edge_system_identity.key_file,
                                           cert_reqs=getattr(ssl, self.tls_details.cert_required),
                                           tls_version=getattr(ssl, self.tls_details.tls_version),
                                           ciphers=self.tls_details.cipher)
             elif not client_cert_available and not client_key_available:
-                self._paho_client.tls_set(self.dcc_identity.root_ca_cert,
+                self._paho_client.tls_set(self.remote_system_identity.root_ca_cert,
                                           cert_reqs=getattr(ssl, self.tls_details.cert_required),
                                           tls_version=getattr(ssl, self.tls_details.tls_version),
                                           ciphers=self.tls_details.cipher)
@@ -249,14 +249,14 @@ class Mqtt():
 
         # Set up username-password
         if self.enable_authentication:
-            if not self.dcc_identity.username:
+            if not self.remote_system_identity.username:
                 log.error("Username not found")
                 raise ValueError("Username not found")
-            elif not self.dcc_identity.password:
+            elif not self.remote_system_identity.password:
                 log.error("Password not found")
                 raise ValueError("Password not found")
             else:
-                self._paho_client.username_pw_set(self.dcc_identity.username, self.dcc_identity.password)
+                self._paho_client.username_pw_set(self.remote_system_identity.username, self.remote_system_identity.password)
 
         if self.qos_details:
             # Set QoS parameters
