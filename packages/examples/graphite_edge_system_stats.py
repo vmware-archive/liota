@@ -31,7 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
-import psutil
+from linux_metrics import cpu_stat,disk_stat,net_stat
 
 dependencies = ["graphite"]
 
@@ -40,26 +40,20 @@ dependencies = ["graphite"]
 
 
 def read_cpu_procs():
-    cnt = 0
-    procs = psutil.pids()
-    for i in procs[:]:
-        p = psutil.Process(i)
-        if p.status() == 'running':
-            cnt += 1
-    return cnt
+    return cpu_stat.procs_running()
 
 
 def read_cpu_utilization(sample_duration_sec=1):
-    return round(psutil.cpu_percent(interval=sample_duration_sec), 2)
-
+    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
+    return round((100 - cpu_pcts['idle']), 2)
+    
 
 def read_disk_usage_stats():
-    return round(psutil.disk_usage('/').percent, 2)
+    return round(disk_stat.disk_reads_writes('sda')[0], 2)
 
 
 def read_network_bytes_received():
-    return round(psutil.net_io_counters(pernic=False).bytes_recv, 2)
-
+    return round(net_stat.rx_tx_bytes('eth0')[0], 2)
 
 class PackageClass(LiotaPackage):
 

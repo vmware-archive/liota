@@ -31,7 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import random
-import psutil
+from linux_metrics import cpu_stat,disk_stat,net_stat,mem_stat
 from liota.dccs.iotcc import IotControlCenter
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.metrics.metric import Metric
@@ -59,30 +59,35 @@ execfile('sampleProp.conf', config)
 # from the device or system associated to the metric.
 
 def read_cpu_procs():
-    procs_running = 0
-    for p in psutil.process_iter():
-        procs_running += 1
-    return procs_running
-
+    return cpu_stat.procs_running()
+    
 
 def read_cpu_utilization(sample_duration_sec=1):
-    return round(psutil.cpu_percent(sample_duration_sec), 2)
+    cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
+    return round((100 - cpu_pcts['idle']), 2)
 
 
 def read_swap_mem_free():
-    return round((100 - psutil.swap_memory().percent), 2)
+    total_swap = round(mem_stat.mem_stats()[4],4)
+    swap_mem_free = round(mem_stat.mem_stats()[5],4)
+    swap_free_percent = (swap_mem_free/total_swap)*100
+    return round(swap_free_percent, 2)
 
 
 def read_disk_usage_stats():
-    return round(psutil.disk_usage('/').percent, 2)
+    return round(disk_stat.disk_reads_writes('sda')[0], 2)
 
 
 def read_mem_free():
-    return round((100 - psutil.virtual_memory().percent), 2)
-
+    total_mem = round(mem_stat.mem_stats()[1],4)
+    free_mem = round(mem_stat.mem_stats()[3],4)
+    mem_free_percent = ((total_mem-free_mem)/total_mem)*100
+    return round(mem_free_percent, 2)
+    
 
 def read_network_packets_sent():
-    return int(psutil.net_io_counters(pernic=False).packets_sent)
+    packets_sent = net_stat.rx_tx_dump('eth0')[1][1] + net_stat.rx_tx_dump('lo')[1][1]
+    return packets_sent
 
 
 def simulated_value():
