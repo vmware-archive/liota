@@ -77,6 +77,7 @@ class MqttDccComms(DCCComms):
         elif isinstance(mqtt_msg_attr, MqttMessagingAttributes):
             self.msg_attr = mqtt_msg_attr
         else:
+            log.error("mqtt_mess_attr should either be None or of type MqttMessagingAttributes")
             raise TypeError("mqtt_mess_attr should either be None or of type MqttMessagingAttributes")
 
         self.tls_details = tls_details
