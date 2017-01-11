@@ -32,6 +32,7 @@
 
 import os
 import pip
+import glob
 from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
@@ -42,18 +43,7 @@ requirements = [str(requirement.req) for requirement in parse_requirements(
 # Get the long description from the README file
 with open('README.md') as f:
     long_description = f.read()
-
-    
-# To return files contained in the directory
-def files(path):
-    list=[]
-    for root, dirs, files in os.walk(path, topdown=True):
-        del dirs[:]
-        for name in files:
-            if not name.endswith('.md'):
-                list.append(os.path.join(root, name))
-    return list
-
+  
 setup(
     name='liota',
     version='0.2',
@@ -93,17 +83,17 @@ setup(
 
     # 'data_file'(conf_files) at custom location
     data_files=[(os.path.abspath(os.sep) + '/../etc/liota/examples',
-                 files('examples')),
+                 glob.glob('examples/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota/examples/model_simulated',
-                 files('examples/model_simulated')),
+                 glob.glob('examples/model_simulated/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages',
-                 files('packages')),
+                 glob.glob('packages/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/examples',
-                 files('packages/examples')),
+                 glob.glob('packages/examples/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/edge_systems/dell5k',
-                 files('packages/edge_systems/dell5k')),
+                 glob.glob('packages/edge_systems/dell5k/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota/conf',
-                 files('config')),
+                 glob.glob('config/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota',
                  ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
                 (os.path.abspath(os.sep) + '/../var/log/liota', [])]
