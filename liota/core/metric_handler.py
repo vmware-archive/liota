@@ -37,7 +37,7 @@ from threading import Thread, Condition, Lock
 from time import time as _time
 
 from liota.lib.utilities.utility import getUTCmillis
-
+from liota.lib.utilities.utility import read_liota_config
 
 log = logging.getLogger(__name__)
 
@@ -274,8 +274,8 @@ def initialize():
         if send_thread is None:
             send_thread = SendThread(name="SendThread")
         global collect_thread_pool
-        # TODO: Make pool size configurable
-        collect_thread_pool = CollectionThreadPool(30)
+        collect_thread_pool_size = int(read_liota_config('CORE_CFG','collect_thread_pool_size'),10) 
+        collect_thread_pool = CollectionThreadPool(collect_thread_pool_size)
         is_initialization_done = True
 
 

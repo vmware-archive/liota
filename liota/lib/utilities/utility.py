@@ -43,6 +43,7 @@ import platform
 import random
 import uuid
 import errno
+import ConfigParser
 
 log = logging.getLogger(__name__)
 
@@ -153,3 +154,25 @@ class LiotaConfigPath:
 
     def get_liota_fullpath(self):
         return LiotaConfigPath.path_liota_config
+
+def read_liota_config(section, name):
+     """Returns the value of name within the specified section.
+ """
+     config = ConfigParser.RawConfigParser()
+     fullPath = LiotaConfigPath().get_liota_fullpath()
+     if fullPath != '':
+         try:
+             if config.read(fullPath) != []:
+                 try:
+                     value = config.get(section, name)			
+                 except ConfigParser.ParsingError as err:
+                     log.error('Could not parse log config file')
+             else:
+                 raise IOError('Cannot open configuration file ' + fullPath)
+         except IOError as err:
+             log.error('Could not open log config file')
+     else:
+         # missing config file
+         log.warn('liota.conf file missing')
+     return value
+ 
