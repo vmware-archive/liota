@@ -34,6 +34,7 @@ import logging
 
 from liota.dcc_comms.dcc_comms import DCCComms
 from liota.lib.transports.mqtt import Mqtt, MqttMessagingAttributes
+from liota.lib.utilities.utility import store_edge_system_uuid, systemUUID
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +64,8 @@ class MqttDccComms(DCCComms):
         :param transport: Set transport to "websockets" to use WebSockets as the transport
                           mechanism. Set to "tcp" to use raw TCP, which is the default.
 
-        :param mqtt_msg_attr: MqttMessagingAttributes object or None
+        :param mqtt_msg_attr: MqttMessagingAttributes object or None.
+                              In case of None, topics will be auto-generated. User provided topic will be used otherwise.
         :param keep_alive: KeepAliveInterval
         :param enable_authentication: Enable user-name password authentication or not
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
@@ -74,6 +76,12 @@ class MqttDccComms(DCCComms):
         if mqtt_msg_attr is None:
             #  pub-topic and sub-topic will be auto-generated
             self.msg_attr = MqttMessagingAttributes(edge_system_identity.edge_system_name)
+            #  Storing edge_system name and generated local_uuid which will be used in
+            #  pub-topic='liota/generated_local_uuid_of_edge_system' and
+            #  sub-topic='liota-resp/generated_local_uuid_of_edge_system'
+            store_edge_system_uuid(entity_name=edge_system_identity.edge_system_name,
+                                   entity_id=systemUUID().get_uuid(edge_system_identity.edge_system_name),
+                                   reg_entity_id=None)
         elif isinstance(mqtt_msg_attr, MqttMessagingAttributes):
             self.msg_attr = mqtt_msg_attr
         else:
