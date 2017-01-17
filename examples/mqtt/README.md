@@ -45,7 +45,8 @@ It enables the following options for developers in LIOTA.
 **(d)** Use combination of **(a) and (c)** or **(b) and (c)**.
 
 
-**NOTE:** If **Option (a)** is used, `generated_local_uuid_of_edge_system` will be written to a file available at path **uuid_path** as specified in ![liota.conf](/config/liota.conf) file.
+**NOTE:**
+If **Option (a)** is used, `generated_local_uuid_of_edge_system` will be written to a file available at path **uuid_path** as specified in ![liota.conf](/config/liota.conf) file.
 Users can refer this file to get the uuid for subscribing.
 
 
@@ -54,13 +55,13 @@ Configuring MqttDccComms and MessagingAttributes for ProjectICE and non-ProjectI
 ### Configuration for ProjectICE Scenario
 ![IoTCC DCC](/liota/dccs/iotcc.py) will support both WebSockets and MQTT as transports.  **This is WIP**.  Once developed it'll allow plug-and-play approach to easily switch between these two protocols.  However, for MQTT
 it follows `Option (a)` as mentioned in the above section.
-* `Option (a)` could be achieved by passing **mqtt_msg_attr=None while initializing MqttDccComms**.
+* **Option (a)** could be achieved by passing **mqtt_msg_attr=None while initializing MqttDccComms**.
 
 Examples for this will be provided once the development is complete.
 
 
 ### Configuration for Non-ProjectICE Scenario
-![GenericMqtt DCC](/liota/dccs/generic_mqtt.py) is a Data Center Component to connect with MQTT brokers using LIOTA in non-ProjectICE scenarios.  `Options (a), (b), (c) and (d)` mentioned in the above section
+![GenericMqtt DCC](/liota/dccs/generic_mqtt.py) is a Data Center Component to connect with MQTT brokers using LIOTA in non-ProjectICE scenarios.  **Options (a), (b), (c) and (d)** mentioned in the above section
 could be used.
 * **enclose_metadata** flag in GenericMqtt Dcc can be used to specify whether a payload should be self-descriptive or not. i.e., If set to **True**, EdgeSystemName and DeviceName for a Metric will be appended
 along with the payload every-time when it is published.
@@ -70,5 +71,5 @@ along with the payload every-time when it is published.
 **NOTE:** MqttMessagingAttributes for a RegisteredMetric object MUST always be passed via **msg_attr** attribute of that RegisteredMetric Object.
 
 Refer:
-* ![aws_auto_gen](/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py) example to publish to AWSIoT using `Option (a)`.
-* ![aws_topic_per_metric](/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py) example to publish to AWSIoT using combination of `Options (b) & (c)`.
+* ![aws_auto_gen](/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py) example to publish to AWSIoT using **Option (a)**.
+* ![aws_topic_per_metric](/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py) example to publish to AWSIoT using combination of **Options (b) & (c)**.
