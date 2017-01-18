@@ -32,7 +32,7 @@ or a traditional socket endpoint.
 The abstract class DCC represents an application in a data-center. It is potentially the most important and complex abstraction of liota. It provides flexibility to developers for choosing the data-center components they need and using API’s provided by liota. With help of this abstraction developers may build custom solutions. The abstract class states basic methods and encapsulates them into unified common API’s required to send data to various DCC’s. Graphite and Project Ice are currently the data-center components supported with AWS, BlueMix and ThingWorx to come soon. New DCC’s can easily be integrated in the abstraction.
 
 ## Transports
-Liota supports WebSockets and MQTT communication protocols.  Refer ![README](examples/mqtt/README.md) to know more on different MQTT configuration options available.
+Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols.  Refer ![README](examples/mqtt/README.md) to know more on different MQTT configuration options available.
 
 ## Package Manager
 Liota applications can be broken into small pieces that can be loaded and unloaded into a running liota process. We recommend putting the EdgeSystems, Devices, Metrics and DCC(s) in separate packages. Then each construct can be loaded and unloaded at will. See the README in the package directory for complete details.
