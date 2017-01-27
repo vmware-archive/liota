@@ -289,11 +289,15 @@ class IotControlCenter(DataCenterComponent):
             f.close()
 
     def store_edge_system_uuid(self, entity_name, reg_entity_id):
-	uuid_path = read_liota_config('UUID_PATH', 'uuid_path')
-        uuid_config = ConfigParser.RawConfigParser()
-        uuid_config.optionxform = str
-        uuid_config.add_section('GATEWAY')
-        uuid_config.set('GATEWAY', 'uuid', reg_entity_id)
-        uuid_config.set('GATEWAY', 'name', entity_name)
-        with open(uuid_path, 'w') as configfile:
-            uuid_config.write(configfile)
+        try:
+            uuid_path = read_liota_config('UUID_PATH', 'uuid_path')
+            uuid_config = ConfigParser.RawConfigParser()
+            uuid_config.optionxform = str
+            uuid_config.add_section('GATEWAY')
+            uuid_config.set('GATEWAY', 'uuid', reg_entity_id)
+            uuid_config.set('GATEWAY', 'name', entity_name)
+            with open(uuid_path, 'w') as configfile:
+                uuid_config.write(configfile)
+        except ConfigParser.ParsingError, err:
+            log.error('Could not open config file ' + err)
+            

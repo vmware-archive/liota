@@ -274,7 +274,7 @@ def initialize():
         if send_thread is None:
             send_thread = SendThread(name="SendThread")
         global collect_thread_pool
-        collect_thread_pool_size = int(read_liota_config('CORE_CFG','collect_thread_pool_size'),10) 
+        collect_thread_pool_size = int(read_liota_config('CORE_CFG','collect_thread_pool_size')) 
         collect_thread_pool = CollectionThreadPool(collect_thread_pool_size)
         is_initialization_done = True
 
