@@ -30,41 +30,54 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.core.package_manager import LiotaPackage
 from linux_metrics import cpu_stat,disk_stat,net_stat
 
-dependencies = ["graphite"]
+from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.filters.range_filter import RangeFilter, Type
+from liota.lib.utilities.filters.windowing_scheme.windowing_scheme import WindowingScheme
 
-#---------------------------------------------------------------------------
-# User defined methods
+dependencies = ["iotcc"]
 
+# Filters to filter data at Sampling Functions
+# Simple filters
+cpu_pro_filter = RangeFilter(Type.CLOSED_REJECT, 5, 10)  # If no of CPU processes <=5 or >=10
+cpu_util_filter = RangeFilter(Type.AT_LEAST, None, 85)  # CPU util >= 85
+disk_usage_filter = RangeFilter(Type.AT_LEAST, None, 80)  # Disk usage >= 80%
+net_usage_filter = RangeFilter(Type.AT_LEAST, None, 1000000)  # Network usage >= 1Mb
+
+# Filters with windowing scheme
+net_usage_filter_with_window = WindowingScheme(net_usage_filter, 30)
+
+
+# ---------------------------------------------------------------------------
+# User defined methods with RangeFilters
 
 def read_cpu_procs():
-    return cpu_stat.procs_running()
+    cnt = cpu_stat.procs_running()
+    return cpu_pro_filter.filter(cnt)
 
 
 def read_cpu_utilization(sample_duration_sec=1):
     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
-    return round((100 - cpu_pcts['idle']), 2)
-    
+    return cpu_util_filter.filter(round((100 - cpu_pcts['idle']), 2))
+
 
 def read_disk_usage_stats():
-    return round(disk_stat.disk_reads_writes('sda')[0], 2)
+    return disk_usage_filter.filter(round(disk_stat.disk_reads_writes('sda')[0], 2))
 
 
 def read_network_bytes_received():
-    return round(net_stat.rx_tx_bytes('eth0')[0], 2)
+    return net_usage_filter_with_window.filter(round(net_stat.rx_tx_bytes('eth0')[0], 2))
+
 
 class PackageClass(LiotaPackage):
-
     def run(self, registry):
         import copy
         from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        edge_system = copy.copy(registry.get("edge_system"))
-        graphite = registry.get("graphite")
-        reg_edge_system = graphite.register(edge_system)
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
+        iotcc = registry.get("iotcc")
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -73,47 +86,47 @@ class PackageClass(LiotaPackage):
 
         # Create metrics
         self.metrics = []
-        metric_name = "EdgeSystem.CPU_Utilization"
+        metric_name = "CPU Utilization"
         metric_cpu_utilization = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_cpu_utilization
-                         )
-        reg_metric_cpu_utilization = graphite.register(metric_cpu_utilization)
-        graphite.create_relationship(reg_edge_system, reg_metric_cpu_utilization)
+                                        unit=None, interval=5,
+                                        aggregation_size=1,
+                                        sampling_function=read_cpu_utilization
+                                        )
+        reg_metric_cpu_utilization = iotcc.register(metric_cpu_utilization)
+        iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_utilization)
         reg_metric_cpu_utilization.start_collecting()
         self.metrics.append(reg_metric_cpu_utilization)
 
-        metric_name = "EdgeSystem.CPU_Process"
+        metric_name = "CPU Process"
         metric_cpu_procs = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_cpu_procs
-                         )
-        reg_metric_cpu_procs = graphite.register(metric_cpu_procs)
-        graphite.create_relationship(reg_edge_system, reg_metric_cpu_procs)
+                                  unit=None, interval=5,
+                                  aggregation_size=1,
+                                  sampling_function=read_cpu_procs
+                                  )
+        reg_metric_cpu_procs = iotcc.register(metric_cpu_procs)
+        iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_procs)
         reg_metric_cpu_procs.start_collecting()
         self.metrics.append(reg_metric_cpu_procs)
 
-        metric_name = "EdgeSystem.Disk_Busy_Stats"
-        metric_disk_busy_stats = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_disk_usage_stats
-                         )
-        reg_metric_disk_busy_stats = graphite.register(metric_disk_busy_stats)
-        graphite.create_relationship(reg_edge_system, reg_metric_disk_busy_stats)
-        reg_metric_disk_busy_stats.start_collecting()
-        self.metrics.append(reg_metric_disk_busy_stats)
+        metric_name = "Disk Usage Stats"
+        metric_disk_usage_stats = Metric(name=metric_name,
+                                         unit=None, interval=5,
+                                         aggregation_size=1,
+                                         sampling_function=read_disk_usage_stats
+                                         )
+        reg_metric_disk_usage_stats = iotcc.register(metric_disk_usage_stats)
+        iotcc.create_relationship(iotcc_edge_system, reg_metric_disk_usage_stats)
+        reg_metric_disk_usage_stats.start_collecting()
+        self.metrics.append(reg_metric_disk_usage_stats)
 
-        metric_name = "EdgeSystem.Network_Bytes_Received"
+        metric_name = "Network Bytes Received"
         metric_network_bytes_received = Metric(name=metric_name,
-                         unit=None, interval=5,
-                         aggregation_size=1,
-                         sampling_function=read_network_bytes_received
-                         )
-        reg_metric_network_bytes_received = graphite.register(metric_network_bytes_received)
-        graphite.create_relationship(reg_edge_system, reg_metric_network_bytes_received)
+                                               unit=None, interval=5,
+                                               aggregation_size=1,
+                                               sampling_function=read_network_bytes_received
+                                               )
+        reg_metric_network_bytes_received = iotcc.register(metric_network_bytes_received)
+        iotcc.create_relationship(iotcc_edge_system, reg_metric_network_bytes_received)
         reg_metric_network_bytes_received.start_collecting()
         self.metrics.append(reg_metric_network_bytes_received)
 

@@ -31,16 +31,31 @@
 # ----------------------------------------------------------------------------#
 
 from linux_metrics import cpu_stat,disk_stat,net_stat,mem_stat
+
 from liota.dccs.iotcc import IotControlCenter
 from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
+from liota.lib.utilities.filters.range_filter import RangeFilter, Type
+from liota.lib.utilities.filters.windowing_scheme.windowing_scheme import WindowingScheme
 
 # getting values from conf file
 config = {}
 execfile('sampleProp.conf', config)
+
+# Filters to filter data at Sampling Functions
+# Simple filters
+cpu_pro_filter = RangeFilter(Type.CLOSED_REJECT, 5, 10)  # If no of CPU processes <=5 or >=10
+cpu_util_filter = RangeFilter(Type.AT_LEAST, None, 85)  # CPU util >= 85
+disk_usage_filter = RangeFilter(Type.AT_LEAST, None, 80)  # Disk usage >= 80%
+net_usage_filter = RangeFilter(Type.AT_LEAST, None, 1000000)  # Network usage >= 1Mb
+mem_free_filter = RangeFilter(Type.AT_MOST, 15, None)  # Memory Free <= 15%
+
+# Filters with windowing scheme
+net_usage_filter_with_window = WindowingScheme(net_usage_filter, 30)
+mem_free_filter_with_window = WindowingScheme(mem_free_filter, 60)
 
 
 # some standard metrics for Linux systems
@@ -50,42 +65,42 @@ execfile('sampleProp.conf', config)
 # we are showing here how to create a representation for a Device in IoTCC but
 # using the notion of RAM (because we have no connected devices yet)
 # agent classes for different kinds of layer 4/5 connections from agent to DCC
-# -------User defined functions for getting the next value for a metric --------
+# -------User defined functions with filters for getting the next value for a metric --------
 # usage of these shown below in main
 # semantics are that on each call the function returns the next available value
 # from the device or system associated to the metric.
 
 def read_cpu_procs():
-    return cpu_stat.procs_running()
+    cnt = cpu_stat.procs_running()
+    return cpu_pro_filter.filter(cnt)
 
 
 def read_cpu_utilization(sample_duration_sec=1):
     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
-    return round((100 - cpu_pcts['idle']), 2)
-    
+    return cpu_util_filter.filter(round((100 - cpu_pcts['idle']), 2))
+
 
 def read_disk_usage_stats():
-    return round(disk_stat.disk_reads_writes('sda')[0], 2)
+    return disk_usage_filter.filter(round(disk_stat.disk_reads_writes('sda')[0], 2))
 
 
 def read_network_bytes_received():
-    return round(net_stat.rx_tx_bytes('eth0')[0], 2)
+    return net_usage_filter_with_window.filter(round(net_stat.rx_tx_bytes('eth0')[0], 2))
 
 
 def read_mem_free():
     total_mem = round(mem_stat.mem_stats()[1],4)
     free_mem = round(mem_stat.mem_stats()[3],4)
     mem_free_percent = ((total_mem-free_mem)/total_mem)*100
-    return round(mem_free_percent, 2)
-
+    return mem_free_filter_with_window.filter(round(mem_free_percent, 2))
     
-#---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # In this example, we demonstrate how System health and some simluated data
-# can be directed to two data center components (IoTCC and graphite) using Liota.
+# can be directed to two data center components IoTCC using Liota.
 # The program illustrates the ease of use Liota brings to IoT application developers.
 
 if __name__ == '__main__':
-
 
     # create a data center object, IoTCC in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
