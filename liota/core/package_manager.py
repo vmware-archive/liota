@@ -44,7 +44,7 @@ from Queue import Queue
 from time import sleep
 from abc import ABCMeta, abstractmethod
 
-from liota.lib.utilities.utility import LiotaConfigPath
+from liota.lib.utilities.utility import LiotaConfigPath, read_liota_config
 
 log = logging.getLogger(__name__)
 
@@ -78,29 +78,12 @@ package_path = None
 package_messenger_pipe = None
 
 # Parse Liota configuration file
-config = ConfigParser.RawConfigParser()
-fullPath = LiotaConfigPath().get_liota_fullpath()
-if fullPath != '':
-    try:
-        if config.read(fullPath) != []:
-            try:
-                package_path = os.path.abspath(
-                    config.get('PKG_CFG', 'pkg_path')
-                )
-                package_messenger_pipe = os.path.abspath(
-                    config.get('PKG_CFG', 'pkg_msg_pipe')
-                )
-            except ConfigParser.ParsingError:
-                log.error('Could not parse log config file')
-                exit(-4)
-        else:
-            raise IOError('Could not open configuration file: ' + fullPath)
-    except IOError:
-        raise IOError('Could not open configuration file: ' + fullPath)
-else:
-    # missing config file
-    log.error('liota.conf file missing')
-
+package_path = os.path.abspath(
+    read_liota_config('PKG_CFG', 'pkg_path')
+)
+package_messenger_pipe = os.path.abspath(
+    read_liota_config('PKG_CFG', 'pkg_msg_pipe')
+)
 assert(isinstance(package_path, basestring))
 assert(isinstance(package_messenger_pipe, basestring))
 
@@ -108,13 +91,9 @@ package_startup_list_path = None
 package_startup_list = []
 
 # Parse packages to load at start-up
-try:
-    package_startup_list_path = os.path.abspath(
-        config.get('PKG_CFG', 'pkg_list')
-    )
-except (ConfigParser.ParsingError, ConfigParser.NoOptionError):
-    pass
-
+package_startup_list_path = os.path.abspath(
+    read_liota_config('PKG_CFG', 'pkg_list')
+)
 
 class ResourceRegistryPerPackage:
     """
