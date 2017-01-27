@@ -29,29 +29,25 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
 import logging
-from liota.lib.transports.web_socket import WebSocket
-
-from liota.dcc_comms.dcc_comms import DCCComms
-
 
 log = logging.getLogger(__name__)
 
 
-class WebSocketDccComms(DCCComms):
+class TLSConf:
 
-    def __init__(self, url):
-        self.url = url
-        self._connect()
+    """
+    This class encapsulates TLS options.
+    """
 
-    def _connect(self):
-        self.wss = WebSocket(self.url)
-
-    def _disconnect(self):
-        raise NotImplementedError
-
-    def send(self, message, msg_attr=None):
-        self.wss.send(message)
-
-    def receive(self):
-        raise NotImplementedError
+    def __init__(self, cert_required, tls_version, cipher):
+        """
+        :param cert_required: Defines the certificate requirements
+        :param tls_version: Version of SSL/TLS protocol to be used
+        :param cipher: Ciphers is a string specifying which encryption ciphers are allowable
+                        for a connection, or None to use the defaults.
+        """
+        self.cert_required = cert_required
+        self.tls_version = tls_version
+        self.cipher = cipher

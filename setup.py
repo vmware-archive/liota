@@ -86,6 +86,8 @@ setup(
                  glob.glob('examples/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota/examples/model_simulated',
                  glob.glob('examples/model_simulated/*.[!md]*')),
+                (os.path.abspath(os.sep) + '/../etc/liota/examples/mqtt/iot_cc',
+                 glob.glob('examples/mqtt/iot_cc/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages',
                  glob.glob('packages/*.[!md]*')),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/examples',

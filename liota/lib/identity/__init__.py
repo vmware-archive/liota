@@ -29,29 +29,3 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-import logging
-from liota.lib.transports.web_socket import WebSocket
-
-from liota.dcc_comms.dcc_comms import DCCComms
-
-
-log = logging.getLogger(__name__)
-
-
-class WebSocketDccComms(DCCComms):
-
-    def __init__(self, url):
-        self.url = url
-        self._connect()
-
-    def _connect(self):
-        self.wss = WebSocket(self.url)
-
-    def _disconnect(self):
-        raise NotImplementedError
-
-    def send(self, message, msg_attr=None):
-        self.wss.send(message)
-
-    def receive(self):
-        raise NotImplementedError
