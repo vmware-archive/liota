@@ -206,7 +206,7 @@ def sha1sum(path_file):
 
 class LiotaConfigPath:
     path_liota_config = ''
-    syswide_path = '/etc/liota/conf/'
+    syswide_path = '/etc/liota/'
 
     def __init__(self):
         if LiotaConfigPath.path_liota_config == '':
@@ -217,8 +217,8 @@ class LiotaConfigPath:
         1. Current working directory. ./liota.conf.
         2. User's home directory (~user/liota.conf)
         3. A place named by an environment variable (LIOTA_CONF)
-        4. A standard system-wide directory (such as /etc/liota/conf/liota.conf)
-        # assert: every install will have a default liota.conf in /etc/liota/conf
+        4. A standard system-wide directory (such as /etc/liota/liota.conf)
+        # assert: every install will have a default liota.conf in /etc/liota/
         """
 
         for loc in os.curdir, os.path.expanduser("~"), os.environ.get(

@@ -121,7 +121,7 @@ liota.conf provides path to find out various configuration & log files. When ini
 * Looks in the current working directory '.'
 * User's home directory '~'
 * A LIOTA_CONF environment variable
-* Finally the default location for every installation: /etc/liota/. (note this will need to be copied from the system doc directory, typically /usr/share/doc/liota-&lt;version&gt;/config/)
+* Finally the default location for every installation: /etc/liota/. (note this will need to be copied from the system doc directory, typically /usr/lib/liota/)
 
 Here is the default liota.conf file:
 
@@ -136,9 +136,9 @@ log_path = /var/log/liota
 uuid_path = /etc/liota/uuid.ini
 
 [IOTCC_PATH]
-dev_file_path = /etc/liota/conf/devs
-entity_file_path = /etc/liota/conf/entity
-iotcc_path = /etc/liota/conf/iotcc.json
+dev_file_path = /etc/liota/devs
+entity_file_path = /etc/liota/entity
+iotcc_path = /etc/liota/iotcc.json
 
 [PKG_CFG]
 pkg_path = /usr/share/liota/packages
