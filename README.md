@@ -66,7 +66,7 @@ To start the autostartliota script perform the following steps:
   $ sudo chmod +x autostartliota
 ```
 
-On Debian/Ubuntu:
+### On Debian/Ubuntu:
 
 * Execute :
 ```bash
@@ -79,7 +79,7 @@ On Debian/Ubuntu:
   $ sudo update-rc.d autostartliota remove
 ```
 
-On RHEL/CentOS:
+### On RHEL/CentOS:
 
 * Execute :
 ```bash
