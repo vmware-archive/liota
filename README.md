@@ -54,6 +54,43 @@ In general, liota can be installed with:
 
 It requires a Python 2.7 environment already installed.
 
+## Autostarting Liota Daemon
+For starting liotad.py in background automatically at reboot, start autostartliota service present at location:
+```bash
+  /etc/init.d/
+```
+To start the autostartliota script perform the following steps:
+
+* Change the file permissions to make it executable:
+```bash
+  $ sudo chmod +x autostartliota
+```
+
+On Debian/Ubuntu:
+
+* Execute :
+```bash
+  $ sudo update-rc.d autostartliota defaults
+  $ sudo invoke-rc.d autostartliota start
+```
+
+* To stop the script, execute:
+```bash
+  $ sudo update-rc.d autostartliota remove
+```
+
+On RHEL/CentOS:
+
+* Execute :
+```bash
+  $ chkconfig --add autostartliota
+  $ chkconfig autostartliota on
+```
+
+* To stop the script, execute:
+```bash
+  $ chkconfig --del autostartliota
+```
 
 ## Liota.conf
 liota.conf provides path to find out various configuration & log files. When initializing, liota does a multi-step search for the configuration file: 

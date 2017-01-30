@@ -1,11 +1,11 @@
 #! /bin/sh
 ### BEGIN INIT INFO
-# Provides:          Liota autostart
+# Provides:          Autostarts liota.
 # Required-Start:    $all
 # Required-Stop:
 # Default-Start:     2 3 4 5
 # Default-Stop:
-# Short-Description: Starts liotad.py at reboot.
+# Short-Description: Starts liotad.py in background at reboot.
 ### END INIT INFO
 
 . /etc/liota/packages
