@@ -61,11 +61,6 @@ For starting liotad.py in background automatically at reboot, start autostartlio
 ```
 To start the autostartliota script perform the following steps:
 
-* Change the file permissions to make it executable:
-```bash
-  $ sudo chmod +x autostartliota
-```
-
 ### On Debian/Ubuntu:
 
 * Execute :
@@ -76,7 +71,7 @@ To start the autostartliota script perform the following steps:
 
 * To stop the script, execute:
 ```bash
-  $ sudo update-rc.d autostartliota remove
+  $ sudo update-rc.d -f autostartliota remove
 ```
 
 ### On RHEL/CentOS:
