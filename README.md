@@ -14,6 +14,7 @@ Each DCC must implement a register() method and return a RegisteredEntity object
 
 ### EdgeSystems and Devices
 The abstract subclasses of Entities, EdgeSystem and Device are for now mostly placeholders in the hierarchy. We expect, as concrete implementations are created over time we'll see some common data and logic that we can move up into the abstract classes.
+
 **Note:** We recommend creating EdgeSystem Objects before creating DCCComms or DeviceComms objects.
 
 ### Metrics
