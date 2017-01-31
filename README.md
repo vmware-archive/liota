@@ -85,6 +85,7 @@ To enable/disable the autostart service perform the following steps:
 ```bash
   $ chkconfig autostartliota on
 ```
+and reboot the system.
 
 * To stop the script, execute:
 ```bash
