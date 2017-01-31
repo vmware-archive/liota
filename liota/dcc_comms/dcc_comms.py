@@ -58,7 +58,7 @@ class DCCComms:
         pass
 
     @abstractmethod
-    def send(self, message):
+    def send(self, message, msg_attr):
         pass
 
     @abstractmethod
