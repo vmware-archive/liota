@@ -8,8 +8,6 @@
 # Short-Description: Starts liotad.py in background at reboot.
 ### END INIT INFO
 
-. /etc/liota/packages
-
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 do_start() {
