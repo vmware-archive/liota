@@ -34,13 +34,12 @@ import json
 import logging
 import time
 import threading
-import ConfigParser
 import os
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
-from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir_log, read_liota_config
+from liota.lib.utilities.utility import getUTCmillis, mkdir_log, read_liota_config, store_edge_system_uuid
 from liota.lib.utilities.si_unit import parse_unit
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
@@ -252,13 +251,13 @@ class IotControlCenter(DataCenterComponent):
                 "Devices": []
             }
         }
-	
-	iotcc_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
+
+        iotcc_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
         path = os.path.dirname(iotcc_path)
         mkdir_log(path)
         try:
             with open(iotcc_path, 'w') as f:
-                json.dump(msg, f, sort_keys = True, indent = 4, ensure_ascii=False)
+                json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
                 log.debug('Initialized ' + iotcc_path)
             f.close()
         except IOError, err:
@@ -289,18 +288,5 @@ class IotControlCenter(DataCenterComponent):
                 json.dump(msg, f, sort_keys = True, indent = 4, ensure_ascii=False)
             f.close()
 
-
-    def store_edge_system_uuid(self, entity_name, reg_entity_id):
-        try:
-            uuid_path = read_liota_config('UUID_PATH', 'uuid_path')
-            uuid_config = ConfigParser.RawConfigParser()
-            uuid_config.optionxform = str
-            uuid_config.add_section('GATEWAY')
-            uuid_config.set('GATEWAY', 'uuid', reg_entity_id)
-            uuid_config.set('GATEWAY', 'name', entity_name)
-            with open(uuid_path, 'w') as configfile:
-                uuid_config.write(configfile)
-        except ConfigParser.ParsingError, err:
-            log.error('Could not open config file ' + err)
             
 

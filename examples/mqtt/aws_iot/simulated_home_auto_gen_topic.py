@@ -40,10 +40,7 @@ from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
 from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
-from liota.lib.identity.identity import RemoteSystemIdentity
-from liota.lib.identity.identity import EdgeSystemIdentity
-from liota.lib.identity.tls_conf import TLSConf
-from liota.lib.transports.mqtt import QoSDetails
+from liota.lib.transports.mqtt import MqttTLSConf, QoSDetails
 
 # getting aws related values from conf file
 config = {}
@@ -123,13 +120,8 @@ def living_room_luminance():
 if __name__ == '__main__':
     #  Creating EdgeSystem
     edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
-    #  Encapsulates Identity Parameters related to Dcc
-    dcc_identity = RemoteSystemIdentity(root_ca_cert=config['broker_root_ca_cert'], username=None, password=None)
-    #  Encapsulates Identity Parameters related to EdgeSystem
-    edge_system_identity = EdgeSystemIdentity(edge_system=edge_system, cert_file=config['edge_system_cert_file'],
-                                              key_file=config['edge_system_key_file'])
     # Encapsulate TLS parameters
-    tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
+    tls_conf = MqttTLSConf(config['cert_required'], config['tls_version'], config['cipher'])
     # Encapsulate QoS related parameters
     qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
@@ -137,8 +129,10 @@ if __name__ == '__main__':
     #  Initializing GenericMqtt DCC using MqttDccComms
     #  AWSIoT broker doesn't support session persistence.  So, always use "clean_session=True"
     #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system'
-    aws = GenericMqtt(MqttDccComms(dcc_identity, edge_system_identity, tls_conf, qos_details, config['BrokerIP'],
-                                   config['BrokerPort'], clean_session=True, userdata=config['userdata'],
+    aws = GenericMqtt(MqttDccComms(edge_system=edge_system, url=config['BrokerIP'], port=config['BrokerPort'],
+                                   tls_conf=tls_conf, root_ca_cert=config['broker_root_ca_cert'], cert_file=
+                                   config['edge_system_cert_file'], key_file=config['edge_system_key_file'],
+                                   qos_details=qos_details, clean_session=True, userdata=config['userdata'],
                                    protocol=config['protocol'], transport=['transport'],
                                    conn_disconn_timeout=config['ConnectDisconnectTimeout']), enclose_metadata=True)
     #  Registering EdgeSystem

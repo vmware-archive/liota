@@ -53,7 +53,7 @@ class GenericMqtt(DataCenterComponent):
     """
     def __init__(self, con, enclose_metadata=False):
         """
-        :param con: AWSMQTTDccComms Object
+        :param con: MqttDccComms Object
         :param enclose_metadata: Include Gateway, Device and Metric names as part of payload or not
         """
         super(GenericMqtt, self).__init__(con)
@@ -98,46 +98,52 @@ class GenericMqtt(DataCenterComponent):
     def _get_entity_hierarchy(self, reg_entity):
         """
         :param reg_entity: RegisteredMetric Object
-        :return: Entity hierarchy delimited by '->'
+        :return: A list with entity names
+                 - [edge_system_name, device_name, metric_name] (or)
+                 - [edge_system_name, metric_name]
         """
         if not isinstance(reg_entity, RegisteredEntity):
             raise TypeError("RegisteredEntity is expected")
 
         def extract_hierarchy(reg_entity):
             """
-            Recursive function to get entity_names
+            Recursive function to get entity names
             :param reg_entity: RegisteredEntity Object
             :return:
             """
             if reg_entity is None:
-                return ""
-            else:
-                return extract_hierarchy(reg_entity.parent) + reg_entity.ref_entity.name + '->'
-        return extract_hierarchy(reg_entity.parent) + reg_entity.ref_entity.name
+                return []
+            return extract_hierarchy(reg_entity.parent) + [reg_entity.ref_entity.name]
+
+        return extract_hierarchy(reg_entity)
 
     def _format_data(self, reg_metric):
         """
         :param reg_metric: Registered Metric Object
         :return: Payload in JSON format
         """
-        _list = []
         met_cnt = reg_metric.values.qsize()
-        if met_cnt > 0:
-            for _ in range(met_cnt):
-                m = reg_metric.values.get(block=True)
-                if m is not None:
-                    _list.append(OrderedDict([('value', m[1]), ('timestamp', m[0])]))
+        if met_cnt == 0:
+            return
+
+        _list = []
+        for _ in range(met_cnt):
+            m = reg_metric.values.get(block=True)
+            if m is not None:
+                _list.append(OrderedDict([('value', m[1]), ('timestamp', m[0])]))
+
         payload = OrderedDict()
-        _entity_hierarchy = self._get_entity_hierarchy(reg_metric).split("->")
         if self.enclose_metadata:
+            _entity_hierarchy = self._get_entity_hierarchy(reg_metric)
             #  EdgeSystem and Device's name will be added with payload
             if len(_entity_hierarchy) == 3:
                 payload['edge_system_name'] = _entity_hierarchy[0]
                 payload['device_name'] = _entity_hierarchy[1]
             #  EdgeSystem's name will be added with payload
-            else:
+            elif len(_entity_hierarchy) == 2:
                 payload['edge_system_name'] = _entity_hierarchy[0]
-
+            else:
+                log.error("Error occurred while constructing payload")
         payload['metric_name'] = reg_metric.ref_entity.name
         payload['metric_data'] = [_ for _ in _list]
         payload['unit'] = parse_unit(reg_metric.ref_entity.unit)[1]

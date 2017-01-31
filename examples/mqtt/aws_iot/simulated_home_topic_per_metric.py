@@ -41,10 +41,7 @@ from liota.lib.transports.mqtt import MqttMessagingAttributes
 from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
-from liota.lib.identity.identity import RemoteSystemIdentity
-from liota.lib.identity.identity import EdgeSystemIdentity
-from liota.lib.identity.tls_conf import TLSConf
-from liota.lib.transports.mqtt import QoSDetails
+from liota.lib.transports.mqtt import MqttTLSConf, QoSDetails
 
 # getting aws related values from conf file
 config = {}
@@ -123,13 +120,8 @@ def living_room_luminance():
 if __name__ == '__main__':
     #  Creating EdgeSystem
     edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
-    #  Encapsulates Identity Parameters related to Dcc
-    dcc_identity = RemoteSystemIdentity(root_ca_cert=config['broker_root_ca_cert'], username=None, password=None)
-    #  Encapsulates Identity Parameters related to EdgeSystem
-    edge_system_identity = EdgeSystemIdentity(edge_system=edge_system, cert_file=config['edge_system_cert_file'],
-                                              key_file=config['edge_system_key_file'])
     # Encapsulate TLS parameters
-    tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
+    tls_conf = MqttTLSConf(config['cert_required'], config['tls_version'], config['cipher'])
     # Encapsulate QoS related parameters
     qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
@@ -138,10 +130,13 @@ if __name__ == '__main__':
     #  AWSIoT broker doesn't support session persistence.  So, always use "clean_session=True"
     #  Custom Publish Topic for an EdgeSystem
     mqtt_msg_attr = MqttMessagingAttributes(pub_topic=config['CustomPubTopic'])
-    #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system'
-    aws = GenericMqtt(MqttDccComms(dcc_identity, edge_system_identity, tls_conf, qos_details, config['BrokerIP'],
-                                   config['BrokerPort'], clean_session=True, mqtt_msg_attr=mqtt_msg_attr,
-                                   conn_disconn_timeout=config['ConnectDisconnectTimeout']), enclose_metadata=False)
+
+    aws = GenericMqtt(MqttDccComms(edge_system=edge_system, url=config['BrokerIP'], port=config['BrokerPort'],
+                                   tls_conf=tls_conf, root_ca_cert=config['broker_root_ca_cert'], cert_file=
+                                   config['edge_system_cert_file'], key_file=config['edge_system_key_file'],
+                                   qos_details=qos_details, clean_session=True, userdata=config['userdata'],
+                                   protocol=config['protocol'], transport=['transport'], conn_disconn_timeout=
+                                   config['ConnectDisconnectTimeout'], mqtt_msg_attr=mqtt_msg_attr), enclose_metadata=False)
     #  Registering EdgeSystem
     reg_edge_system = aws.register(edge_system)
 
@@ -178,7 +173,7 @@ if __name__ == '__main__':
     reg_temp_metric = aws.register(temp_metric)
     aws.create_relationship(reg_dht_sensor, reg_temp_metric)
     #  Publish topic for this Metric
-    reg_temp_metric.msg_attr = MqttMessagingAttributes(pub_topic='home/living-room/temperature')
+    reg_temp_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomTempTopic'])
     #  Publishing Registered Temperature Metric to AWS
     reg_temp_metric.start_collecting()
 
@@ -195,7 +190,7 @@ if __name__ == '__main__':
     reg_hum_metric = aws.register(hum_metric)
     aws.create_relationship(reg_dht_sensor, reg_hum_metric)
     #  Publish topic for this Metric
-    reg_hum_metric.msg_attr = MqttMessagingAttributes(pub_topic='home/living-room/humidity')
+    reg_hum_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomHumTopic'])
     #  Publishing Registered Humidity Metric to AWS
     reg_hum_metric.start_collecting()
 
@@ -218,6 +213,6 @@ if __name__ == '__main__':
     reg_light_metric = aws.register(light_metric)
     aws.create_relationship(reg_light_sensor, reg_light_metric)
     #  Publish topic for this Metric
-    reg_light_metric.msg_attr = MqttMessagingAttributes(pub_topic='home/living-room/light')
+    reg_light_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomLightTopic'])
     #  Publishing Registered Light Metric to AWS
     reg_light_metric.start_collecting()

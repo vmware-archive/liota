@@ -45,9 +45,7 @@ class PackageClass(LiotaPackage):
         import copy
         from liota.dccs.generic_mqtt import GenericMqtt
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
-        from liota.lib.identity.identity import EdgeSystemIdentity, RemoteSystemIdentity
-        from liota.lib.transports.mqtt import QoSDetails
-        from liota.lib.identity.tls_conf import TLSConf
+        from liota.lib.transports.mqtt import MqttTLSConf, QoSDetails
 
         # Acquire resources from registry
         # Creating a copy of edge_system object to keep original object "clean"
@@ -58,13 +56,8 @@ class PackageClass(LiotaPackage):
         config = {}
         execfile(config_path + '/sampleProp.conf', config)
 
-        #  Encapsulates Identity Parameters related to Dcc
-        dcc_identity = RemoteSystemIdentity(root_ca_cert=config['broker_root_ca_cert'], username=None, password=None)
-        #  Encapsulates Identity Parameters related to EdgeSystem
-        edge_system_identity = EdgeSystemIdentity(edge_system=edge_system, cert_file=config['edge_system_cert_file'],
-                                                  key_file=config['edge_system_key_file'])
         # Encapsulate TLS parameters
-        tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
+        tls_conf = MqttTLSConf(config['cert_required'], config['tls_version'], config['cipher'])
         # Encapsulate QoS related parameters
         qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
@@ -72,10 +65,12 @@ class PackageClass(LiotaPackage):
         #  Initializing GenericMqtt DCC using MqttDccComms
         #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system'
         #  Create and pass custom MqttMessagingAttributes object to MqttDccComms to have custom topic
-        self.generic_mqtt = GenericMqtt(MqttDccComms(dcc_identity, edge_system_identity, tls_conf, qos_details, config['BrokerIP'],
-                                       config['BrokerPort'], clean_session=True, userdata=config['userdata'],
-                                       protocol=config['protocol'], transport=['transport'],
-                                       conn_disconn_timeout=config['ConnectDisconnectTimeout']), enclose_metadata=True)
+        self.generic_mqtt = GenericMqtt(MqttDccComms(edge_system=edge_system, url=config['BrokerIP'], port=config['BrokerPort'],
+                                   tls_conf=tls_conf, root_ca_cert=config['broker_root_ca_cert'], cert_file=
+                                   config['edge_system_cert_file'], key_file=config['edge_system_key_file'],
+                                   qos_details=qos_details, clean_session=True, userdata=config['userdata'],
+                                   protocol=config['protocol'], transport=['transport'],
+                                   conn_disconn_timeout=config['ConnectDisconnectTimeout']), enclose_metadata=True)
 
         # Register edge system (gateway)
         generic_mqtt_edge_system = self.generic_mqtt.register(edge_system)

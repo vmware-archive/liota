@@ -2,15 +2,9 @@
 
 LIOTA offers MQTT protocol as transport at both Device & DCC ends via ![MqttDeviceComms](/liota/device_comms/mqtt_device_comms.py) & ![MqttDccComms](/liota/dcc_comms/mqtt_dcc_comms.py).
 
-## Security
-LIOTA's Mqtt client supports both Username-password based authentication & certification based authentication.  Users can configure appropriate parameters using these objects
-while initializing MqttDeviceComms and MqttDccComms:
-
-* ![EdgeSystemIdentity & RemoteSystemIdentity](/liota/lib/identity/identity.py)
-* ![TLSConf](/liota/lib/identity/tls_conf.py)
 
 ## QoS
-LIOTA also supports configuration of QoS related parameters like in_flight size, queue_size and retry timeout using **QoSDetails class** in ![mqtt.py](/liota/lib/transports/mqtt.py).
+LIOTA also supports configuration of QoS related parameters like in_flight size, queue_size and retry timeout using **QoSDetails class**.
 
 ## Using MqttDeviceComms
 
@@ -34,7 +28,7 @@ It enables the following options for developers in LIOTA.
 * Publish retain flag will be **False** and
 * Subscribe call_back will be **None**
 
-**(b)** Use custom single publish and subscribe topic for an EdgeSystem, its Devices and Metrics.
+**(b)** Use custom single publish and subscribe topic for an EdgeSystem, its Devices and Metrics.  Along with custom topics, other parameters (QoS, retain_flag ,etc.,) can be referred from ![Property File](/examples/mqtt/aws_iot/awsSampleProp.conf).
 
 **-** In the above two cases, MQTT message's payload MUST be self-descriptive so that subscriber can subscribe process accordingly to a single topic by parsing payload.
 
@@ -57,14 +51,15 @@ Configuring MqttDccComms and MessagingAttributes for ProjectICE and non-ProjectI
 it follows `Option (a)` as mentioned in the above section.
 * **Option (a)** could be achieved by passing **mqtt_msg_attr=None while initializing MqttDccComms**.
 
-Examples for this will be provided once the development is complete.
-
 
 ### Configuration for Non-ProjectICE Scenario
 ![GenericMqtt DCC](/liota/dccs/generic_mqtt.py) is a Data Center Component to connect with MQTT brokers using LIOTA in non-ProjectICE scenarios.  **Options (a), (b), (c) and (d)** mentioned in the above section
 could be used.
 * **enclose_metadata** flag in GenericMqtt Dcc can be used to specify whether a payload should be self-descriptive or not. i.e., If set to **True**, EdgeSystemName and DeviceName for a Metric will be appended
-along with the payload every-time when it is published.
+along with the payload every-time when it is published.  This is because:
+**-** If **automatic topic generation** option is used, subscribers can differentiate between metrics from different EdgeSystems & Devices by parsing the payload.  So, **enclose_metadata=True** should be used in this case.
+**-** If **custom topic per metric** option is used, subscribers can differentiate between metrics from different EdgeSystems & Devices by subscribing to appropriate topics.
+
 * **Option (b)** could be achieved by passing **custom MqttMessagingAttributes object** while initializing **MqttDccComms**.
 * **Option (c)** could be achieved by passing **custom MqttMessagingAttributes object** as an attribute with name **msg_attr** to the corresponding **RegisteredMetricObjects**
 
