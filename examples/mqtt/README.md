@@ -58,9 +58,9 @@ could be used.
 * **enclose_metadata** flag in GenericMqtt Dcc can be used to specify whether a payload should be self-descriptive or not. i.e., If set to **True**, EdgeSystemName and DeviceName for a Metric will be appended
 along with the payload every-time when it is published.  This is because:
 
-**-** If **automatic topic generation** option is used, subscribers can differentiate between metrics from different EdgeSystems & Devices by parsing the payload.  So, **enclose_metadata=True** should be used in this case.
+  **-** If **automatic topic generation** option is used, subscribers can differentiate between metrics from different EdgeSystems & Devices by parsing the payload.  So, **enclose_metadata=True** should be used in this case.
 
-**-** If **custom topic per metric** option is used, subscribers can differentiate between metrics from different EdgeSystems & Devices by subscribing to appropriate topics.
+  **-** If **custom topic per metric** option is used, subscribers can differentiate between metrics from different EdgeSystems & Devices by subscribing to appropriate topics.
 
 * **Option (b)** could be achieved by passing **custom MqttMessagingAttributes object** while initializing **MqttDccComms**.
 * **Option (c)** could be achieved by passing **custom MqttMessagingAttributes object** as an attribute with name **msg_attr** to the corresponding **RegisteredMetricObjects**
