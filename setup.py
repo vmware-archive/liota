@@ -123,7 +123,5 @@ setup(
                  ['config/liota.conf', 'config/logging.json']),
                 (os.path.abspath(os.sep) + '/../etc/liota',
                  ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
-                (os.path.abspath(os.sep) + '/../etc/init.d',
-                 ['scripts/autostartliota']),
                 (os.path.abspath(os.sep) + '/../var/log/liota', [])]
 )
