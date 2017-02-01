@@ -41,7 +41,7 @@ from liota.device_comms.mqtt_device_comms import MqttDeviceComms
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.entities.metrics.metric import Metric
-from liota.lib.transports.mqtt import MqttTLSConf, QoSDetails
+from liota.lib.utilities.utility import Credentials, TLSConf
 
 # getting values from conf file
 config = {}
@@ -110,21 +110,18 @@ def get_value(queue):
 
 
 # MQTT connection setup to record kitchen and living room temperature values
-def mqtt_subscribe(edge_system_object):
-
+def mqtt_subscribe():
+    # Encapsulates Credentials
+    credentials = Credentials(config['broker_root_ca_cert'], config['broker_username'], ['broker_password'],
+                              config['edge_system_cert_file'], config['edge_system_key_file'])
     # Encapsulate TLS parameters
-    tls_conf = MqttTLSConf(cert_required=config['cert_required'], tls_version=config['tls_version'],
+    tls_conf = TLSConf(cert_required=config['cert_required'], tls_version=config['tls_version'],
                        cipher=config['cipher'])
 
-    # Encapsulate QoS related parameters
-    qos_details = QoSDetails(in_flight=config['in_flight'], queue_size=config['queue_size'], retry=config['retry'])
-
     # Create MQTT connection object with required params
-    mqtt_conn = MqttDeviceComms(url=config['BrokerIP'],  port=config['BrokerPort'], tls_conf=tls_conf,
-                                root_ca_cert=config['broker_root_ca_cert'], cert_file=config['edge_system_cert_file'],
-                                key_file=config['edge_system_key_file'],  qos_details=None,  clean_session=True,
-                                keep_alive=config['keep_alive'], enable_authentication=True,
-                                username=config['broker_username'], password=['broker_password'])
+    mqtt_conn = MqttDeviceComms(url=config['BrokerIP'],  port=config['BrokerPort'], credentials=credentials,
+                                tls_conf=tls_conf, qos_details=None,  clean_session=True,
+                                keep_alive=config['keep_alive'], enable_authentication=True)
 
     # Subscribe to channels : "temperature/kitchen" and "temperature/living-room" with preferred QoS level 0, 1 or 2
     # Provide callback function as a parameter for corresponding channel
@@ -134,18 +131,19 @@ def mqtt_subscribe(edge_system_object):
 
 if __name__ == "__main__":
 
+    #  Creating EdgeSystem
+    edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
+
+    # Connect with MQTT broker using DeviceComms and subscribe to topics
+    # Get kitchen and living room temperature values using MQTT channel
+    mqtt_subscribe()
+
     # Create DCC object IoTCC using websocket transport
     # with UID and PASS
     iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
                              WebSocketDccComms(url=config['WebSocketUrl']))
 
     try:
-
-        # Create an Edge System Dk300
-        edge_system = Dk300EdgeSystem(config['EdgeSystemName'])
-
-        # Get kitchen and living room temperature values using MQTT channel
-        mqtt_subscribe(edge_system)
 
         # Register Edge System with IoT control center
         reg_edge_system = iotcc.register(edge_system)

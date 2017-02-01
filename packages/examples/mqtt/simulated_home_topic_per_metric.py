@@ -123,6 +123,11 @@ class PackageClass(LiotaPackage):
         generic_mqtt = registry.get("generic_mqtt")
         generic_mqtt_edge_system = copy.copy(registry.get("generic_mqtt_edge_system"))
 
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
         # Create metrics
         self.metrics = []
 
@@ -138,7 +143,7 @@ class PackageClass(LiotaPackage):
         reg_cpu_utilization = generic_mqtt.register(cpu_utilization)
         generic_mqtt.create_relationship(generic_mqtt_edge_system, reg_cpu_utilization)
         #  Publish topic for this Metric
-        reg_cpu_utilization.msg_attr = MqttMessagingAttributes(pub_topic='home/gateway/metrics')
+        reg_cpu_utilization.msg_attr = MqttMessagingAttributes(pub_topic=config['CustomPubTopic'])
         #  Publishing Registered CPU Utilization Metric to GenericMqtt Dcc
         reg_cpu_utilization.start_collecting()
         self.metrics.append(reg_cpu_utilization)
@@ -161,7 +166,7 @@ class PackageClass(LiotaPackage):
         reg_temp_metric = generic_mqtt.register(temp_metric)
         generic_mqtt.create_relationship(reg_dht_sensor, reg_temp_metric)
         #  Publish topic for this Metric
-        reg_temp_metric.msg_attr = MqttMessagingAttributes(pub_topic='home/living-room/temperature')
+        reg_temp_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomTempTopic'])
         #  Publishing Registered Temperature Metric to GenericMqtt Dcc
         reg_temp_metric.start_collecting()
         self.metrics.append(reg_temp_metric)
@@ -179,7 +184,7 @@ class PackageClass(LiotaPackage):
         reg_hum_metric = generic_mqtt.register(hum_metric)
         generic_mqtt.create_relationship(reg_dht_sensor, reg_hum_metric)
         #  Publish topic for this Metric
-        reg_hum_metric.msg_attr = MqttMessagingAttributes(pub_topic='home/living-room/humidity')
+        reg_hum_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomHumTopic'])
         #  Publishing Registered Humidity Metric to GenericMqtt Dcc
         reg_hum_metric.start_collecting()
         self.metrics.append(reg_hum_metric)
@@ -203,7 +208,7 @@ class PackageClass(LiotaPackage):
         reg_light_metric = generic_mqtt.register(light_metric)
         generic_mqtt.create_relationship(reg_light_sensor, reg_light_metric)
         #  Publish topic for this Metric
-        reg_light_metric.msg_attr = MqttMessagingAttributes(pub_topic='home/living-room/light')
+        reg_light_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomLightTopic'])
         #  Publishing Registered Light Metric to GenericMqttDcc
         reg_light_metric.start_collecting()
         self.metrics.append(reg_light_metric)

@@ -124,17 +124,15 @@ class Mqtt():
         """
         log.debug("Unsubscribed: {0}".format(str(mid)))
 
-    def __init__(self, url, port, tls_conf=None, root_ca_cert=None, cert_file=None, key_file=None, qos_details=None,
-                 client_id="", clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
-                 enable_authentication=False, username=None, password=None, conn_disconn_timeout=10):
+    def __init__(self, url, port, credentials = None, tls_conf=None, qos_details=None, client_id="",
+                 clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
+                 enable_authentication=False, conn_disconn_timeout=10):
 
         """
         :param url: MQTT Broker URL or IP
         :param port: MQTT Broker Port
-        :param tls_conf: MqttTLSConf object
-        :param root_ca_cert: Root CA certificate path or Self-signed server certificate path
-        :param cert_file: Device certificate file path
-        :param key_file: Device certificate key-file path
+        :param credentials: Credentials Object
+        :param tls_conf: TLSConf object
         :param qos_details: QoSDetails object
         :param client_id: Client ID
         :param clean_session: Connect with Clean session or not
@@ -153,26 +151,27 @@ class Mqtt():
         """
         self.url = url
         self.port = port
+        self.credentials = credentials
         self.tls_conf = tls_conf
-        self.root_ca_cert = root_ca_cert
-        self.cert_file = cert_file
-        self.key_file = key_file
-        self.keep_alive = keep_alive
         self.qos_details = qos_details
+        self.client_id = client_id
+        self.clean_session = clean_session
+        self.userdata = userdata
+        self.protocol = protocol
+        self.transport = transport
+        self.keep_alive = keep_alive
         self.enable_authentication = enable_authentication
-        self.username = username
-        self.password = password
         self._conn_disconn_timeout = conn_disconn_timeout
-        if clean_session:
+        if self.clean_session:
             # If user passes client_id, it'll be used.  Otherwise, it is left to the underlying paho
             # to generate random client_id
-            self._paho_client = paho.Client(client_id, clean_session=True, userdata=userdata,
-                                            protocol=getattr(paho, protocol), transport=transport)
+            self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
+                                            protocol=getattr(paho, self.protocol), transport=self.transport)
             log.info("clean_session is set to True")
         else:
             #  client_id is either auto-generated or provided by user
-            self._paho_client = paho.Client(client_id, clean_session=False, userdata=userdata,
-                                            protocol=getattr(paho, protocol), transport=transport)
+            self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
+                                            protocol=getattr(paho, self.protocol), transport=self.transport)
             log.info("clean_session is set to False")
 
         self._connect_result_code = sys.maxsize
@@ -193,17 +192,17 @@ class Mqtt():
         if self.tls_conf:
 
             # Validate CA certificate path
-            if self.root_ca_cert:
-                if not(os.path.exists(self.root_ca_cert)):
+            if self.credentials.root_ca_cert:
+                if not(os.path.exists(self.credentials.root_ca_cert)):
                     log.error("Error : Wrong CA certificate path.")
                     raise ValueError("Error : Wrong CA certificate path.")
             else:
-                log.error("Error : Wrong CA certificate path.")
+                log.error("Error : CA certificate path is missing")
                 raise ValueError("Error : CA certificate path is missing")
 
             # Validate client certificate path
-            if self.cert_file:
-                if os.path.exists(self.cert_file):
+            if self.credentials.cert_file:
+                if os.path.exists(self.credentials.cert_file):
                     client_cert_available = True
                 else:
                     log.error("Error : Wrong client certificate path.")
@@ -212,8 +211,8 @@ class Mqtt():
                 client_cert_available = False
 
             # Validate client key file path
-            if self.key_file:
-                if os.path.exists(self.key_file):
+            if self.credentials.key_file:
+                if os.path.exists(self.credentials.key_file):
                     client_key_available = True
                 else:
                     log.error("Error : Wrong client key path.")
@@ -230,16 +229,16 @@ class Mqtt():
             '''
 
             if client_cert_available and client_key_available:
-                log.debug("Certificates : ", self.root_ca_cert, self.cert_file,
-                          self.key_file)
+                log.debug("Certificates : ", self.credentials.root_ca_cert, self.credentials.cert_file,
+                          self.credentials.key_file)
 
-                self._paho_client.tls_set(self.root_ca_cert, self.cert_file,
-                                          self.key_file,
+                self._paho_client.tls_set(self.credentials.root_ca_cert, self.credentials.cert_file,
+                                          self.credentials.key_file,
                                           cert_reqs=getattr(ssl, self.tls_conf.cert_required),
                                           tls_version=getattr(ssl, self.tls_conf.tls_version),
                                           ciphers=self.tls_conf.cipher)
             elif not client_cert_available and not client_key_available:
-                self._paho_client.tls_set(self.root_ca_cert,
+                self._paho_client.tls_set(self.credentials.root_ca_cert,
                                           cert_reqs=getattr(ssl, self.tls_conf.cert_required),
                                           tls_version=getattr(ssl, self.tls_conf.tls_version),
                                           ciphers=self.tls_conf.cipher)
@@ -253,14 +252,14 @@ class Mqtt():
 
         # Set up username-password
         if self.enable_authentication:
-            if not self.username:
+            if not self.credentials.username:
                 log.error("Username not found")
                 raise ValueError("Username not found")
-            elif not self.password:
+            elif not self.credentials.password:
                 log.error("Password not found")
                 raise ValueError("Password not found")
             else:
-                self._paho_client.username_pw_set(self.username, self.password)
+                self._paho_client.username_pw_set(self.credentials.username, self.credentials.password)
 
         if self.qos_details:
             # Set QoS parameters
@@ -356,24 +355,6 @@ class Mqtt():
         :return:
         """
         return self._paho_client._client_id
-
-
-class MqttTLSConf:
-
-    """
-    This class encapsulates TLS config parameters related for MQTT.
-    """
-
-    def __init__(self, cert_required, tls_version, cipher):
-        """
-        :param cert_required: Defines the certificate requirements
-        :param tls_version: Version of SSL/TLS protocol to be used
-        :param cipher: Ciphers is a string specifying which encryption ciphers are allowable
-                        for a connection, or None to use the defaults.
-        """
-        self.cert_required = cert_required
-        self.tls_version = tls_version
-        self.cipher = cipher
 
 
 class QoSDetails:

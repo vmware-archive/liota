@@ -44,19 +44,16 @@ class MqttDccComms(DCCComms):
     DccComms for MQTT Transport
     """
 
-    def __init__(self, edge_system, url, port, tls_conf=None, root_ca_cert=None, cert_file=None, key_file=None,
-                 qos_details=None, client_id="", clean_session=False, userdata=None, protocol="MQTTv311",
-                 transport="tcp", keep_alive=60, mqtt_msg_attr=None, enable_authentication=False, username=None,
-                 password=None, conn_disconn_timeout=10):
+    def __init__(self, edge_system_name, url, port, credentials=None, tls_conf=None, qos_details=None,
+                 client_id="", clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
+                 mqtt_msg_attr=None, enable_authentication=False, conn_disconn_timeout=10):
 
         """
         :param edge_system: Edge System object as EdgeSystem's name is used in auto-generation of topic
         :param url: MQTT Broker URL or IP
         :param port: MQTT Broker Port
         :param tls_conf: TLSConf object
-        :param root_ca_cert: Root CA certificate path or Self-signed server certificate path
-        :param cert_file: Device certificate file path
-        :param key_file: Device certificate key-file path
+        :param credentials: Credentials object
         :param qos_details: QoSDetails object
         :param client_id: Client ID
         :param clean_session: Connect with Clean session or not
@@ -71,8 +68,6 @@ class MqttDccComms(DCCComms):
         :param mqtt_msg_attr: MqttMessagingAttributes object or None.
                             In case of None, topics will be auto-generated. User provided topic will be used otherwise.
         :param enable_authentication: Enable user-name password authentication or not
-        :param username: Username for authentication
-        :param password: Password for authentication
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
         """
 
@@ -81,14 +76,14 @@ class MqttDccComms(DCCComms):
         if mqtt_msg_attr is None:
             #  pub-topic and sub-topic will be auto-generated
             log.info("pub-topic and sub-topic is auto-generated")
-            self.msg_attr = MqttMessagingAttributes(edge_system.name)
+            self.msg_attr = MqttMessagingAttributes(edge_system_name)
             #  local_uuid generated will be the client ID
-            self.client_id = systemUUID().get_uuid(edge_system.name)
+            self.client_id = systemUUID().get_uuid(edge_system_name)
             log.info("generated local uuid will be the client ID")
             #  Storing edge_system name and generated local_uuid which will be used in
             #  pub-topic='liota/generated_local_uuid_of_edge_system' and
             #  sub-topic='liota-resp/generated_local_uuid_of_edge_system'
-            store_edge_system_uuid(entity_name=edge_system.name,
+            store_edge_system_uuid(entity_name=edge_system_name,
                                    entity_id=self.client_id,
                                    reg_entity_id=None)
         elif isinstance(mqtt_msg_attr, MqttMessagingAttributes):
@@ -100,10 +95,8 @@ class MqttDccComms(DCCComms):
 
         self.url = url
         self.port = port
+        self.credentials = credentials
         self.tls_conf = tls_conf
-        self.root_ca_cert = root_ca_cert
-        self.cert_file = cert_file
-        self.key_file = key_file
         self.qos_details = qos_details
         self.clean_session = clean_session
         self.userdata = userdata
@@ -111,8 +104,6 @@ class MqttDccComms(DCCComms):
         self.transport = transport
         self.keep_alive = keep_alive
         self.enable_authentication = enable_authentication
-        self.username = username
-        self.password = password
         self.conn_disconn_timeout = conn_disconn_timeout
         self._connect()
 
@@ -121,10 +112,9 @@ class MqttDccComms(DCCComms):
         Initializes Mqtt Transport and connects to MQTT broker.
         :return:
         """
-        self.client = Mqtt(self.url, self.port, self.tls_conf, self.root_ca_cert, self.cert_file, self.key_file,
-                           self.qos_details, self.client_id, self.clean_session, self.userdata, self.protocol,
-                           self.transport, self.keep_alive, self.enable_authentication, self.username, self.password,
-                           self.conn_disconn_timeout)
+        self.client = Mqtt(self.url, self.port, self.credentials, self.tls_conf, self.qos_details, self.client_id,
+                           self.clean_session, self.userdata, self.protocol, self.transport, self.keep_alive,
+                           self.enable_authentication, self.conn_disconn_timeout)
 
     def _disconnect(self):
         """

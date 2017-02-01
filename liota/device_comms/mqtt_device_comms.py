@@ -43,17 +43,14 @@ class MqttDeviceComms(DeviceComms):
     DeviceComms for MQTT Transport
     """
 
-    def __init__(self, url, port, tls_conf=None, root_ca_cert=None, cert_file=None, key_file=None,
-                 qos_details=None, client_id="", clean_session=False, userdata=None, protocol="MQTTv311",
-                 transport="tcp", keep_alive=60, enable_authentication=False, username=None,
-                 password=None, conn_disconn_timeout=10):
+    def __init__(self, url, port, credentials=None, tls_conf=None, qos_details=None,
+                 client_id="", clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
+                 enable_authentication=False, conn_disconn_timeout=10):
         """
         :param url: MQTT Broker URL or IP
         :param port: MQTT Broker Port
+        :param credentials: Credentials object
         :param tls_conf: TLSConf object
-        :param root_ca_cert: Root CA certificate path or Self-signed server certificate path
-        :param cert_file: Device certificate file path
-        :param key_file: Device certificate key-file path
         :param qos_details: QoSDetails object
         :param client_id: Client ID
         :param clean_session: Connect with Clean session or not
@@ -66,16 +63,12 @@ class MqttDeviceComms(DeviceComms):
 
         :param keep_alive: KeepAliveInterval
         :param enable_authentication: Enable user-name password authentication or not
-        :param username: Username for authentication
-        :param password: Password for authentication
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
         """
         self.url = url
         self.port = port
+        self.credentials = credentials
         self.tls_conf = tls_conf
-        self.root_ca_cert = root_ca_cert
-        self.cert_file = cert_file
-        self.key_file = key_file
         self.client_id = client_id
         self.qos_details = qos_details
         self.clean_session = clean_session
@@ -84,8 +77,6 @@ class MqttDeviceComms(DeviceComms):
         self.transport = transport
         self.keep_alive = keep_alive
         self.enable_authentication = enable_authentication
-        self.username = username
-        self.password = password
         self.conn_disconn_timeout = conn_disconn_timeout
         self._connect()
 
@@ -94,10 +85,9 @@ class MqttDeviceComms(DeviceComms):
         Initializes Mqtt Transport and connects to MQTT broker.
         :return:
         """
-        self.client = Mqtt(self.url, self.port, self.tls_conf, self.root_ca_cert, self.cert_file, self.key_file,
-                           self.qos_details, self.client_id, self.clean_session, self.userdata, self.protocol,
-                           self.transport, self.keep_alive, self.enable_authentication, self.username, self.password,
-                           self.conn_disconn_timeout)
+        self.client = Mqtt(self.url, self.port, self.credentials, self.tls_conf, self.qos_details, self.client_id,
+                           self.clean_session, self.userdata, self.protocol, self.transport, self.keep_alive,
+                           self.enable_authentication, self.conn_disconn_timeout)
 
     def _disconnect(self):
         """
