@@ -175,7 +175,7 @@ if __name__ == '__main__':
     reg_temp_metric = aws.register(temp_metric)
     aws.create_relationship(reg_dht_sensor, reg_temp_metric)
     #  Publish topic for this Metric
-    reg_temp_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomTempTopic'])
+    reg_temp_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomTemperatureTopic'])
     #  Publishing Registered Temperature Metric to AWS
     reg_temp_metric.start_collecting()
 
@@ -192,7 +192,7 @@ if __name__ == '__main__':
     reg_hum_metric = aws.register(hum_metric)
     aws.create_relationship(reg_dht_sensor, reg_hum_metric)
     #  Publish topic for this Metric
-    reg_hum_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomHumTopic'])
+    reg_hum_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomHumidityTopic'])
     #  Publishing Registered Humidity Metric to AWS
     reg_hum_metric.start_collecting()
 

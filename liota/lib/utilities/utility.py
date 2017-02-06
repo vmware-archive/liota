@@ -207,7 +207,7 @@ def read_liota_config(section, name):
 
 class Credentials:
     """
-    This class encapsulates credentials related to a connection  both at Dcc and Device side.
+    This class encapsulates certificates or credentials related to a connection  both at Dcc and Device side.
     """
 
     def __init__(self, root_ca_cert, username, password, cert_file, key_file):

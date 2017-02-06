@@ -6,6 +6,14 @@ LIOTA offers MQTT protocol as transport at both Device & DCC ends via ![MqttDevi
 ## QoS
 LIOTA also supports configuration of QoS related parameters like in_flight size, queue_size and retry timeout using **QoSDetails class**.
 
+
+## Credentials and TLS Configurations
+* **Credentials class** encapsulates certificates or credentials related to a connection used at both DCC and Device side.
+* **TLSConf class** encapsulates parameters related to TLS configuration.
+
+![Example](/examples/mqtt/dcc_comms/aws_iot/simulated_home_topic_per_metric.py) shows how the above objects can be used to establish a secure connection.
+
+
 ## Using MqttDeviceComms
 
 For both ProjectICE & non-ProjectICE use-cases, MQTT related parameters required in `publish()` and `subscribe()` like topic, qos, etc., are fetched directly from the user's
