@@ -92,7 +92,7 @@ class RangeFilter(Filter):
         """
         if filter_type not in Type:
             log.error("Unsupported Filter Type.")
-            raise ValueError("Unsupported Filter Type.")
+            raise TypeError("Unsupported Filter Type.")
 
         self.filter_type = filter_type
         self._validate(lower_bound, upper_bound)
@@ -117,11 +117,11 @@ class RangeFilter(Filter):
 
         elif self.filter_type in [Type.LESS_THAN, Type.AT_MOST] and not isinstance(lower_bound, Number):
             log.error("lower_bound must be a number")
-            raise ValueError("lower_bound must be a number")
+            raise TypeError("lower_bound must be a number")
 
         elif self.filter_type in [Type.GREATER_THAN, Type.AT_LEAST] and not isinstance(upper_bound, Number):
             log.error("upper_bound must be a number")
-            raise ValueError("upper_bound must be a number")
+            raise TypeError("upper_bound must be a number")
 
     def filter(self, v):
         """
@@ -176,8 +176,8 @@ class RangeFilter(Filter):
             result = v
 
         if result is not None:
-            log.info("Value passed by filter : %s" % str(result))
+            log.debug("Value passed by filter : %s" % str(result))
         else:
-            log.info("Value rejected by filter : %s" % str(v))
+            log.debug("Value rejected by filter : %s" % str(v))
 
         return result

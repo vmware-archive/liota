@@ -86,7 +86,7 @@ def read_mem_free():
     
 
 def read_network_packets_sent():
-    packets_sent = net_stat.rx_tx_dump('eth0')[1][1] + net_stat.rx_tx_dump('lo')[1][1]
+    packets_sent = net_stat.rx_tx_dump('ens33')[1][1] + net_stat.rx_tx_dump('lo')[1][1]
     return packets_sent
 
 
