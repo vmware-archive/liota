@@ -176,8 +176,8 @@ class RangeFilter(Filter):
             result = v
 
         if result is not None:
-            log.debug("Value passed by filter : %s" % str(result))
+            log.info("Value passed by filter : %s" % str(result))
         else:
-            log.debug("Value rejected by filter : %s" % str(v))
+            log.info("Value rejected by filter : %s" % str(v))
 
         return result
