@@ -77,9 +77,12 @@ class MqttDccComms(DCCComms):
             #  pub-topic and sub-topic will be auto-generated
             log.info("pub-topic and sub-topic is auto-generated")
             self.msg_attr = MqttMessagingAttributes(edge_system_name)
-            #  local_uuid generated will be the client ID
-            self.client_id = systemUUID().get_uuid(edge_system_name)
-            log.info("generated local uuid will be the client ID")
+            if self.client_id is None or self.client_id == "":
+                #  local_uuid generated will be the client ID
+                self.client_id = systemUUID().get_uuid(edge_system_name)
+                log.info("generated local uuid will be the client ID")
+            else:
+                log.info("Client ID is provided by user")
             #  Storing edge_system name and generated local_uuid which will be used in
             #  pub-topic='liota/generated_local_uuid_of_edge_system' and
             #  sub-topic='liota-resp/generated_local_uuid_of_edge_system'
