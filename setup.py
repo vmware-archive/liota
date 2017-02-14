@@ -112,6 +112,7 @@ setup(
                   'packages/examples/graphite_bike_simulated.py',
                   'packages/examples/iotcc_bike_simulated.py',
                   'packages/examples/graphite_edge_system_stats.py',
+                  'packages/examples/graphite_edge_system_stats_with_filter.py',
                   'packages/examples/iotcc_edge_system_stats.py',
                   'packages/examples/iotcc_edge_system_stats_with_filter.py',
                   'packages/examples/thermistor_simulator.py',

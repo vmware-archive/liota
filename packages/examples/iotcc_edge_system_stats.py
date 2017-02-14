@@ -53,7 +53,7 @@ def read_disk_usage_stats():
 
 
 def read_network_bytes_received():
-    return round(net_stat.rx_tx_bytes('eth0')[0], 2)
+    return round(net_stat.rx_tx_bytes('ens33')[0], 2)
 
 
 class PackageClass(LiotaPackage):
