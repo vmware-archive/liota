@@ -46,17 +46,17 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 
 #  Random number generator, simulating living room temperature readings.
-def living_room_temperature():
+def get_living_room_temperature():
     return random.randint(10, 30)
 
 
 #  Random number generator, simulating living room humidity readings.
-def living_room_humidity():
+def get_living_room_humidity():
     return random.randint(70, 90)
 
 
 #  Random number generator, simulating living room luminous readings.
-def living_room_luminance():
+def get_living_room_luminance():
     # 0 - Lights Off, 1 - Lights On
     return random.randint(0, 1)
 
@@ -152,7 +152,7 @@ class PackageClass(LiotaPackage):
             unit=ureg.degC,
             interval=1,
             aggregation_size=5,
-            sampling_function=living_room_temperature
+            sampling_function=get_living_room_temperature
         )
         #  Registering Metric and creating Parent-Child relationship
         reg_temp_metric = generic_mqtt.register(temp_metric)
@@ -168,7 +168,7 @@ class PackageClass(LiotaPackage):
             unit=None,
             interval=1,
             aggregation_size=5,
-            sampling_function=living_room_humidity
+            sampling_function=get_living_room_humidity
         )
         #  Registering Metric and creating Parent-Child relationship
         reg_hum_metric = generic_mqtt.register(hum_metric)
@@ -190,7 +190,7 @@ class PackageClass(LiotaPackage):
             unit=None,
             interval=10,
             aggregation_size=1,
-            sampling_function=living_room_luminance
+            sampling_function=get_living_room_luminance
         )
         #  Registering Metric and creating Parent-Child relationship
         reg_light_metric = generic_mqtt.register(light_metric)

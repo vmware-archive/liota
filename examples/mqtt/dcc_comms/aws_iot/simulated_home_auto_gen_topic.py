@@ -58,17 +58,17 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 
 #  Random number generator, simulating living room temperature readings.
-def living_room_temperature():
+def get_living_room_temperature():
     return random.randint(10, 30)
 
 
 #  Random number generator, simulating living room humidity readings.
-def living_room_humidity():
+def get_living_room_humidity():
     return random.randint(70, 90)
 
 
 #  Random number generator, simulating living room luminous readings.
-def living_room_luminance():
+def get_living_room_luminance():
     # 0 - Lights Off, 1 - Lights On
     return random.randint(0, 1)
 
@@ -132,11 +132,16 @@ if __name__ == '__main__':
     #  Connecting to AWSIoT
     #  Initializing GenericMqtt DCC using MqttDccComms
     #  AWSIoT broker doesn't support session persistence.  So, always use "clean_session=True"
-    #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system'
-    aws = GenericMqtt(MqttDccComms(edge_system_name=edge_system.name, url=config['BrokerIP'], port=config['BrokerPort'],
-                                   credentials=credentials, tls_conf=tls_conf, qos_details=qos_details, clean_session=True,
-                                   userdata=config['userdata'], protocol=config['protocol'], transport=['transport'],
-                                   conn_disconn_timeout=config['ConnectDisconnectTimeout']), enclose_metadata=True)
+    #  Publish topic for all Metrics will be 'liota/stats/generated_local_uuid_of_edge_system'
+    aws = GenericMqtt(MqttDccComms(edge_system_name=edge_system.name,
+                                   url=config['BrokerIP'], port=config['BrokerPort'], credentials=credentials,
+                                   tls_conf=tls_conf,
+                                   qos_details=qos_details,
+                                   clean_session=True,
+                                   userdata=config['userdata'],
+                                   protocol=config['protocol'], transport=['transport'],
+                                   conn_disconn_timeout=config['ConnectDisconnectTimeout']),
+                      enclose_metadata=True)
     #  Registering EdgeSystem
     reg_edge_system = aws.register(edge_system)
 
@@ -166,7 +171,7 @@ if __name__ == '__main__':
         unit=ureg.degC,
         interval=1,
         aggregation_size=5,
-        sampling_function=living_room_temperature
+        sampling_function=get_living_room_temperature
     )
     #  Registering Metric and creating Parent-Child relationship
     reg_temp_metric = aws.register(temp_metric)
@@ -181,7 +186,7 @@ if __name__ == '__main__':
         unit=None,
         interval=1,
         aggregation_size=5,
-        sampling_function=living_room_humidity
+        sampling_function=get_living_room_humidity
     )
     #  Registering Metric and creating Parent-Child relationship
     reg_hum_metric = aws.register(hum_metric)
@@ -202,7 +207,7 @@ if __name__ == '__main__':
         unit=None,
         interval=10,
         aggregation_size=1,
-        sampling_function=living_room_luminance
+        sampling_function=get_living_room_luminance
     )
     #  Registering Metric and creating Parent-Child relationship
     reg_light_metric = aws.register(light_metric)

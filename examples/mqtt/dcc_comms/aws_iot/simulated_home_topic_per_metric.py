@@ -58,17 +58,17 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 
 #  Random number generator, simulating living room temperature readings.
-def living_room_temperature():
+def get_living_room_temperature():
     return random.randint(10, 30)
 
 
 #  Random number generator, simulating living room humidity readings.
-def living_room_humidity():
+def get_living_room_humidity():
     return random.randint(70, 90)
 
 
 #  Random number generator, simulating living room luminous readings.
-def living_room_luminance():
+def get_living_room_luminance():
     # 0 - Lights Off, 1 - Lights On
     return random.randint(0, 1)
 
@@ -134,11 +134,16 @@ if __name__ == '__main__':
     #  Custom Publish Topic for an EdgeSystem
     mqtt_msg_attr = MqttMessagingAttributes(pub_topic=config['CustomPubTopic'])
 
-    aws = GenericMqtt(MqttDccComms(edge_system_name=edge_system.name, url=config['BrokerIP'], port=config['BrokerPort'],
-                                   credentials=credentials, tls_conf=tls_conf, qos_details=qos_details, clean_session=True,
-                                   userdata=config['userdata'], protocol=config['protocol'], transport=['transport'],
+    aws = GenericMqtt(MqttDccComms(edge_system_name=edge_system.name,
+                                   url=config['BrokerIP'], port=config['BrokerPort'], credentials=credentials,
+                                   tls_conf=tls_conf,
+                                   qos_details=qos_details,
+                                   clean_session=True,
+                                   userdata=config['userdata'],
+                                   protocol=config['protocol'], transport=['transport'],
                                    conn_disconn_timeout=config['ConnectDisconnectTimeout'],
-                                   mqtt_msg_attr=mqtt_msg_attr), enclose_metadata=False)
+                                   mqtt_msg_attr=mqtt_msg_attr),
+                      enclose_metadata=False)
     #  Registering EdgeSystem
     reg_edge_system = aws.register(edge_system)
 
@@ -169,7 +174,7 @@ if __name__ == '__main__':
         unit=ureg.degC,
         interval=1,
         aggregation_size=5,
-        sampling_function=living_room_temperature
+        sampling_function=get_living_room_temperature
     )
     #  Registering Metric and creating Parent-Child relationship
     reg_temp_metric = aws.register(temp_metric)
@@ -186,7 +191,7 @@ if __name__ == '__main__':
         unit=None,
         interval=1,
         aggregation_size=5,
-        sampling_function=living_room_humidity
+        sampling_function=get_living_room_humidity
     )
     #  Registering Metric and creating Parent-Child relationship
     reg_hum_metric = aws.register(hum_metric)
@@ -209,7 +214,7 @@ if __name__ == '__main__':
         unit=None,
         interval=10,
         aggregation_size=1,
-        sampling_function=living_room_luminance
+        sampling_function=get_living_room_luminance
     )
     #  Registering Metric and creating Parent-Child relationship
     reg_light_metric = aws.register(light_metric)

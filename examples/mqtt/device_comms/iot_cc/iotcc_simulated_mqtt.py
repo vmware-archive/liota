@@ -120,7 +120,9 @@ def mqtt_subscribe():
 
     # Create MQTT connection object with required params
     mqtt_conn = MqttDeviceComms(url=config['BrokerIP'],  port=config['BrokerPort'], credentials=credentials,
-                                tls_conf=tls_conf, qos_details=None,  clean_session=True,
+                                tls_conf=tls_conf,
+                                qos_details=None,
+                                clean_session=True,
                                 keep_alive=config['keep_alive'], enable_authentication=True)
 
     # Subscribe to channels : "temperature/kitchen" and "temperature/living-room" with preferred QoS level 0, 1 or 2
