@@ -132,7 +132,7 @@ if __name__ == '__main__':
     #  Connecting to AWSIoT
     #  Initializing GenericMqtt DCC using MqttDccComms
     #  AWSIoT broker doesn't support session persistence.  So, always use "clean_session=True"
-    #  Publish topic for all Metrics will be 'liota/stats/generated_local_uuid_of_edge_system'
+    #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system/stats'
     aws = GenericMqtt(MqttDccComms(edge_system_name=edge_system.name,
                                    url=config['BrokerIP'], port=config['BrokerPort'], credentials=credentials,
                                    tls_conf=tls_conf,

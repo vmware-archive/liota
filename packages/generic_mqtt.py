@@ -66,7 +66,7 @@ class PackageClass(LiotaPackage):
 
         #  Connecting to Mqtt Broker
         #  Initializing GenericMqtt DCC using MqttDccComms
-        #  Publish topic for all Metrics will be 'liota/stats/generated_local_uuid_of_edge_system'
+        #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system/stats'
         #  Create and pass custom MqttMessagingAttributes object to MqttDccComms to have custom topic
         self.generic_mqtt = GenericMqtt(MqttDccComms(edge_system_name=edge_system.name,
                                                      url=config['BrokerIP'], port=config['BrokerPort'], credentials=credentials,
