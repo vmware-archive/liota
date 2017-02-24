@@ -15,11 +15,13 @@ But you must do configuration first before start device discovery.
 In details, after installation with (sudo python setup.py install), you can do the following:
 # Configuration A (under /etc/liota/conf, inside liota.conf, default/example settings are available)
 [IOTCC_PATH]
+
 dev_file_path = /etc/liota/conf/devs   # the folder where store discovered device information files
 
 entity_file_path = /etc/liota/conf/entity # the folder where store discovered device information internally
 
 [DISC_CFG]
+
 disc_cmd_msg_pipe = /var/tmp/liota/disc_cmd_messenger.fifo # the named pipe path for discovery CmdMessengerThread
 
 [DEVICE_TYPE_TO_UNIQUEKEY_MAPPING] # device discovery can only process device types which are listed here, among its attributes,
@@ -27,7 +29,9 @@ disc_cmd_msg_pipe = /var/tmp/liota/disc_cmd_messenger.fifo # the named pipe path
 Press64 = serial		# Unique attribute's key should be specified, e.g., serial or SN
 
 LM35 = SN
+
 Apple56 = SN
+
 Banana23 = serial
 
 [DEVICE_TYPE_TO_DCC_MAPPING]  # for each device type, corresponding package file name should be written and must start with DCC
@@ -41,6 +45,7 @@ Apple56 = IOTCC-pkg2.py						# downloaded from Airwatch Console/Server to start 
 Banana23 = IOTCC-pkg3.py					# package file)
 
 [DEVSIM_CFG]
+
 devsim_cmd_msg_pipe = /var/tmp/liota/devsim_cmd_messenger.fifo	# the named pipe path for Device Simulator CmdMessengerThread
 
 [DISC_ENDPOINT_LIST]		# Endpoing list where you want discovery listens on and simulator send messages to
@@ -60,19 +65,33 @@ coap = 10.1.170.173:5683					# Mqtt broker should be started first before publis
 broker_username = None						# default setting does not need certificate or password
 
 broker_password = None						# to use it, please change settings
+
 broker_root_ca_cert = /etc/liota/packages/dev_disc/certs/ca.crt
+
 edge_system_cert_file = /etc/liota/packages/dev_disc/certs/client.crt
+
 edge_system_key_file = /etc/liota/packages/dev_disc/certs/client.key
+
 cert_required = CERT_NONE
+
 tls_version = None
+
 userdata = None
+
 protocol = MQTTv311
+
 transport = tcp
+
 cipher = None
+
 in_flight = 20
+
 queue_size = 0
+
 retry = 5
+
 keep_alive = 60
+
 ConnectDisconnectTimeout = 10
 
 # Configuration B (under /etc/liota/packages, inside sampleProf.conf)
@@ -135,17 +154,29 @@ sudo ./liota_devsim_pipe.sh list th
 
 # In addition, currently the messages sent from device simulators are hard coded (under source code
 liota/dev_sims/coap.py (or mqtt.py, named_pipe.py, socket_clnt.py), and inside run()), like
+
         msg = {
+
             "Apple56": {
+
                 "k1": "v1",
+
                 "SN": "0",
+
                 "kn": "vn"
+
             }
+
         }
+
 where Apple56 is the device type, and its value is attributes. We also have message counter control through, e.g.,
+
             if i >=10: xxx
+
             else:
+
                 msg["Apple56"]["SN"] = str(i)
+
 Please modify them corresponding to your settings in liota.conf!!!
 
 ## Commands for Both Device Discovery & Device Simulator
