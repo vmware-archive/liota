@@ -38,7 +38,7 @@ from liota.dcc_comms.dcc_comms import DCCComms
 log = logging.getLogger(__name__)
 
 
-class Socket(DCCComms):
+class SocketDccComms(DCCComms):
 
     def __init__(self, ip, port):
         self.ip = ip

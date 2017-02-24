@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
 #  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
@@ -30,47 +31,23 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.core.package_manager import LiotaPackage
+from time import sleep
+import liota.core.discovery_simulator
 
-dependencies = ["edge_systems/dell5k/edge_system"]
+#---------------------------------------------------------------------------
+# Lines below are subject to change, depending on whether we change the way
+# device discovery manager operates or not. More specifically, how it
+# elegantly signal all listening threads to terminate.
+#
 
-
-class PackageClass(LiotaPackage):
-    """
-    This package creates a IoTControlCenter DCC object and registers edge system on
-    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
-    """
-
-    def run(self, registry):
-        import copy
-        from liota.dccs.iotcc import IotControlCenter
-        from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
-        from liota.dccs.dcc import RegistrationFailure
-
-        # Acquire resources from registry
-        # Creating a copy of edge_system object to keep original object "clean"
-        edge_system = copy.copy(registry.get("edge_system"))
-
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
-
-        # Initialize DCC object with transport
-        self.iotcc = IotControlCenter(
-            config['IotCCUID'], config['IotCCPassword'],
-            WebSocketDccComms(url=config['WebSocketUrl'])
-        )
-
-        try:
-            # Register edge system (gateway)
-            iotcc_edge_system = self.iotcc.register(edge_system)
-
-            registry.register("iotcc", self.iotcc)
-            registry.register("iotcc_edge_system", iotcc_edge_system)
-        except RegistrationFailure:
-            print "EdgeSystem registration to IOTCC failed"
-        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
-
-    def clean_up(self):
-        self.iotcc.comms.wss.close()
+try:
+    while not isinstance(
+        liota.core.discovery_simulator.simulator_thread,
+        liota.core.discovery_simulator.SimulatorThread
+    ) or liota.core.discovery_simulator.simulator_thread.isAlive():
+        sleep(1)
+except (KeyboardInterrupt, SystemExit):
+    pass
+finally:
+    if not liota.core.discovery_simulator.cmd_message_queue is None:
+        liota.core.discovery_simulator.cmd_message_queue.put(["terminate"])

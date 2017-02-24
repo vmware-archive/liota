@@ -38,7 +38,7 @@ from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
-from liota.dcc_comms.socket_comms import Socket
+from liota.dcc_comms.socket_comms import SocketDccComms
 from liota.dccs.graphite import Graphite
 
 # getting values from conf file
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     # Sending data to an alternate data center component (e.g. data lake for analytics)
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite instance
-    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+    graphite = Graphite(SocketDccComms(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
     graphite_reg_edge_system = graphite.register(edge_system)
     simulated_metric = Metric(
