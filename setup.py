@@ -120,6 +120,8 @@ setup(
                   'packages/examples/iotcc_thermistor_simulated.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/edge_systems/dell5k',
                  ['packages/edge_systems/dell5k/edge_system.py']),
+		(os.path.abspath(os.sep) + '/../etc/liota/scripts',
+                 ['scripts/autostartliota']),
                 (os.path.abspath(os.sep) + '/../etc/liota/conf',
                  ['config/liota.conf', 'config/logging.json']),
                 (os.path.abspath(os.sep) + '/../etc/liota',
