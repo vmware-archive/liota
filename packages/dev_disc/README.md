@@ -21,7 +21,8 @@ Device Simulator will get configuration from liota.conf and initialize the data 
 
 ### How to Start Device Discovery
 
-Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can   put dev_disc/dev_disc inside packages_auto.txt)
+Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc inside packages_auto.txt)
+
 But you must do configuration first before start device discovery.
 
 In details, after installation with (sudo python setup.py install), you can do the following:
@@ -109,8 +110,10 @@ keep_alive = 60
 ConnectDisconnectTimeout = 10
 
 # Configuration B (under /etc/liota/packages, inside sampleProf.conf)
+
 Since when device is discovered, it will be registered to DCC based on your [DEVICE_TYPE_TO_DCC_MAPPING] in liota.conf,
 it will use DCC credentials. Therefore, please guarantee IOTCC or Graphite section in sampleProf.conf are configured well.
+
 #### [IOTCC] ####
 WebSocketUrl = "xxx"
 
