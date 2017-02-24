@@ -1,8 +1,10 @@
 # Device Discovery & Device simulator
 Device Discovery consists of three parts: 
 
-(1) A DiscoveryThread that spawn out various Listener Threads, maintain global data structures and run discovery initialization/clean-up codes, 
+(1) A DiscoveryThread that spawn out various Listener Threads, maintain global data structures and run discovery initialization/clean-up codes,
+
 (2) Discovery Listener Threads which listen on one or more specific communication channels, which could be MQTT subscriber, Coap Server, Socket Server, or a Named Pipe Reader for now, to receive Messages from devices for discovering and registering devices,
+
 and (3) Discovery Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Discovery Thread.
 
 Device Discovery will get configuration from liota.conf and initialize the data structures when its own module (`device_discovery.py`) is imported. Once imported, CmdMessengerThread will start listening on a named pipe and DiscoveryThread will spawn out Listener threads.
@@ -10,7 +12,9 @@ Device Discovery will get configuration from liota.conf and initialize the data 
 Device Simulator is a separate debugging and simulation tool for device discovery, which consists of three parts:
 
 (1) A SimulatorThread that spawns out various Simulator Threads, maintain global data structures and run simulator initialization/clean-up codes,
+
 (2) Device Simulator Threads which make use of one or more specific communication channels, which could be MQTT Publisher, Coap Client, Socket Client, or a Named Pipe Writer for now, to send Messages to Liota Device Discovery Listeners for advertising device information, 
+
 and (3) Command Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Simulator Thread.
 
 Device Simulator will get configuration from liota.conf and initialize the data structures when its own module (`discovery_simulator.py`) is imported. Once imported, CmdMessengerThread will start listening on a named pipe and DeviceSimulatorThread will spawn out Simulator threads.
@@ -124,46 +128,72 @@ To be reminded, if DCC Liota package is not loaded, i.e., no corresponding DCC i
 # Start Device Discovery Liota Package (dev_disc.py under /etc/liota/packages/)
 
 1. when keep dev_disc inside packages_auto.txt:
+
 sudo python liotad.py (add & is optional)
+
 2. when dev_disc is not inside packages_auto.txt:
+
 start package manager with cmd line in 1., then load device discovery package by
+
 sudo ./liotapkg.sh load dev_disc/dev_disc
 
 (can check logs through "tail -f /var/log/liota/liota.log")
 
 # Verify Device Discovery is started
 messages should be printed out to stdout, e.g.,
+
 MqttListener is initialized   # when you have Mqtt inside End Point list
+
 CoapListener is initialized   # when you have Coap inside End Point list
+
 CoapListerner is running
+
 NamedPipeListener is initialized # when you have Named Pipe inside End Point list
+
 NamedPipeListener is running
+
 MqttListener is running
+
 SocketListener is initialized  # when you have Socket inside End Point list
+
 SocketListener Server started!
+
 (if running or started are printed out, listeners are started successfully)
 
 You can also use CmdMessage to check certain information (under /etc/liota/packages/dev_disc)
+
 sudo ./liota_disc_pipe.sh list th
+
 sudo ./liota_disc_pipe.sh list dev
+
 sudo ./liota_disc_pipe.sh list cfg
 
 ### How to Start Device Simulator
 Device Simulator Must BE started after Device Discovery module is imported; and should be started
 separately by (under /etc/liota/packages/dev_disc)
+
 sudo python liota_devsim_load.py (add & is optional)
 
 Verification messages are as followings.
+
 MqttSimulator is initialized
+
 MqttSimulator is initialized
+
 CoapSimulator is initialized
+
 CoapSimulator is running
+
 NamedPipeSimulator is initialized
+
 NamedPipeSimulator is running
+
 SocketSimulator is initialized
+
 SocketSimulator is running...
 
 You can also use CmdMessage to check certain information (under /etc/liota/packages/dev_disc)
+
 sudo ./liota_devsim_pipe.sh list th
 
 # In addition, currently the messages sent from device simulators are hard coded (under source code
