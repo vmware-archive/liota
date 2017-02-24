@@ -32,45 +32,24 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["edge_systems/dell5k/edge_system"]
-
+dependencies = ["iotcc"]
 
 class PackageClass(LiotaPackage):
-    """
-    This package creates a IoTControlCenter DCC object and registers edge system on
-    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
-    """
 
     def run(self, registry):
-        import copy
-        from liota.dccs.iotcc import IotControlCenter
-        from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
-        from liota.dccs.dcc import RegistrationFailure
-
-        # Acquire resources from registry
-        # Creating a copy of edge_system object to keep original object "clean"
-        edge_system = copy.copy(registry.get("edge_system"))
+        from liota.core.device_discovery import DiscoveryThread
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
         config = {}
         execfile(config_path + '/sampleProp.conf', config)
 
-        # Initialize DCC object with transport
-        self.iotcc = IotControlCenter(
-            config['IotCCUID'], config['IotCCPassword'],
-            WebSocketDccComms(url=config['WebSocketUrl'])
-        )
+#---------------------------------------------------------------------------
+# Initialization should occur when this module is imported for first time.
+# This method create queues and spawns DiscoveryThread, which will spins up
+# listening threads for listed listeners in liota.conf for new devices.
 
-        try:
-            # Register edge system (gateway)
-            iotcc_edge_system = self.iotcc.register(edge_system)
-
-            registry.register("iotcc", self.iotcc)
-            registry.register("iotcc_edge_system", iotcc_edge_system)
-        except RegistrationFailure:
-            print "EdgeSystem registration to IOTCC failed"
-        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
+        self.discovery_thread = DiscoveryThread(name="DiscoveryThread", registry=registry)
 
     def clean_up(self):
-        self.iotcc.comms.wss.close()
+        self.discovery_thread._terminate_all()
