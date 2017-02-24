@@ -1,9 +1,17 @@
 # Device Discovery & Device simulator
-Device Discovery consists of three parts: (1) A DiscoveryThread that spawn out various Listener Threads, maintain global data structures and run discovery initialization/clean-up codes, (2) Discovery Listener Threads which listen on one or more specific communication channels, which could be MQTT subscriber, Coap Server, Socket Server, or a Named Pipe Reader for now, to receive Messages from devices for discovering and registering devices, and (3) Discovery Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Discovery Thread.
+Device Discovery consists of three parts: 
+
+(1) A DiscoveryThread that spawn out various Listener Threads, maintain global data structures and run discovery initialization/clean-up codes, 
+(2) Discovery Listener Threads which listen on one or more specific communication channels, which could be MQTT subscriber, Coap Server, Socket Server, or a Named Pipe Reader for now, to receive Messages from devices for discovering and registering devices,
+and (3) Discovery Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Discovery Thread.
 
 Device Discovery will get configuration from liota.conf and initialize the data structures when its own module (`device_discovery.py`) is imported. Once imported, CmdMessengerThread will start listening on a named pipe and DiscoveryThread will spawn out Listener threads.
 
-Device Simulator is a separate debugging and simulation tool for device discovery, which consists of three parts: (1) A SimulatorThread that spawns out various Simulator Threads, maintain global data structures and run simulator initialization/clean-up codes, (2) Device Simulator Threads which make use of one or more specific communication channels, which could be MQTT Publisher, Coap Client, Socket Client, or a Named Pipe Writer for now, to send Messages to Liota Device Discovery Listeners for advertising device information, and (3) Command Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Simulator Thread.
+Device Simulator is a separate debugging and simulation tool for device discovery, which consists of three parts:
+
+(1) A SimulatorThread that spawns out various Simulator Threads, maintain global data structures and run simulator initialization/clean-up codes,
+(2) Device Simulator Threads which make use of one or more specific communication channels, which could be MQTT Publisher, Coap Client, Socket Client, or a Named Pipe Writer for now, to send Messages to Liota Device Discovery Listeners for advertising device information, 
+and (3) Command Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Simulator Thread.
 
 Device Simulator will get configuration from liota.conf and initialize the data structures when its own module (`discovery_simulator.py`) is imported. Once imported, CmdMessengerThread will start listening on a named pipe and DeviceSimulatorThread will spawn out Simulator threads.
 
@@ -49,6 +57,7 @@ Banana23 = IOTCC-pkg3.py					# package file)
 devsim_cmd_msg_pipe = /var/tmp/liota/devsim_cmd_messenger.fifo	# the named pipe path for Device Simulator CmdMessengerThread
 
 [DISC_ENDPOINT_LIST]		# Endpoing list where you want discovery listens on and simulator send messages to
+
 							# if no item in this list, Device Discovery will not be started
 
 disc_msg_pipe = /var/tmp/liota/discovery_messenger.fifo		# currently, only support these 4 types
@@ -58,6 +67,7 @@ socket = 127.0.0.1:5000						# you can only use some of them by deleting others
 mqtt = 127.0.0.1:1883:device_discovery				# IP address should be updated according to your system
 
 coap = 10.1.170.173:5683					# Mqtt broker should be started first before publish/subscribe
+
 								# reference: https://mosquitto.org/download/
 
 [DISC_MQTT_CFG]							# Mqtt with TLS authentication need more settings
@@ -99,10 +109,14 @@ Since when device is discovered, it will be registered to DCC based on your [DEV
 it will use DCC credentials. Therefore, please guarantee IOTCC or Graphite section in sampleProf.conf are configured well.
 #### [IOTCC] ####
 WebSocketUrl = "xxx"
+
 IotCCUID = "admin"
+
 IotCCPassword = "xxx"
+
 #### [GRAPHITE] ####
 GraphiteIP = "92.246.246.188"
+
 GraphitePort = 2003
 
 To be reminded, if DCC Liota package is not loaded, i.e., no corresponding DCC instance, although discovery thread can still listens on end points, device registration will not be carried out.
