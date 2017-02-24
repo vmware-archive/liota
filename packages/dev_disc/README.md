@@ -1,4 +1,4 @@
-# Device Discovery & Device simulator
+# Device Discovery & Device Simulator
 Device Discovery consists of three parts: 
 
 (1) A DiscoveryThread that spawn out various Listener Threads, maintain global data structures and run discovery initialization/clean-up codes,
@@ -130,74 +130,74 @@ To be reminded, if DCC Liota package is not loaded, i.e., no corresponding DCC i
 
 # Start Device Discovery Liota Package (dev_disc.py under /etc/liota/packages/)
 
-1. when keep dev_disc inside packages_auto.txt:
+a). when keep dev_disc inside packages_auto.txt:
 
-sudo python liotad.py (add & is optional)
+	sudo python liotad.py (add & is optional)
 
-2. when dev_disc is not inside packages_auto.txt:
+b). when dev_disc is not inside packages_auto.txt:
 
-start package manager with cmd line in 1., then load device discovery package by
+	start package manager with cmd line in 1., then load device discovery package by
 
-sudo ./liotapkg.sh load dev_disc/dev_disc
+	sudo ./liotapkg.sh load dev_disc/dev_disc
 
 (can check logs through "tail -f /var/log/liota/liota.log")
 
 # Verify Device Discovery is started
 messages should be printed out to stdout, e.g.,
 
-MqttListener is initialized   # when you have Mqtt inside End Point list
+	MqttListener is initialized   # when you have Mqtt inside End Point list
 
-CoapListener is initialized   # when you have Coap inside End Point list
+	CoapListener is initialized   # when you have Coap inside End Point list
 
-CoapListerner is running
+	CoapListerner is running
 
-NamedPipeListener is initialized # when you have Named Pipe inside End Point list
+	NamedPipeListener is initialized # when you have Named Pipe inside End Point list
 
-NamedPipeListener is running
+	NamedPipeListener is running
 
-MqttListener is running
+	MqttListener is running
 
-SocketListener is initialized  # when you have Socket inside End Point list
+	SocketListener is initialized  # when you have Socket inside End Point list
 
-SocketListener Server started!
+	SocketListener Server started!
 
 (if running or started are printed out, listeners are started successfully)
 
 You can also use CmdMessage to check certain information (under /etc/liota/packages/dev_disc)
 
-sudo ./liota_disc_pipe.sh list th
+	sudo ./liota_disc_pipe.sh list th
 
-sudo ./liota_disc_pipe.sh list dev
+	sudo ./liota_disc_pipe.sh list dev
 
-sudo ./liota_disc_pipe.sh list cfg
+	sudo ./liota_disc_pipe.sh list cfg
 
 ### How to Start Device Simulator
 Device Simulator Must BE started after Device Discovery module is imported; and should be started
 separately by (under /etc/liota/packages/dev_disc)
 
-sudo python liota_devsim_load.py (add & is optional)
+	sudo python liota_devsim_load.py (add & is optional)
 
 Verification messages are as followings.
 
-MqttSimulator is initialized
+	MqttSimulator is initialized
 
-MqttSimulator is initialized
+	MqttSimulator is initialized
 
-CoapSimulator is initialized
+	CoapSimulator is initialized
 
-CoapSimulator is running
+	CoapSimulator is running
 
-NamedPipeSimulator is initialized
+	NamedPipeSimulator is initialized
 
-NamedPipeSimulator is running
+	NamedPipeSimulator is running
 
-SocketSimulator is initialized
+	SocketSimulator is initialized
 
-SocketSimulator is running...
+	SocketSimulator is running...
 
 You can also use CmdMessage to check certain information (under /etc/liota/packages/dev_disc)
 
-sudo ./liota_devsim_pipe.sh list th
+	sudo ./liota_devsim_pipe.sh list th
 
 # In addition, currently the messages sent from device simulators are hard coded (under source code
 liota/dev_sims/coap.py (or mqtt.py, named_pipe.py, socket_clnt.py), and inside run()), like
