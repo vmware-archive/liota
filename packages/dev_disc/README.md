@@ -16,21 +16,28 @@ In details, after installation with (sudo python setup.py install), you can do t
 # Configuration A (under /etc/liota/conf, inside liota.conf, default/example settings are available)
 [IOTCC_PATH]
 dev_file_path = /etc/liota/conf/devs   # the folder where store discovered device information files
+
 entity_file_path = /etc/liota/conf/entity # the folder where store discovered device information internally
 
 [DISC_CFG]
 disc_cmd_msg_pipe = /var/tmp/liota/disc_cmd_messenger.fifo # the named pipe path for discovery CmdMessengerThread
 
 [DEVICE_TYPE_TO_UNIQUEKEY_MAPPING] # device discovery can only process device types which are listed here, among its attributes,
+
 Press64 = serial		# Unique attribute's key should be specified, e.g., serial or SN
+
 LM35 = SN
 Apple56 = SN
 Banana23 = serial
 
 [DEVICE_TYPE_TO_DCC_MAPPING]  # for each device type, corresponding package file name should be written and must start with DCC
+
 LM35 = Graphite-pkg.py, IOTCC-pkg.py		# name, currently only support Graphite or IOTCC, later when device is successfully
+
 Press64 = IOTCC-pkg1.py						# registered in IOTCC, and enrolled in Airwatch, corresponding package will be
+
 Apple56 = IOTCC-pkg2.py						# downloaded from Airwatch Console/Server to start collecting data (defined in
+
 Banana23 = IOTCC-pkg3.py					# package file)
 
 [DEVSIM_CFG]
@@ -38,15 +45,21 @@ devsim_cmd_msg_pipe = /var/tmp/liota/devsim_cmd_messenger.fifo	# the named pipe 
 
 [DISC_ENDPOINT_LIST]		# Endpoing list where you want discovery listens on and simulator send messages to
 							# if no item in this list, Device Discovery will not be started
-disc_msg_pipe = /var/tmp/liota/discovery_messenger.fifo		# currently, only support these 4 types
-socket = 127.0.0.1:5000										# you can only use some of them by deleting others
-mqtt = 127.0.0.1:1883:device_discovery						# IP address should be updated according to your system
-coap = 10.1.170.173:5683									# Mqtt broker should be started first before publish/subscribe
-															# reference: https://mosquitto.org/download/
 
-[DISC_MQTT_CFG]												# Mqtt with TLS authentication need more settings
-broker_username = None										# default setting does not need certificate or password
-broker_password = None										# to use it, please change settings
+disc_msg_pipe = /var/tmp/liota/discovery_messenger.fifo		# currently, only support these 4 types
+
+socket = 127.0.0.1:5000						# you can only use some of them by deleting others
+
+mqtt = 127.0.0.1:1883:device_discovery				# IP address should be updated according to your system
+
+coap = 10.1.170.173:5683					# Mqtt broker should be started first before publish/subscribe
+								# reference: https://mosquitto.org/download/
+
+[DISC_MQTT_CFG]							# Mqtt with TLS authentication need more settings
+
+broker_username = None						# default setting does not need certificate or password
+
+broker_password = None						# to use it, please change settings
 broker_root_ca_cert = /etc/liota/packages/dev_disc/certs/ca.crt
 edge_system_cert_file = /etc/liota/packages/dev_disc/certs/client.crt
 edge_system_key_file = /etc/liota/packages/dev_disc/certs/client.key
