@@ -34,6 +34,17 @@ The abstract class DCC represents an application in a data-center. It is potenti
 ## Package Manager
 Liota applications can be broken into small pieces that can be loaded and unloaded into a running liota process. We recommend putting the EdgeSystems, Devices, Metrics and DCC(s) in separate packages. Then each construct can be loaded and unloaded at will. See the README in the package directory for complete details.
 
+## Device Discovery
+Liota SDK provides users a way to discover new devices at run-time through a dedicated discovery thread. The discovery thread could listen on a list of end points by spinning up a listening thread for each of them. Currently, Liota supports 4 kinds of end points: MQTT, COAP, Socket, and Named Pipe.
+
+Assume there is a list of DeviceType-to-DCC Mappings, such as {TypeA:[DCC1-Package-Name, DCC2-Package-Name], TypeB:[DCC3-Package-Name]}. Listening thread waits for a json message from devices, registers new devices with each DCC in the mapping list, sets any properties, fills out device file for AW agent. AW agent enrolls discovered device and pushes content to bring the device to compliance.
+
+The json message from devices starts with Device Type and comprises a dictionary, that is,
+{ ‘DeviceType’:{key1:value1,key2:value2, …, keyn:valuen}} e.g., {LM35:{k1:v1,…,SN:12345,kn:vn}}. Assume there is specified unique key for each ‘Type’ of devices, e.g.,
+[{‘Type’:’LM35’, ‘UniqueKey’:’SN’}]. We will concatenate the type and unique id to LM35_12345 and use this as the name to register the device.
+
+See the README in the dev_disc directory under package directory for complete usage details.
+
 ## SI Units
 Liota supports SI units and the conversion of the units with help of Pint library which is included in liota package to provide developers the capability to use SI units in their code. We have also included the example [simulated_graphite_temp.py] (https://github.com/vmware/liota/blob/master/examples/simulated_graphite_temp.py) which uses the library to convert temperature value from Celsius to Fahrenheit and Kelvin. More details on the usage of the Pint library and conversion of units can be found at this [link] (https://pint.readthedocs.io/en/0.7.2/index.html).
 
@@ -54,6 +65,50 @@ In general, liota can be installed with:
 
 It requires a Python 2.7 environment already installed.
 
+## Autostarting Liota Daemon
+For starting liotad.py in background automatically at reboot perform the following steps: 
+
+* Copy autostartliota script present in scripts folder to location:
+```bash
+  /etc/init.d/
+```
+
+To enable/disable the autostart service perform the following steps:
+
+### On Debian/Ubuntu:
+
+* Execute :
+```bash
+  $ sudo update-rc.d autostartliota defaults
+  $ sudo invoke-rc.d autostartliota start
+```
+
+* To stop the script and remove it from different runlevels, execute:
+```bash
+  $ sudo update-rc.d -f autostartliota remove
+```
+
+### On RHEL/CentOS:
+
+* To add the script to different runlevels (rc[0-6].d folders), execute:
+```bash
+  $ chkconfig --add autostartliota
+```
+
+* To start it, execute the following command and reboot the system:
+```bash
+  $ chkconfig autostartliota on
+```
+
+* To stop the script, execute:
+```bash
+  $ chkconfig autostartliota off
+```
+
+* To remove the script from different runlevels (rc[0-6].d folders), execute:
+```bash
+  $ chkconfig --del autostartliota
+```
 
 ## Liota.conf
 liota.conf provides path to find out various configuration & log files. When initializing, liota does a multi-step search for the configuration file: 
@@ -75,7 +130,8 @@ log_path = /var/log/liota
 uuid_path = /etc/liota/conf/uuid.ini
 
 [IOTCC_PATH]
-iotcc_path = /etc/liota/conf/iotcc.json
+dev_file_path = /etc/liota/conf/devs
+entity_file_path = /etc/liota/conf/entity
 
 [PKG_CFG]
 pkg_path = /etc/liota/packages

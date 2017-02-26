@@ -30,47 +30,25 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.core.package_manager import LiotaPackage
+from abc import ABCMeta, abstractmethod
+from threading import Thread
 
-dependencies = ["edge_systems/dell5k/edge_system"]
-
-
-class PackageClass(LiotaPackage):
+class DiscoveryListener(Thread):
     """
-    This package creates a IoTControlCenter DCC object and registers edge system on
-    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
+    DiscoveryListener is ABC (abstract base class) of all listening classes.
+    Developers should extend DiscoveryListener class and implement the abstract methods.
     """
 
-    def run(self, registry):
-        import copy
-        from liota.dccs.iotcc import IotControlCenter
-        from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
-        from liota.dccs.dcc import RegistrationFailure
+    __metaclass__ = ABCMeta
 
-        # Acquire resources from registry
-        # Creating a copy of edge_system object to keep original object "clean"
-        edge_system = copy.copy(registry.get("edge_system"))
+    @abstractmethod
+    def __init__(self, name):
+        Thread.__init__(self, name=name)
 
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+    @abstractmethod
+    def run(self):
+        raise NotImplementedError
 
-        # Initialize DCC object with transport
-        self.iotcc = IotControlCenter(
-            config['IotCCUID'], config['IotCCPassword'],
-            WebSocketDccComms(url=config['WebSocketUrl'])
-        )
-
-        try:
-            # Register edge system (gateway)
-            iotcc_edge_system = self.iotcc.register(edge_system)
-
-            registry.register("iotcc", self.iotcc)
-            registry.register("iotcc_edge_system", iotcc_edge_system)
-        except RegistrationFailure:
-            print "EdgeSystem registration to IOTCC failed"
-        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
-
+    @abstractmethod
     def clean_up(self):
-        self.iotcc.comms.wss.close()
+        raise NotImplementedError
