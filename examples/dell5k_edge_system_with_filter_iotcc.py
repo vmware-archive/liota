@@ -85,12 +85,12 @@ def read_disk_usage_stats():
 
 
 def read_network_bytes_received():
-    return net_usage_filter_with_window.filter(round(net_stat.rx_tx_bytes('eth0')[0], 2))
+    return net_usage_filter_with_window.filter(round(net_stat.rx_tx_bytes('ens33')[0], 2))
 
 
 def read_mem_free():
-    total_mem = round(mem_stat.mem_stats()[1],4)
-    free_mem = round(mem_stat.mem_stats()[3],4)
+    total_mem = round(mem_stat.mem_stats()[1], 4)
+    free_mem = round(mem_stat.mem_stats()[3], 4)
     mem_free_percent = ((total_mem-free_mem)/total_mem)*100
     return mem_free_filter_with_window.filter(round(mem_free_percent, 2))
     

@@ -32,7 +32,7 @@
 
 import random
 
-from liota.dcc_comms.socket_comms import Socket
+from liota.dcc_comms.socket_comms import SocketDccComms
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.simulated_edge_system import SimulatedEdgeSystem
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     # Sending data to Graphite data center component
     # Socket is the underlying transport used to connect to the Graphite
     # instance
-    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+    graphite = Graphite(SocketDccComms(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
     graphite_reg_edge_system = graphite.register(edge_system)
 

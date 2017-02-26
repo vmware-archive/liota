@@ -108,5 +108,5 @@ class WindowingScheme(Filter):
         :return: None
         """
         self.next_window_time += (self.window_size_sec * 1000)
-        log.info("Resetting window")
+        log.debug("Resetting window")
         self.sample_passed = False  # Resetting

@@ -11,7 +11,7 @@ include examples/dell5k_edge_system_graphite.py
 include examples/dell5k_edge_system_iotcc.py
 include examples/multi_metric_simulated_edge_system_graphite.py
 include examples/dk300_edge_system_iotcc_graphite.py
-include example/sampleProp.conf
+include examples/sampleProp.conf
 include examples/model_simulated/graphite_bike_simulated.py
 include examples/model_simulated/graphite_thermistor_simulated.py
 include examples/model_simulated/iotcc_bike_simulated.py

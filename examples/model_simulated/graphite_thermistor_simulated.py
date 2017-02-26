@@ -32,7 +32,7 @@
 
 import math
 import pint
-from liota.dcc_comms.socket_comms import Socket
+from liota.dcc_comms.socket_comms import SocketDccComms
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     # Graphite is a data center component
     # Socket is the transport which the agent uses to connect to the graphite
     # instance
-    graphite = Graphite(Socket(ip=config['GraphiteIP'],
+    graphite = Graphite(SocketDccComms(ip=config['GraphiteIP'],
                                port=config['GraphitePort']))
 
     graphite_reg_dev = graphite.register(thermistor_model)

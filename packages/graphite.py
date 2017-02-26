@@ -44,7 +44,7 @@ class PackageClass(LiotaPackage):
     def run(self, registry):
         import copy
         from liota.dccs.graphite import Graphite
-        from liota.dcc_comms.socket_comms import Socket
+        from liota.dcc_comms.socket_comms import SocketDccComms
 
         # Acquire resources from registry
         # Creating a copy of system object to keep original object "clean"
@@ -57,7 +57,7 @@ class PackageClass(LiotaPackage):
 
         # Initialize DCC object with transport
         self.graphite = Graphite(
-            Socket(ip=config['GraphiteIP'],
+            SocketDccComms(ip=config['GraphiteIP'],
                    port=config['GraphitePort'])
         )
 
