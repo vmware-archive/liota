@@ -34,7 +34,9 @@ include packages/examples/iotcc_ram.py
 include packages/examples/graphite_bike_simulated.py
 include packages/examples/iotcc_bike_simulated.py
 include packages/examples/graphite_edge_system_stats.py
+include packages/examples/graphite_edge_system_stats_with_filter.py
 include packages/examples/iotcc_edge_system_stats.py
+include packages/examples/iotcc_edge_system_stats_with_filter.py
 include packages/examples/thermistor_simulator.py
 include packages/examples/graphite_thermistor_simulated.py
 include packages/examples/iotcc_thermistor_simulated.py
