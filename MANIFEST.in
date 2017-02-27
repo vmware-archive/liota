@@ -9,6 +9,7 @@ include examples/simulated_graphite_event_based.py
 include examples/simulated_graphite_temp.py
 include examples/dell5k_edge_system_graphite.py
 include examples/dell5k_edge_system_iotcc.py
+include examples/dell5k_edge_system_with_filter_iotcc.py
 include examples/multi_metric_simulated_edge_system_graphite.py
 include examples/dk300_edge_system_iotcc_graphite.py
 include examples/sampleProp.conf
@@ -16,6 +17,8 @@ include examples/model_simulated/graphite_bike_simulated.py
 include examples/model_simulated/graphite_thermistor_simulated.py
 include examples/model_simulated/iotcc_bike_simulated.py
 include examples/model_simulated/iotcc_thermistor_simulated.py
+include examples/mqtt/iot_cc/iotcc_simulated_mqtt.py
+include examples/mqtt/iot_cc/samplePropMqtt.conf
 include packages/graphite.py
 include packages/iotcc.py
 include packages/sampleProp.conf
