@@ -246,29 +246,29 @@ class SensorTagCollector(Thread):
             while self._is_running:
                 # Attempt reading from device with try-catch, as BTLEException occurs frequently
                 try:
-                    # isEnabled and Sensor availability check for all sensors
-                    if self._temp_enabled and self.tag.IRtemperature is not None:
+                    # isEnabled check for sensors
+                    if self._temp_enabled:
                         self._temp_queue.put(self.tag.IRtemperature.read())
 
-                    if self._humi_enabled and self.tag.humidity is not None:
+                    if self._humi_enabled:
                         self._humi_queue.put(self.tag.humidity.read())
 
-                    if self._baro_enabled and self.tag.barometer is not None:
+                    if self._baro_enabled:
                         self._baro_queue.put(self.tag.barometer.read())
 
-                    if self._acce_enabled and self.tag.accelerometer is not None:
+                    if self._acce_enabled:
                         self._acce_queue.put(self.tag.accelerometer.read())
 
-                    if self._magn_enabled and self.tag.magnetometer is not None:
+                    if self._magn_enabled:
                         self._magn_queue.put(self.tag.magnetometer.read())
 
-                    if self._gyro_enabled and self.tag.gyroscope is not None:
+                    if self._gyro_enabled:
                         self._gyro_queue.put(self.tag.gyroscope.read())
 
-                    if self._bat_level_enabled and self.tag.battery is not None:
+                    if self._bat_level_enabled:
                         self._bat_level_queue.put(self.tag.battery.read())
 
-                    if self._light_enabled and self.tag.lightmeter is not None:
+                    if self._light_enabled:
                         self._light_queue.put(self.tag.lightmeter.read())
 
                     self.tag.waitForNotifications(self._sampling_interval_sec)
