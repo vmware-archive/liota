@@ -19,6 +19,10 @@ include examples/model_simulated/iotcc_bike_simulated.py
 include examples/model_simulated/iotcc_thermistor_simulated.py
 include examples/mqtt/iot_cc/iotcc_simulated_mqtt.py
 include examples/mqtt/iot_cc/samplePropMqtt.conf
+include packages/dev_disc/liota_disc_pipe.sh
+include packages/dev_disc/dev_disc.py
+include packages/dev_disc/liota_devsim_pipe.sh
+include packages/dev_disc/liota_devsim_load.py
 include packages/graphite.py
 include packages/iotcc.py
 include packages/sampleProp.conf
