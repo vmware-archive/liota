@@ -113,6 +113,7 @@ setup(
                   'packages/dev_disc/liota_devsim_load.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/examples',
                  ['packages/examples/bike_simulator.py',
+                  'packages/examples/mqtt_device.py',
                   'packages/examples/iotcc_ram.py',
                   'packages/examples/graphite_bike_simulated.py',
                   'packages/examples/iotcc_bike_simulated.py',
