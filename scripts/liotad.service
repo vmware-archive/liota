@@ -1,0 +1,11 @@
+#
+# systemd unit configuration
+#
+[Unit]
+Description=Little Internet of Things Agent Daemon
+
+[Service]
+ExecStart=/etc/liota/packages/liotad.py
+
+[Install]
+WantedBy=multi-user.target
