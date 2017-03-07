@@ -5,7 +5,7 @@ Device Discovery consists of three parts:
 
 (2) Discovery Listener Threads which listen on one or more specific communication channels, which could be MQTT subscriber, Coap Server, Socket Server, or a Named Pipe Reader for now, to receive Messages from devices for discovering and registering devices,
 
-and (3) Discovery Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Discovery Thread.
+(3) Discovery Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Discovery Thread.
 
 Device Discovery will get configuration from liota.conf and initialize the data structures when its own module (`device_discovery.py`) is imported. Once imported, CmdMessengerThread will start listening on a named pipe and DiscoveryThread will spawn out Listener threads.
 
@@ -15,7 +15,7 @@ Device Simulator is a separate debugging and simulation tool for device discover
 
 (2) Device Simulator Threads which make use of one or more specific communication channels, which could be MQTT Publisher, Coap Client, Socket Client, or a Named Pipe Writer for now, to send Messages to Liota Device Discovery Listeners for advertising device information, 
 
-and (3) Command Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Simulator Thread.
+(3) Command Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Simulator Thread.
 
 Device Simulator will get configuration from liota.conf and initialize the data structures when its own module (`discovery_simulator.py`) is imported. Once imported, CmdMessengerThread will start listening on a named pipe and DeviceSimulatorThread will spawn out Simulator threads.
 
@@ -23,7 +23,12 @@ Device Simulator will get configuration from liota.conf and initialize the data 
 
 Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc inside packages_auto.txt)
 
-But you must do configuration first before start device discovery.
+But you must do configuration first before start device discovery. 
+Also, in order to use COAP-Enabled device discovery install this additional library:
+
+```bash
+  $ sudo pip install txthings
+```
 
 In details, after installation with (sudo python setup.py install), you can do the following:
 # Configuration A (under /etc/liota/conf, inside liota.conf, default/example settings are available)
