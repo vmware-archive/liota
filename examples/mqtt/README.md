@@ -29,7 +29,7 @@ It enables the following options for developers in LIOTA.
 * Publish retain flag will be **False** and
 * Subscribe call_back will be **None**
 
-**(b)** Use custom single publish and subscribe topic for an EdgeSystem, its Devices and Metrics.  Along with custom topics, other parameters (QoS, retain_flag ,etc.,) can be referred from ![Property File](/examples/mqtt/dcc_comms/aws_iot/awsSampleProp.conf).
+**(b)** Use custom single publish and subscribe topic for an EdgeSystem, its Devices and Metrics.  Along with custom topics, other parameters (QoS, retain_flag ,etc.,) can be referred from ![Property File](/examples/mqtt/dcc_comms/aws_iot/sampleProp.conf).
 
 **-** In the above two cases, MQTT message's payload MUST be self-descriptive so that subscriber can subscribe process accordingly to a single topic by parsing payload. i.e., Along with stats of metric, its edge_system's_name, device's_name will also be appended with the payload.
 
