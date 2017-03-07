@@ -44,6 +44,7 @@ import random
 import uuid
 import errno
 import ConfigParser
+import stat
 
 log = logging.getLogger(__name__)
 
@@ -100,7 +101,7 @@ class systemUUID:
         # all resources with the same resource name will have the same uuid, on this system
         # resources created on a different system with a name used on this
         # system will have *different* uuids' as it should be
-        tmp = str(uuid.uuid5(self._get_system_uuid(), resource_name))
+        tmp = str(uuid.uuid5(self._get_system_uuid(), resource_name.encode('utf-8')))
         log.info('resource: ' + resource_name + '  uuid=' + str(tmp))
         return str(tmp)
 
@@ -184,7 +185,8 @@ class LiotaConfigPath:
 
 
 def read_liota_config(section, name):
-    """Returns the value of name within the specified section.
+    """
+    Returns the value of name within the specified section.
     """
     config = ConfigParser.RawConfigParser()
     fullPath = LiotaConfigPath().get_liota_fullpath()
@@ -204,3 +206,36 @@ def read_liota_config(section, name):
         log.warn('liota.conf file missing')
     return value
 
+  
+class DiscUtilities:
+    """
+    DiscUtilities is a wrapper of utility functions
+    """
+    def __init__(self):
+        pass
+
+    def validate_named_pipe(self, pipe_file):
+        assert(isinstance(pipe_file, basestring))
+        if os.path.exists(pipe_file):
+            if stat.S_ISFIFO(os.stat(pipe_file).st_mode):
+                pass
+            else:
+                log.error("Pipe path exists, but it is not a pipe")
+                return False
+        else:
+            pipe_dir = os.path.dirname(pipe_file)
+            if not os.path.isdir(pipe_dir):
+                try:
+                    os.makedirs(pipe_dir)
+                    log.info("Created directory: " + pipe_dir)
+                except OSError:
+                    log.error("Could not create directory for messenger pipe")
+                    return False
+            try:
+                os.mkfifo(pipe_file)
+                log.info("Created pipe: " + pipe_file)
+            except OSError:
+                log.error("Could not create messenger pipe")
+                return False
+        assert(stat.S_ISFIFO(os.stat(pipe_file).st_mode))
+        return True

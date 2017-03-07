@@ -1,3 +1,4 @@
+#!/bin/bash
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
 #  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
@@ -30,47 +31,36 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.core.package_manager import LiotaPackage
+liota_config="/etc/liota/conf/liota.conf"
+discovery_messenger_pipe=""
 
-dependencies = ["edge_systems/dell5k/edge_system"]
+if [ ! -f "$liota_config" ]; then
+    echo "ERROR: Configuration file not found" >&2
+    exit -1
+fi
 
+while read line # Read configurations from file
+do
+    if echo $line | grep -F = &>/dev/null
+    then
+        varname=$(echo "$line" | sed "s/^\(..*\)\s*\=\s*..*$/\1/")
+        if [ $varname == "disc_cmd_msg_pipe" ]; then
+            value=$(echo "$line" | sed "s/^..*\s*\=\s*\(..*\)$/\1/")
+            discovery_messenger_pipe=$value
+        fi
+    fi
+done < $liota_config
 
-class PackageClass(LiotaPackage):
-    """
-    This package creates a IoTControlCenter DCC object and registers edge system on
-    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
-    """
+if [ "$discovery_messenger_pipe" == "" ]; then
+    echo "ERROR: Discovery pipe path not found in configuration file" >&2
+    exit -2
+fi
 
-    def run(self, registry):
-        import copy
-        from liota.dccs.iotcc import IotControlCenter
-        from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
-        from liota.dccs.dcc import RegistrationFailure
+if [ ! -p "$discovery_messenger_pipe" ]; then
+    echo "ERROR: Discovery Pipe path is not a named pipe" >&2
+    #exit -3
+fi
 
-        # Acquire resources from registry
-        # Creating a copy of edge_system object to keep original object "clean"
-        edge_system = copy.copy(registry.get("edge_system"))
-
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
-
-        # Initialize DCC object with transport
-        self.iotcc = IotControlCenter(
-            config['IotCCUID'], config['IotCCPassword'],
-            WebSocketDccComms(url=config['WebSocketUrl'])
-        )
-
-        try:
-            # Register edge system (gateway)
-            iotcc_edge_system = self.iotcc.register(edge_system)
-
-            registry.register("iotcc", self.iotcc)
-            registry.register("iotcc_edge_system", iotcc_edge_system)
-        except RegistrationFailure:
-            print "EdgeSystem registration to IOTCC failed"
-        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
-
-    def clean_up(self):
-        self.iotcc.comms.wss.close()
+# Echo to named pipe
+echo "Pipe file: $discovery_messenger_pipe" >&2
+echo "$@" > $discovery_messenger_pipe
