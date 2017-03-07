@@ -32,42 +32,57 @@
 
 import json
 import logging
-
+from abc import abstractmethod
 from collections import OrderedDict
 
 from liota.dccs.dcc import DataCenterComponent
+from liota.entities.registered_entity import RegisteredEntity
 from liota.entities.edge_systems.edge_system import EdgeSystem
 from liota.entities.devices.device import Device
 from liota.entities.metrics.metric import Metric
 from liota.entities.metrics.registered_metric import RegisteredMetric
-from liota.entities.registered_entity import RegisteredEntity
-from liota.lib.utilities.si_unit import parse_unit
-
+from liota.lib.utilities.si_unit import parse_unit, UnsupportedUnitError
 
 log = logging.getLogger(__name__)
 
 
-class GenericMqtt(DataCenterComponent):
+class BasicDataCenterComponent(DataCenterComponent):
     """
-    DCC for MQTT Brokers. MqttDccComms is used as transport.
+    Basic DataCenterComponent with Abstract implementations.
+
+    Subclasses (DCCs) can have specific implementations.
     """
-    def __init__(self, con, enclose_metadata=False):
+
+    @abstractmethod
+    def __init__(self, comms, enclose_metadata=False):
         """
-        :param con: MqttDccComms Object
+        :param comms: DccCommsObject.
         :param enclose_metadata: Include Gateway, Device and Metric names as part of payload or not
         """
-        super(GenericMqtt, self).__init__(con)
+        super(BasicDataCenterComponent, self).__init__(
+            comms=comms
+        )
         self.enclose_metadata = enclose_metadata
 
+    @abstractmethod
     def register(self, entity_obj):
-        log.info("Registering resource with GenericMqtt DCC {0}".format(entity_obj.name))
+        """
+        Subclasses (DCCs) can have specific implementations.  If not, call this method.
+
+        :param entity_obj: Entity Object
+        :return: RegisteredEntity Object
+        """
+        super(BasicDataCenterComponent, self).register(entity_obj)
         if isinstance(entity_obj, Metric):
             return RegisteredMetric(entity_obj, self, None)
         else:
             return RegisteredEntity(entity_obj, self, None)
 
+    @abstractmethod
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """
+        Subclasses (DCCs) can have specific implementations.  If not, call this method.
+
         This method creates Parent-Child relationship.  Supported relationships are:
 
                EdgeSystem
@@ -83,14 +98,15 @@ class GenericMqtt(DataCenterComponent):
         :param reg_entity_child:  Registered Device or Registered Metric Object
         :return: None
         """
-
         # Validating here helps in enclose_metadata
         if not isinstance(reg_entity_parent.ref_entity, EdgeSystem) and \
                 not isinstance(reg_entity_parent.ref_entity, Device):
+            log.error("reg_entity_parent should either be a Registered EdgeSystem or a Device")
             raise TypeError("reg_entity_parent should either be a Registered EdgeSystem or a Device")
 
         if not isinstance(reg_entity_child.ref_entity, Device) and \
                 not isinstance(reg_entity_child, RegisteredMetric):
+            log.error("reg_entity_child should either be a Registered Device or Metric")
             raise TypeError("reg_entity_child should either be a Registered Device or Metric")
 
         reg_entity_child.parent = reg_entity_parent
@@ -103,6 +119,7 @@ class GenericMqtt(DataCenterComponent):
                  - [edge_system_name, metric_name]
         """
         if not isinstance(reg_entity, RegisteredEntity):
+            log.error("RegisteredEntity is expected")
             raise TypeError("RegisteredEntity is expected")
 
         def extract_hierarchy(reg_entity):
@@ -117,13 +134,16 @@ class GenericMqtt(DataCenterComponent):
 
         return extract_hierarchy(reg_entity)
 
+    @abstractmethod
     def _format_data(self, reg_metric):
         """
+        Subclasses (DCCs) can have specific implementations.  If not, call this method.
+
         :param reg_metric: Registered Metric Object
-        :return: Payload in JSON format
+        :return: Payload in JSON format or None
         """
         met_cnt = reg_metric.values.qsize()
-        if met_cnt == 0:
+        if 0 == met_cnt:
             return
 
         _list = []
@@ -143,11 +163,38 @@ class GenericMqtt(DataCenterComponent):
             elif len(_entity_hierarchy) == 2:
                 payload['edge_system_name'] = _entity_hierarchy[0]
             else:
+                # Not raising error.
+                # Metrics can be published even if error occurred while
+                # constructing payload for enclose_metadata
                 log.error("Error occurred while constructing payload")
         payload['metric_name'] = reg_metric.ref_entity.name
         payload['metric_data'] = [_ for _ in _list]
-        payload['unit'] = parse_unit(reg_metric.ref_entity.unit)[1]
+        # TODO: Make this as part of si_unit.py
+        # Handling Base, Derived and Prefixed Units
+        if reg_metric.ref_entity.unit is None:
+            payload['unit'] = 'null'
+        else:
+            try:
+                unit_tuple = parse_unit(reg_metric.ref_entity.unit)
+                if unit_tuple[0] is None:
+                    # Base and Derived Units
+                    payload['unit'] = unit_tuple[1]
+                else:
+                    # Prefixed or non-SI Units
+                    payload['unit'] = unit_tuple[0] + unit_tuple[1]
+            except UnsupportedUnitError as err:
+                # Not raising error.
+                # Metrics can be published even if unit is unsupported
+                payload['unit'] = 'null'
+                log.error(str(err))
         return json.dumps(payload)
 
+    @abstractmethod
     def set_properties(self, reg_entity, properties):
-        raise NotImplementedError
+        """
+        Subclasses must have specific implementation.
+        :param reg_entity: RegisteredEntity object.
+        :param properties: Properties of the RegisteredEntity object.
+        :return:
+        """
+        pass

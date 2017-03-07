@@ -32,8 +32,8 @@ The abstract class DCC represents an application in a data-center. It is potenti
 ## Transports
 Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols.  Refer ![MQTT](/examples/mqtt/README.md) to know more on different MQTT configuration options available.
 
-## Credentials and TLS Configurations
-* Credentials class encapsulates certificates or credentials related to a connection used at both DCC and Device side.
+## Identity and TLS Configurations
+* Identity class encapsulates certificates or credentials related to a connection used at both DCC and Device side.
 * TLSConf class encapsulates parameters related to TLS configuration.
 
 

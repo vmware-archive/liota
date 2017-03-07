@@ -30,65 +30,49 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import logging
-from abc import ABCMeta, abstractmethod
+import random
 
-from liota.entities.entity import Entity
-from liota.dcc_comms.dcc_comms import DCCComms
-from liota.entities.metrics.registered_metric import RegisteredMetric
+from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
+from liota.lib.transports.mqtt import MqttMessagingAttributes
+from liota.dccs.thingworx import ThingWorx
+from liota.entities.metrics.metric import Metric
+from liota.entities.edge_systems.simulated_edge_system import SimulatedEdgeSystem
 
-log = logging.getLogger(__name__)
-
-
-class DataCenterComponent:
-
-    """
-    Abstract base class for all DCCs.
-    """
-    __metaclass__ = ABCMeta
-
-    @abstractmethod
-    def __init__(self, comms):
-        if not isinstance(comms, DCCComms):
-            log.error("DCCComms object is expected.")
-            raise TypeError("DCCComms object is expected.")
-        self.comms = comms
-
-    # -----------------------------------------------------------------------
-    # Implement this method in subclasses and do actual registration.
-    #
-    # This method should return a RegisteredEntity if successful, or raise
-    # an exception if failed. Call this method from subclasses for a type
-    # check.
-    #
-
-    @abstractmethod
-    def register(self, entity_obj):
-        if not isinstance(entity_obj, Entity):
-            log.error("Entity object is expected.")
-            raise TypeError("Entity object is expected.")
-
-    @abstractmethod
-    def create_relationship(self, reg_entity_parent, reg_entity_child):
-        pass
-
-    @abstractmethod
-    def _format_data(self, reg_metric):
-        pass
-
-    def publish(self, reg_metric):
-        if not isinstance(reg_metric, RegisteredMetric):
-            log.error("RegisteredMetric object is expected.")
-            raise TypeError("RegisteredMetric object is expected.")
-        message = self._format_data(reg_metric)
-        if hasattr(reg_metric, 'msg_attr'):
-            self.comms.send(message, reg_metric.msg_attr)
-        else:
-            self.comms.send(message, None)
-
-    @abstractmethod
-    def set_properties(self, reg_entity, properties):
-        pass
+# getting values from conf file
+config = {}
+execfile('sampleProp.conf', config)
 
 
-class RegistrationFailure(Exception): pass
+# Random number generator, simulating random metric readings.
+def simulated_sampling_function():
+    return random.randint(0, 20)
+
+# ---------------------------------------------------------------------------
+# In this example, we demonstrate how data for a simulated metric generating
+# random numbers can be directed to ThingWorx data center component using Liota.
+# The program illustrates the ease of use Liota brings to IoT application
+# developers.
+
+if __name__ == '__main__':
+
+    edge_system = SimulatedEdgeSystem(config['EdgeSystemName'])
+
+    #  Connecting to MQTT Broker used by ThingWorx
+    #  Initializing ThingWorx DCC using MqttDccComms
+    #  For simplicity, this example connects over un-secure connection
+    thingworx = ThingWorx(MqttDccComms(edge_system_name=edge_system.name,
+                                       url=config['BrokerIP'], port=config['BrokerPort']),
+                          enclose_metadata=True)
+    #  Registering EdgeSystem
+    graphite_reg_edge_system = thingworx.register(edge_system)
+
+    metric_name = config['MetricName']
+    simulated_metric = Metric(name=metric_name,
+                              interval=5,
+                              sampling_function=simulated_sampling_function)
+    reg_metric = thingworx.register(simulated_metric)
+    thingworx.create_relationship(graphite_reg_edge_system, reg_metric)
+    #  Publish topic for this Metric
+    reg_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['CustomPubTopic'])
+    reg_metric.start_collecting()
+

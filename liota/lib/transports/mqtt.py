@@ -124,14 +124,14 @@ class Mqtt():
         """
         log.debug("Unsubscribed: {0}".format(str(mid)))
 
-    def __init__(self, url, port, credentials = None, tls_conf=None, qos_details=None, client_id="",
+    def __init__(self, url, port, identity=None, tls_conf=None, qos_details=None, client_id="",
                  clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
                  enable_authentication=False, conn_disconn_timeout=10):
 
         """
         :param url: MQTT Broker URL or IP
         :param port: MQTT Broker Port
-        :param credentials: Credentials Object
+        :param identity: Identity Object
         :param tls_conf: TLSConf object
         :param qos_details: QoSDetails object
         :param client_id: Client ID
@@ -151,7 +151,7 @@ class Mqtt():
         """
         self.url = url
         self.port = port
-        self.credentials = credentials
+        self.identity = identity
         self.tls_conf = tls_conf
         self.qos_details = qos_details
         self.client_id = client_id
@@ -192,8 +192,8 @@ class Mqtt():
         if self.tls_conf:
 
             # Validate CA certificate path
-            if self.credentials.root_ca_cert:
-                if not(os.path.exists(self.credentials.root_ca_cert)):
+            if self.identity.root_ca_cert:
+                if not(os.path.exists(self.identity.root_ca_cert)):
                     log.error("Error : Wrong CA certificate path.")
                     raise ValueError("Error : Wrong CA certificate path.")
             else:
@@ -201,8 +201,8 @@ class Mqtt():
                 raise ValueError("Error : CA certificate path is missing")
 
             # Validate client certificate path
-            if self.credentials.cert_file:
-                if os.path.exists(self.credentials.cert_file):
+            if self.identity.cert_file:
+                if os.path.exists(self.identity.cert_file):
                     client_cert_available = True
                 else:
                     log.error("Error : Wrong client certificate path.")
@@ -211,8 +211,8 @@ class Mqtt():
                 client_cert_available = False
 
             # Validate client key file path
-            if self.credentials.key_file:
-                if os.path.exists(self.credentials.key_file):
+            if self.identity.key_file:
+                if os.path.exists(self.identity.key_file):
                     client_key_available = True
                 else:
                     log.error("Error : Wrong client key path.")
@@ -229,16 +229,16 @@ class Mqtt():
             '''
 
             if client_cert_available and client_key_available:
-                log.debug("Certificates : ", self.credentials.root_ca_cert, self.credentials.cert_file,
-                          self.credentials.key_file)
+                log.debug("Certificates : ", self.identity.root_ca_cert, self.identity.cert_file,
+                          self.identity.key_file)
 
-                self._paho_client.tls_set(self.credentials.root_ca_cert, self.credentials.cert_file,
-                                          self.credentials.key_file,
+                self._paho_client.tls_set(self.identity.root_ca_cert, self.identity.cert_file,
+                                          self.identity.key_file,
                                           cert_reqs=getattr(ssl, self.tls_conf.cert_required),
                                           tls_version=getattr(ssl, self.tls_conf.tls_version),
                                           ciphers=self.tls_conf.cipher)
             elif not client_cert_available and not client_key_available:
-                self._paho_client.tls_set(self.credentials.root_ca_cert,
+                self._paho_client.tls_set(self.identity.root_ca_cert,
                                           cert_reqs=getattr(ssl, self.tls_conf.cert_required),
                                           tls_version=getattr(ssl, self.tls_conf.tls_version),
                                           ciphers=self.tls_conf.cipher)
@@ -252,14 +252,14 @@ class Mqtt():
 
         # Set up username-password
         if self.enable_authentication:
-            if not self.credentials.username:
+            if not self.identity.username:
                 log.error("Username not found")
                 raise ValueError("Username not found")
-            elif not self.credentials.password:
+            elif not self.identity.password:
                 log.error("Password not found")
                 raise ValueError("Password not found")
             else:
-                self._paho_client.username_pw_set(self.credentials.username, self.credentials.password)
+                self._paho_client.username_pw_set(self.identity.username, self.identity.password)
 
         if self.qos_details:
             # Set QoS parameters
@@ -381,7 +381,7 @@ class MqttMessagingAttributes:
      ----------------------------------------------------------------
 
      a) Use single publish and subscribe topic generated by LIOTA for an EdgeSystem, its Devices and its Metrics.
-        - Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system/stats'
+        - Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system/request'
         - Subscribe topic will be 'liota/generated_local_uuid_of_edge_system/response'
      b) Use custom single publish and subscribe topic for an EdgeSystem, its Devices and Metrics.
 
@@ -408,7 +408,7 @@ class MqttMessagingAttributes:
         """
         if edge_system_name:
             #  For Project ICE and Non-Project ICE, topics will be auto-generated if edge_system_name is not None
-            self.pub_topic = 'liota/' + systemUUID().get_uuid(edge_system_name) + '/stats'
+            self.pub_topic = 'liota/' + systemUUID().get_uuid(edge_system_name) + '/request'
             self.sub_topic = 'liota/' + systemUUID().get_uuid(edge_system_name) + '/response'
         else:
             #  When edge_system_name is None, pub_topic or sub_topic must be provided

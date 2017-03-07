@@ -41,7 +41,8 @@ from liota.device_comms.mqtt_device_comms import MqttDeviceComms
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.entities.metrics.metric import Metric
-from liota.lib.utilities.utility import Credentials, TLSConf
+from liota.lib.utilities.identity import Identity
+from liota.lib.utilities.tls_conf import TLSConf
 
 # getting values from conf file
 config = {}
@@ -111,15 +112,15 @@ def get_value(queue):
 
 # MQTT connection setup to record kitchen and living room temperature values
 def mqtt_subscribe():
-    # Encapsulates Credentials
-    credentials = Credentials(config['broker_root_ca_cert'], config['broker_username'], ['broker_password'],
+    # Encapsulates Identity
+    identity = Identity(config['broker_root_ca_cert'], config['broker_username'], ['broker_password'],
                               config['edge_system_cert_file'], config['edge_system_key_file'])
     # Encapsulate TLS parameters
     tls_conf = TLSConf(cert_required=config['cert_required'], tls_version=config['tls_version'],
                        cipher=config['cipher'])
 
     # Create MQTT connection object with required params
-    mqtt_conn = MqttDeviceComms(url=config['BrokerIP'],  port=config['BrokerPort'], credentials=credentials,
+    mqtt_conn = MqttDeviceComms(url=config['BrokerIP'],  port=config['BrokerPort'], identity=identity,
                                 tls_conf=tls_conf,
                                 qos_details=None,
                                 clean_session=True,

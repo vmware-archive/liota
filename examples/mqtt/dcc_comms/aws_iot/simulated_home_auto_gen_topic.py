@@ -35,13 +35,14 @@ import random
 import pint
 from linux_metrics import cpu_stat
 
-from liota.dccs.generic_mqtt import GenericMqtt
+from liota.dccs.aws_iot import AWSIoT
 from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
 from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.lib.transports.mqtt import QoSDetails
-from liota.lib.utilities.utility import Credentials, TLSConf
+from liota.lib.utilities.identity import Identity
+from liota.lib.utilities.tls_conf import TLSConf
 
 # getting aws related values from conf file
 config = {}
@@ -121,8 +122,8 @@ def get_living_room_luminance():
 if __name__ == '__main__':
     #  Creating EdgeSystem
     edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
-    #  Encapsulates Credentials
-    credentials = Credentials(config['broker_root_ca_cert'], None, None,
+    #  Encapsulates Identity
+    identity = Identity(config['broker_root_ca_cert'], None, None,
                               config['edge_system_cert_file'], config['edge_system_key_file'])
     # Encapsulate TLS parameters
     tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
@@ -132,16 +133,16 @@ if __name__ == '__main__':
     #  Connecting to AWSIoT
     #  Initializing GenericMqtt DCC using MqttDccComms
     #  AWSIoT broker doesn't support session persistence.  So, always use "clean_session=True"
-    #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system/stats'
-    aws = GenericMqtt(MqttDccComms(edge_system_name=edge_system.name,
-                                   url=config['BrokerIP'], port=config['BrokerPort'], credentials=credentials,
-                                   tls_conf=tls_conf,
-                                   qos_details=qos_details,
-                                   clean_session=True,
-                                   userdata=config['userdata'],
-                                   protocol=config['protocol'], transport=['transport'],
-                                   conn_disconn_timeout=config['ConnectDisconnectTimeout']),
-                      enclose_metadata=True)
+    #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system/request'
+    aws = AWSIoT(MqttDccComms(edge_system_name=edge_system.name,
+                              url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
+                              tls_conf=tls_conf,
+                              qos_details=qos_details,
+                              clean_session=True,
+                              userdata=config['userdata'],
+                              protocol=config['protocol'], transport=['transport'],
+                              conn_disconn_timeout=config['ConnectDisconnectTimeout']),
+                 enclose_metadata=True)
     #  Registering EdgeSystem
     reg_edge_system = aws.register(edge_system)
 

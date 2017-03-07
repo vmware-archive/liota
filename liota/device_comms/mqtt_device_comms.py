@@ -43,13 +43,13 @@ class MqttDeviceComms(DeviceComms):
     DeviceComms for MQTT Transport
     """
 
-    def __init__(self, url, port, credentials=None, tls_conf=None, qos_details=None,
+    def __init__(self, url, port, identity=None, tls_conf=None, qos_details=None,
                  client_id="", clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
                  enable_authentication=False, conn_disconn_timeout=10):
         """
         :param url: MQTT Broker URL or IP
         :param port: MQTT Broker Port
-        :param credentials: Credentials object
+        :param identity: Identity object
         :param tls_conf: TLSConf object
         :param qos_details: QoSDetails object
         :param client_id: Client ID
@@ -67,7 +67,7 @@ class MqttDeviceComms(DeviceComms):
         """
         self.url = url
         self.port = port
-        self.credentials = credentials
+        self.identity = identity
         self.tls_conf = tls_conf
         self.client_id = client_id
         self.qos_details = qos_details
@@ -85,7 +85,7 @@ class MqttDeviceComms(DeviceComms):
         Initializes Mqtt Transport and connects to MQTT broker.
         :return:
         """
-        self.client = Mqtt(self.url, self.port, self.credentials, self.tls_conf, self.qos_details, self.client_id,
+        self.client = Mqtt(self.url, self.port, self.identity, self.tls_conf, self.qos_details, self.client_id,
                            self.clean_session, self.userdata, self.protocol, self.transport, self.keep_alive,
                            self.enable_authentication, self.conn_disconn_timeout)
 

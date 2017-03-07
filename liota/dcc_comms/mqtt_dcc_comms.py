@@ -44,7 +44,7 @@ class MqttDccComms(DCCComms):
     DccComms for MQTT Transport
     """
 
-    def __init__(self, edge_system_name, url, port, credentials=None, tls_conf=None, qos_details=None,
+    def __init__(self, edge_system_name, url, port, identity=None, tls_conf=None, qos_details=None,
                  client_id="", clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
                  mqtt_msg_attr=None, enable_authentication=False, conn_disconn_timeout=10):
 
@@ -53,7 +53,7 @@ class MqttDccComms(DCCComms):
         :param url: MQTT Broker URL or IP
         :param port: MQTT Broker Port
         :param tls_conf: TLSConf object
-        :param credentials: Credentials object
+        :param identity: Identity object
         :param qos_details: QoSDetails object
         :param client_id: Client ID
         :param clean_session: Connect with Clean session or not
@@ -83,9 +83,7 @@ class MqttDccComms(DCCComms):
                 log.info("generated local uuid will be the client ID")
             else:
                 log.info("Client ID is provided by user")
-            #  Storing edge_system name and generated local_uuid which will be used in
-            #  pub-topic='liota/generated_local_uuid_of_edge_system' and
-            #  sub-topic='liota-resp/generated_local_uuid_of_edge_system'
+            #  Storing edge_system name and generated local_uuid which will be used in auto-generation of pub-sub topic
             store_edge_system_uuid(entity_name=edge_system_name,
                                    entity_id=self.client_id,
                                    reg_entity_id=None)
@@ -98,7 +96,7 @@ class MqttDccComms(DCCComms):
 
         self.url = url
         self.port = port
-        self.credentials = credentials
+        self.identity = identity
         self.tls_conf = tls_conf
         self.qos_details = qos_details
         self.clean_session = clean_session
@@ -115,7 +113,7 @@ class MqttDccComms(DCCComms):
         Initializes Mqtt Transport and connects to MQTT broker.
         :return:
         """
-        self.client = Mqtt(self.url, self.port, self.credentials, self.tls_conf, self.qos_details, self.client_id,
+        self.client = Mqtt(self.url, self.port, self.identity, self.tls_conf, self.qos_details, self.client_id,
                            self.clean_session, self.userdata, self.protocol, self.transport, self.keep_alive,
                            self.enable_authentication, self.conn_disconn_timeout)
 

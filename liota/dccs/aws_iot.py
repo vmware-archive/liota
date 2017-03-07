@@ -31,64 +31,48 @@
 # ----------------------------------------------------------------------------#
 
 import logging
-from abc import ABCMeta, abstractmethod
 
-from liota.entities.entity import Entity
-from liota.dcc_comms.dcc_comms import DCCComms
-from liota.entities.metrics.registered_metric import RegisteredMetric
+from liota.dccs.basic_dcc import BasicDataCenterComponent
 
 log = logging.getLogger(__name__)
 
 
-class DataCenterComponent:
-
+class AWSIoT(BasicDataCenterComponent):
     """
-    Abstract base class for all DCCs.
+    DCC for AWSIoT Platform.
     """
-    __metaclass__ = ABCMeta
+    def __init__(self, con, enclose_metadata=False):
+        """
+        :param con: DccComms Object
+        :param enclose_metadata: Include Gateway, Device and Metric names as part of payload or not
+        """
+        super(AWSIoT, self).__init__(
+            comms=con,
+            enclose_metadata=enclose_metadata
+        )
 
-    @abstractmethod
-    def __init__(self, comms):
-        if not isinstance(comms, DCCComms):
-            log.error("DCCComms object is expected.")
-            raise TypeError("DCCComms object is expected.")
-        self.comms = comms
-
-    # -----------------------------------------------------------------------
-    # Implement this method in subclasses and do actual registration.
-    #
-    # This method should return a RegisteredEntity if successful, or raise
-    # an exception if failed. Call this method from subclasses for a type
-    # check.
-    #
-
-    @abstractmethod
     def register(self, entity_obj):
-        if not isinstance(entity_obj, Entity):
-            log.error("Entity object is expected.")
-            raise TypeError("Entity object is expected.")
+        """
+        :param entity_obj: Entity Object
+        :return: RegisteredEntity Object
+        """
+        log.info("Registering resource with AWSIoT DCC {0}".format(entity_obj.name))
+        return super(AWSIoT, self).register(entity_obj)
 
-    @abstractmethod
     def create_relationship(self, reg_entity_parent, reg_entity_child):
-        pass
+        """
+        :param reg_entity_parent: Registered EdgeSystem or Registered Device Object
+        :param reg_entity_child:  Registered Device or Registered Metric Object
+        :return: None
+        """
+        super(AWSIoT, self).create_relationship(reg_entity_parent, reg_entity_child)
 
-    @abstractmethod
     def _format_data(self, reg_metric):
-        pass
+        """
+        :param reg_metric: Registered Metric Object
+        :return: Payload in JSON format
+        """
+        return super(AWSIoT, self)._format_data(reg_metric)
 
-    def publish(self, reg_metric):
-        if not isinstance(reg_metric, RegisteredMetric):
-            log.error("RegisteredMetric object is expected.")
-            raise TypeError("RegisteredMetric object is expected.")
-        message = self._format_data(reg_metric)
-        if hasattr(reg_metric, 'msg_attr'):
-            self.comms.send(message, reg_metric.msg_attr)
-        else:
-            self.comms.send(message, None)
-
-    @abstractmethod
     def set_properties(self, reg_entity, properties):
-        pass
-
-
-class RegistrationFailure(Exception): pass
+        raise NotImplementedError
