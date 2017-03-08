@@ -113,7 +113,7 @@ def get_value(queue):
 # MQTT connection setup to record kitchen and living room temperature values
 def mqtt_subscribe():
     # Encapsulates Identity
-    identity = Identity(config['broker_root_ca_cert'], config['broker_username'], ['broker_password'],
+    identity = Identity(config['broker_root_ca_cert'], config['broker_username'], config['broker_password'],
                               config['edge_system_cert_file'], config['edge_system_key_file'])
     # Encapsulate TLS parameters
     tls_conf = TLSConf(cert_required=config['cert_required'], tls_version=config['tls_version'],

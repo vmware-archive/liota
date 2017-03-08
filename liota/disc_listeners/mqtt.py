@@ -29,26 +29,19 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-import os
-import sys
+
 import json
-import inspect
-import stat
-import fcntl
-import thread
 import logging
-import time
-from Queue import Queue
 from threading import Thread
 
 from liota.disc_listeners.discovery_listener import DiscoveryListener
 from liota.device_comms.mqtt_device_comms import MqttDeviceComms
-from liota.lib.identity.identity import RemoteSystemIdentity
-from liota.lib.identity.identity import EdgeSystemIdentity
-from liota.lib.identity.tls_conf import TLSConf
+from liota.lib.utilities.identity import Identity
+from liota.lib.utilities.tls_conf import TLSConf
 from liota.lib.transports.mqtt import QoSDetails
 
 log = logging.getLogger(__name__)
+
 
 class MqttListener(DiscoveryListener):
     """
@@ -104,29 +97,24 @@ class MqttListener(DiscoveryListener):
             else:
                 log.error("discovery.pkg_registry is None; could not start MqttListener!")
                 return
-            # RemoteSystemIdentity Object to connect with broker used in DeviceComms
-            self.remote_system_identity = RemoteSystemIdentity(self.cfg_sets['broker_root_ca_cert'],
-                        self.cfg_sets['broker_username'], self.cfg_sets['broker_password'])
-            # Create Edge System identity object with all required certificate details
-            self.edge_system_identity = EdgeSystemIdentity(self.edge_system_object,
-                        self.cfg_sets['edge_system_cert_file'], self.cfg_sets['edge_system_key_file'])
+            # Encapsulates Identity
+            self.identity = Identity(self.cfg_sets['broker_root_ca_cert'], self.cfg_sets['broker_username'],
+                                     self.cfg_sets['broker_password'],
+                                     self.cfg_sets['edge_system_cert_file'], self.cfg_sets['edge_system_key_file'])
 
             if ((self.cfg_sets['cert_required'] == "None") or  (self.cfg_sets['cert_required'] == "CERT_NONE")):
                 self.tls_conf = None
             else:
                 # Encapsulate TLS parameters
                 self.tls_conf = TLSConf(self.cfg_sets['cert_required'], self.cfg_sets['tls_version'],
-                            self.cfg_sets['cipher'])
+                                        self.cfg_sets['cipher'])
             # Encapsulate QoS related parameters
-            self.qos_details = QoSDetails(self.cfg_sets['in_flight'], self.cfg_sets['queue_size'],
-                        self.cfg_sets['retry'])
-            #self.qos_details = None
+            self.qos_details = QoSDetails(self.cfg_sets['in_flight'], self.cfg_sets['queue_size'], self.cfg_sets['retry'])
+
             # Create MQTT connection object with required params
-            self.mqtt_conn = MqttDeviceComms(remote_system_identity=self.remote_system_identity,
-                                edge_system_identity=self.edge_system_identity, tls_details=self.tls_conf,
-                                qos_details=None, url=self.broker_ip, clean_session=True,
-                                port=int(self.broker_port), keep_alive=int(self.cfg_sets['keep_alive']),
-                                enable_authentication=False)
+            self.mqtt_conn = MqttDeviceComms(url=self.broker_ip, port=int(self.broker_port), identity=self.identity,
+                                             tls_conf=self.tls_conf, qos_details=self.qos_details, clean_session=True,
+                                             keep_alive=int(self.cfg_sets['keep_alive']), enable_authentication=False)
             # Add callback methods
             self.mqtt_conn.subscribe(self.topic, 2, self.callback_msg_proc)
             log.debug("MqttListener is running")

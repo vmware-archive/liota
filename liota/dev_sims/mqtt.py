@@ -29,25 +29,20 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-import os
-import sys
+
 import json
-import inspect
-import stat
 import time
-import fcntl
 import logging
-from Queue import Queue
 
 from liota.dev_sims.device_simulator import DeviceSimulator
 from liota.device_comms.mqtt_device_comms import MqttDeviceComms
-from liota.lib.identity.identity import RemoteSystemIdentity
-from liota.lib.identity.identity import EdgeSystemIdentity
-from liota.lib.identity.tls_conf import TLSConf
+from liota.lib.utilities.identity import Identity
+from liota.lib.utilities.tls_conf import TLSConf
 from liota.lib.transports.mqtt import QoSDetails
 
 
 log = logging.getLogger(__name__)
+
 
 class MqttSimulator(DeviceSimulator):
     """
@@ -75,12 +70,10 @@ class MqttSimulator(DeviceSimulator):
             self.topic = str(str_list[2])
         self.simulator = simulator
 
-        # RemoteSystemIdentity Object to connect with broker used in DeviceComms
-        self.remote_system_identity = RemoteSystemIdentity(mqtt_cfg['broker_root_ca_cert'],
-                mqtt_cfg['broker_username'], mqtt_cfg['broker_password'])
-        # Create Edge System identity object with all required certificate details
-        self.edge_system_identity = EdgeSystemIdentity(self.simulator.edge_system_object,
-                mqtt_cfg['edge_system_cert_file'], mqtt_cfg['edge_system_key_file'])
+        # Encapsulates Identity
+        self.identity = Identity(mqtt_cfg['broker_root_ca_cert'], mqtt_cfg['broker_username'],
+                                 mqtt_cfg['broker_password'], mqtt_cfg['edge_system_cert_file'],
+                                 mqtt_cfg['edge_system_key_file'])
         if ((mqtt_cfg['cert_required'] == "None") or  (mqtt_cfg['cert_required'] == "CERT_NONE")):
             self.tls_conf = None
         else:
@@ -89,11 +82,9 @@ class MqttSimulator(DeviceSimulator):
         # Encapsulate QoS related parameters
         self.qos_details = QoSDetails(mqtt_cfg['in_flight'], mqtt_cfg['queue_size'], mqtt_cfg['retry'])
         # Create MQTT connection object with required params
-        self.mqtt_conn = MqttDeviceComms(remote_system_identity=self.remote_system_identity,
-                edge_system_identity=self.edge_system_identity, tls_details=self.tls_conf,
-                qos_details=None, url=self.broker_ip, clean_session=True,
-                port=int(self.broker_port), keep_alive=int(mqtt_cfg['keep_alive']),
-                enable_authentication=False)
+        self.mqtt_conn = MqttDeviceComms(url=self.broker_ip, port=int(self.broker_port), identity=self.identity,
+                                         tls_conf=self.tls_conf, qos_details=self.qos_details,  clean_session=True,
+                                         keep_alive=int(mqtt_cfg['keep_alive']), enable_authentication=False)
 
         log.debug("MqttSimulator is initialized")
         print "MqttSimulator is initialized"
