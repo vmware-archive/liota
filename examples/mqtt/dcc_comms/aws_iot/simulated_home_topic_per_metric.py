@@ -112,7 +112,7 @@ def get_living_room_luminance():
 #
 #  d) Use combination of (a) and (c) or (b) and (c).
 #
-# GenericMqtt DCC has enclose_metadata option.  It can be used to enclose EdgeSystem, Device and Metric names
+# AWSIoT DCC has enclose_metadata option.  It can be used to enclose EdgeSystem, Device and Metric names
 # along with the sensor data payload of a Metric.
 #
 # This example showcases publishing Metrics using (b) and (c) without enclose_metadata
@@ -130,7 +130,6 @@ if __name__ == '__main__':
     qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
     #  Connecting to AWSIoT
-    #  Initializing GenericMqtt using MqttDccComms
     #  AWSIoT broker doesn't support session persistence.  So, always use "clean_session=True"
     #  Custom Publish Topic for an EdgeSystem
     mqtt_msg_attr = MqttMessagingAttributes(pub_topic=config['CustomPubTopic'])

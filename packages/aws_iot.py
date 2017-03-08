@@ -65,24 +65,23 @@ class PackageClass(LiotaPackage):
         # Encapsulate QoS related parameters
         qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
-        #  Connecting to Mqtt Broker
-        #  Initializing GenericMqtt DCC using MqttDccComms
+        #  Connecting to AWSIoT
         #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system/request'
         #  Create and pass custom MqttMessagingAttributes object to MqttDccComms to have custom topic
-        self.generic_mqtt = AWSIoT(MqttDccComms(edge_system_name=edge_system.name,
-                                                url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
-                                                tls_conf=tls_conf,
-                                                qos_details=qos_details,
-                                                clean_session=True, userdata=config['userdata'],
-                                                protocol=config['protocol'], transport=['transport'],
-                                                conn_disconn_timeout=config['ConnectDisconnectTimeout']),
-                                   enclose_metadata=True)
+        self.aws_iot = AWSIoT(MqttDccComms(edge_system_name=edge_system.name,
+                                           url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
+                                           tls_conf=tls_conf,
+                                           qos_details=qos_details,
+                                           clean_session=True, userdata=config['userdata'],
+                                           protocol=config['protocol'], transport=['transport'],
+                                           conn_disconn_timeout=config['ConnectDisconnectTimeout']),
+                              enclose_metadata=True)
 
         # Register edge system (gateway)
-        generic_mqtt_edge_system = self.generic_mqtt.register(edge_system)
+        generic_mqtt_edge_system = self.aws_iot.register(edge_system)
 
-        registry.register("generic_mqtt", self.generic_mqtt)
-        registry.register("generic_mqtt_edge_system", generic_mqtt_edge_system)
+        registry.register("aws_iot", self.aws_iot)
+        registry.register("aws_iot__edge_system", generic_mqtt_edge_system)
 
     def clean_up(self):
-        self.generic_mqtt.comms.client.disconnect()
+        self.aws_iot.comms.client.disconnect()

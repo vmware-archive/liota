@@ -36,7 +36,7 @@ from linux_metrics import cpu_stat
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["generic_mqtt"]
+dependencies = ["aws_iot"]
 
 
 #  Reading CPU Utilization.
@@ -59,7 +59,6 @@ def get_living_room_humidity():
 def get_living_room_luminance():
     # 0 - Lights Off, 1 - Lights On
     return random.randint(0, 1)
-
 
 # ------------------------------------------------------------------------------------------------------------------
 # In this example, we demonstrate how data for a simulated metric generating
@@ -101,18 +100,18 @@ def get_living_room_luminance():
 #  d) Use combination of (a) and (c) or (b) and (c).
 #
 #
-# GenericMqtt DCC has enclose_metadata option.  It can be used to enclose EdgeSystem, Device and Metric names
+# AWSIoT DCC has enclose_metadata option.  It can be used to enclose EdgeSystem, Device and Metric names
 # along with the sensor data payload of a Metric.
 #
-# This example showcases publishing Metrics using (c) with enclose_metadata
+# This example showcases publishing Metrics using (a) and enclose_metadata
 # ----------------------------------------------------------------------------------------------------------------------
 
 class PackageClass(LiotaPackage):
+
     def run(self, registry):
         import copy
         import pint
 
-        from liota.lib.transports.mqtt import MqttMessagingAttributes
         from liota.entities.metrics.metric import Metric
         from liota.entities.devices.simulated_device import SimulatedDevice
 
@@ -120,13 +119,8 @@ class PackageClass(LiotaPackage):
         ureg = pint.UnitRegistry()
 
         # Acquire resources from registry
-        generic_mqtt = registry.get("generic_mqtt")
-        generic_mqtt_edge_system = copy.copy(registry.get("generic_mqtt_edge_system"))
-
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        aws_iot = registry.get("aws_iot")
+        aws_iot_edge_system = copy.copy(registry.get("aws_iot_edge_system"))
 
         # Create metrics
         self.metrics = []
@@ -140,19 +134,17 @@ class PackageClass(LiotaPackage):
             sampling_function=read_cpu_utilization
         )
         #  Registering Metric and creating Parent-Child relationship
-        reg_cpu_utilization = generic_mqtt.register(cpu_utilization)
-        generic_mqtt.create_relationship(generic_mqtt_edge_system, reg_cpu_utilization)
-        #  Publish topic for this Metric
-        reg_cpu_utilization.msg_attr = MqttMessagingAttributes(pub_topic=config['CustomPubTopic'])
-        #  Publishing Registered CPU Utilization Metric to GenericMqtt Dcc
+        reg_cpu_utilization = aws_iot.register(cpu_utilization)
+        aws_iot.create_relationship(aws_iot_edge_system, reg_cpu_utilization)
+        #  Publishing Registered CPU Utilization Metric to AWSIoT Dcc
         reg_cpu_utilization.start_collecting()
         self.metrics.append(reg_cpu_utilization)
 
         #  Creating Simulated Device
         dht_sensor = SimulatedDevice("SimulatedDHTSensor")
         #  Registering Device and creating Parent-Child relationship
-        reg_dht_sensor = generic_mqtt.register(dht_sensor)
-        generic_mqtt.create_relationship(generic_mqtt_edge_system, reg_dht_sensor)
+        reg_dht_sensor = aws_iot.register(dht_sensor)
+        aws_iot.create_relationship(aws_iot_edge_system, reg_dht_sensor)
         #  Creating Temperature Metric
         temp_metric = Metric(
             name="LivingRoomTemperature",
@@ -163,11 +155,9 @@ class PackageClass(LiotaPackage):
             sampling_function=get_living_room_temperature
         )
         #  Registering Metric and creating Parent-Child relationship
-        reg_temp_metric = generic_mqtt.register(temp_metric)
-        generic_mqtt.create_relationship(reg_dht_sensor, reg_temp_metric)
-        #  Publish topic for this Metric
-        reg_temp_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomTemperatureTopic'])
-        #  Publishing Registered Temperature Metric to GenericMqtt Dcc
+        reg_temp_metric = aws_iot.register(temp_metric)
+        aws_iot.create_relationship(reg_dht_sensor, reg_temp_metric)
+        #  Publishing Registered Temperature Metric to AWSIoT Dcc
         reg_temp_metric.start_collecting()
         self.metrics.append(reg_temp_metric)
 
@@ -181,19 +171,17 @@ class PackageClass(LiotaPackage):
             sampling_function=get_living_room_humidity
         )
         #  Registering Metric and creating Parent-Child relationship
-        reg_hum_metric = generic_mqtt.register(hum_metric)
-        generic_mqtt.create_relationship(reg_dht_sensor, reg_hum_metric)
-        #  Publish topic for this Metric
-        reg_hum_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomHumidityTopic'])
-        #  Publishing Registered Humidity Metric to GenericMqtt Dcc
+        reg_hum_metric = aws_iot.register(hum_metric)
+        aws_iot.create_relationship(reg_dht_sensor, reg_hum_metric)
+        #  Publishing Registered Humidity Metric to AWSIoT Dcc
         reg_hum_metric.start_collecting()
         self.metrics.append(reg_hum_metric)
 
         #  Creating Simulated Device
         light_sensor = SimulatedDevice("SimDigLightSensor")
         #  Registering Device and creating Parent-Child relationship
-        reg_light_sensor = generic_mqtt.register(light_sensor)
-        generic_mqtt.create_relationship(generic_mqtt_edge_system, reg_light_sensor)
+        reg_light_sensor = aws_iot.register(light_sensor)
+        aws_iot.create_relationship(aws_iot_edge_system, reg_light_sensor)
 
         #  Creating Light Metric
         light_metric = Metric(
@@ -205,11 +193,9 @@ class PackageClass(LiotaPackage):
             sampling_function=get_living_room_luminance
         )
         #  Registering Metric and creating Parent-Child relationship
-        reg_light_metric = generic_mqtt.register(light_metric)
-        generic_mqtt.create_relationship(reg_light_sensor, reg_light_metric)
-        #  Publish topic for this Metric
-        reg_light_metric.msg_attr = MqttMessagingAttributes(pub_topic=config['LivingRoomLightTopic'])
-        #  Publishing Registered Light Metric to GenericMqttDcc
+        reg_light_metric = aws_iot.register(light_metric)
+        aws_iot.create_relationship(reg_light_sensor, reg_light_metric)
+        #  Publishing Registered Light Metric to AWSIoT Dcc
         reg_light_metric.start_collecting()
         self.metrics.append(reg_light_metric)
 
