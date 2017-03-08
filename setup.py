@@ -45,7 +45,7 @@ with open('README.md') as f:
 
 setup(
     name='liota',
-    version='0.2',
+    version='0.2.1',
     packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
