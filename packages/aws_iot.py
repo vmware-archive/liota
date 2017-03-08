@@ -37,8 +37,8 @@ dependencies = ["edge_systems/dell5k/edge_system"]
 
 class PackageClass(LiotaPackage):
     """
-    This package creates a GenericMqtt DCC object and registers edge system on
-    GenericMqtt to acquire "registered edge system", i.e. generic_mqtt_edge_system.
+    This package creates a AWSIoT DCC object and registers edge system on
+    AWSIoT to acquire "registered edge system", i.e. aws_iot_edge_system.
     """
 
     def run(self, registry):
@@ -78,10 +78,10 @@ class PackageClass(LiotaPackage):
                               enclose_metadata=True)
 
         # Register edge system (gateway)
-        generic_mqtt_edge_system = self.aws_iot.register(edge_system)
+        aws_iot_edge_system = self.aws_iot.register(edge_system)
 
         registry.register("aws_iot", self.aws_iot)
-        registry.register("aws_iot__edge_system", generic_mqtt_edge_system)
+        registry.register("aws_iot_edge_system", aws_iot_edge_system)
 
     def clean_up(self):
         self.aws_iot.comms.client.disconnect()
