@@ -55,7 +55,7 @@ it follows `Option (a)` as mentioned in the above section.
 
 ### Configuration for Non-Project ICE Scenario
 
-* **enclose_metadata** flag in GenericMqtt Dcc can be used to specify whether a payload should be self-descriptive or not. i.e., If set to **True**, EdgeSystemName and DeviceName for a Metric will be appended
+* **enclose_metadata** flag in ![AWSIoT DCC](/liota/dccs/aws_iot.py) can be used to specify whether a payload should be self-descriptive or not. i.e., If set to **True**, EdgeSystemName and DeviceName for a Metric will be appended
 along with the payload every-time when it is published.  This is because:
 
   **-** If **automatic topic generation** option is used, subscribers can differentiate between metrics from different EdgeSystems & Devices by parsing the payload.  So, **enclose_metadata=True** should be used in this case.
@@ -66,6 +66,8 @@ along with the payload every-time when it is published.  This is because:
 * **Option (c)** could be achieved by passing **custom MqttMessagingAttributes object** as an attribute with name **msg_attr** to the corresponding **RegisteredMetricObjects**
 
 **NOTE:** MqttMessagingAttributes for a RegisteredMetric object MUST always be passed via **msg_attr** attribute of that RegisteredMetric Object.
+
+Similarly, other DCCs can also use this approach to publish metric stats using MQTT.
 
 Refer:
 * ![aws_auto_gen](/examples/mqtt/dcc_comms/aws_iot/simulated_home_auto_gen_topic.py) example to publish to AWSIoT using **Option (a)**.
