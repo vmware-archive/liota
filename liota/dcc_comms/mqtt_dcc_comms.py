@@ -124,15 +124,15 @@ class MqttDccComms(DCCComms):
         """
         self.client.disconnect()
 
-    def subscribe(self, mess_attr=None):
+    def subscribe(self, msg_attr=None):
         """
         Subscribes to a topic with specified QoS and callback.
 
-        :param mess_attr: MqttMessagingAttributes Object
+        :param msg_attr: MqttMessagingAttributes Object
         :return:
         """
-        if mess_attr:
-            self.client.subscribe(mess_attr.sub_topic, mess_attr.sub_qos, mess_attr.sub_callback)
+        if msg_attr:
+            self.client.subscribe(msg_attr.sub_topic, msg_attr.sub_qos, msg_attr.sub_callback)
         else:
             self.client.subscribe(self.msg_attr.sub_topic, self.msg_attr.sub_qos, self.msg_attr.sub_callback)
 
