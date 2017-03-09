@@ -354,7 +354,7 @@ class Mqtt():
         Returns client-id
         :return:
         """
-        return self.client_id
+        return self._paho_client._client_id
 
 
 class QoSDetails:
