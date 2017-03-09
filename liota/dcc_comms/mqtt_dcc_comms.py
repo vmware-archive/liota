@@ -49,7 +49,7 @@ class MqttDccComms(DCCComms):
                  mqtt_msg_attr=None, enable_authentication=False, conn_disconn_timeout=10):
 
         """
-        :param edge_system: Edge System object as EdgeSystem's name is used in auto-generation of topic
+        :param edge_system: EdgeSystem's name for auto-generation of topic
         :param url: MQTT Broker URL or IP
         :param port: MQTT Broker Port
         :param tls_conf: TLSConf object
