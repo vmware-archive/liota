@@ -38,7 +38,12 @@ include packages/examples/graphite_edge_system_stats.py
 include packages/examples/graphite_edge_system_stats_with_filter.py
 include packages/examples/iotcc_edge_system_stats.py
 include packages/examples/iotcc_edge_system_stats_with_filter.py
+include packages/examples/iotcc_resource_properties.py
 include packages/examples/thermistor_simulator.py
 include packages/examples/graphite_thermistor_simulated.py
 include packages/examples/iotcc_thermistor_simulated.py
 include packages/edge_systems/dell5k/edge_system.py
+include packages/dev_disc/liota_disc_pipe.sh
+include packages/dev_disc/dev_disc.py
+include packages/dev_disc/liota_devsim_pipe.sh
+include packages/dev_disc/liota_devsim_load.py
