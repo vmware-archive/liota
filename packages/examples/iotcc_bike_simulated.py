@@ -141,11 +141,15 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
         import copy
 
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
-
-        bike_simulator = registry.get("bike_simulator")
+        bike_simulator = registry.get(config["DeviceName"])
 
         iotcc_bike = iotcc.register(bike_simulator)
         iotcc.create_relationship(iotcc_edge_system, iotcc_bike)

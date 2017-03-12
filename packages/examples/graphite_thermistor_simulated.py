@@ -114,9 +114,14 @@ class PackageClass(LiotaPackage):
     def run(self, registry):
         from liota.entities.metrics.metric import Metric
 
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
         # Acquire resources from registry
         graphite = registry.get("graphite")
-        thermistor_simulator = registry.get("thermistor_simulator")
+        thermistor_simulator = registry.get(config["DeviceName"])
         graphite_thermistor = graphite.register(thermistor_simulator)
 
         ureg = thermistor_simulator.ureg

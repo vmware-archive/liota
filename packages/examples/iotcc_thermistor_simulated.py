@@ -115,11 +115,16 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
         import copy
 
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
 
-        thermistor_simulator = registry.get("thermistor_simulator")
+        thermistor_simulator = registry.get(config["DeviceName"])
         iotcc_thermistor = iotcc.register(thermistor_simulator)
         iotcc.create_relationship(iotcc_edge_system, iotcc_thermistor)
 
