@@ -41,7 +41,6 @@ class PackageClass(LiotaPackage):
     def run(self, registry):
         import copy
         # Acquire resources from registry
-
         iotcc = registry.get("iotcc")
         
         # Get values from configuration file
@@ -56,12 +55,15 @@ class PackageClass(LiotaPackage):
             return
 
         organization_group_properties = json_obj["OGProperties"]
-
+        # Use iotcc_edge_system as identifier to get the reg_edge_system object from registry
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
+        # Set organization group property for edge_system
         iotcc.set_properties(iotcc_edge_system, organization_group_properties)
 
         for i in json_obj['Devices']:
+            # Use device name as identifier to get the reg_device from registry
             iotcc_reg_device=registry.get(i["DeviceName"])
+            # Set Organization group property for devices
             iotcc.set_properties(iotcc_reg_device, organization_group_properties)
 
     def clean_up(self):

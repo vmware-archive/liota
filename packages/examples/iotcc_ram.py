@@ -80,7 +80,8 @@ class PackageClass(LiotaPackage):
         reg_mem_free_metric.start_collecting()
         self.metrics.append(reg_mem_free_metric)
 
-        registry.register("reg_ram_device", reg_ram_device)
+        # Use the device name as identifier in the registry to easily refer the device in other packages
+        registry.register(reg_ram_device.name, reg_ram_device)
 
     def clean_up(self):
         for metric in self.metrics:

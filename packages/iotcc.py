@@ -65,7 +65,10 @@ class PackageClass(LiotaPackage):
         try:
             # Register edge system (gateway)
             iotcc_edge_system = self.iotcc.register(edge_system)
-
+            """
+            Use iotcc & iotcc_edge_system as common identifiers
+            in the registry to easily refer the objects in other packages
+            """
             registry.register("iotcc", self.iotcc)
             registry.register("iotcc_edge_system", iotcc_edge_system)
         except RegistrationFailure:

@@ -36,7 +36,6 @@ dependencies = ["edge_systems/dell5k/edge_system"]
 
 
 class PackageClass(LiotaPackage):
-
     def run(self, registry):
         from liota.entities.devices.thermistor_simulated import ThermistorSimulated
         import pint
@@ -54,7 +53,8 @@ class PackageClass(LiotaPackage):
             ureg=ureg
         )
 
-        registry.register("thermistor_simulator", thermistor_simulator)
+        # Use the device name as identifier in the registry to easily refer the device in other packages
+        registry.register(thermistor_simulator.name, thermistor_simulator)
 
     def clean_up(self):
         pass
