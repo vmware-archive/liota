@@ -60,8 +60,8 @@ class PackageClass(LiotaPackage):
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
         iotcc.set_properties(iotcc_edge_system, organization_group_properties)
 
-        for i in json_obj['iotcc']['Devices']:
-            iotcc_reg_device=registry.get(i['DeviceName'])
+        for i in json_obj['Devices']:
+            iotcc_reg_device=registry.get(i["DeviceName"])
             iotcc.set_properties(iotcc_reg_device, organization_group_properties)
 
     def clean_up(self):
