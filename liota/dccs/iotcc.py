@@ -64,6 +64,7 @@ class IotControlCenter(DataCenterComponent):
         self.username = username
         self.password = password
         self.proto = HelixProtocol(self.con, username, password)
+        self.info_file = self._init_info()
 
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
@@ -137,15 +138,17 @@ class IotControlCenter(DataCenterComponent):
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
+                self.store_reg_entity_details("EdgeSystem", entity_obj.name, self.reg_entity_id)
                 self.store_edge_system_uuid(entity_obj.name, self.reg_entity_id)
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
-                        self.reg_entity_id, None, None)
+                                                     self.reg_entity_id, None, None)
             else:
+                self.store_reg_entity_details("Devices", entity_obj.name, self.reg_entity_id)
                 # get dev_type, and prop_dict if possible
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("Devices", entity_obj.name, self.reg_entity_id,
-                        entity_obj.entity_type, None)
+                                                     entity_obj.entity_type, None)
 
             return RegisteredEntity(entity_obj, self, self.reg_entity_id)
 
@@ -157,9 +160,9 @@ class IotControlCenter(DataCenterComponent):
         """
         # sanity check: must be RegisteredEntity or RegisteredMetricRegisteredMetric
         if (not isinstance(reg_entity_parent, RegisteredEntity) \
-            and not isinstance(reg_entity_parent, RegisteredMetric)) \
-            or (not isinstance(reg_entity_child, RegisteredEntity) \
-                and not isinstance(reg_entity_child, RegisteredMetric)):
+                    and not isinstance(reg_entity_parent, RegisteredMetric)) \
+                or (not isinstance(reg_entity_child, RegisteredEntity) \
+                            and not isinstance(reg_entity_child, RegisteredMetric)):
             raise TypeError()
 
         reg_entity_child.parent = reg_entity_parent
@@ -170,7 +173,7 @@ class IotControlCenter(DataCenterComponent):
             self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
             self.con.send(self._relationship(self.con.next_id(),
-                reg_entity_parent.reg_entity_id, reg_entity_child.reg_entity_id))
+                                             reg_entity_parent.reg_entity_id, reg_entity_child.reg_entity_id))
 
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
@@ -247,12 +250,12 @@ class IotControlCenter(DataCenterComponent):
         if entity.entity_type == "HelixGateway":
             with self.file_ops_lock:
                 self.store_reg_entity_attributes("EdgeSystem", entity.name,
-                    reg_entity_obj.reg_entity_id, None, properties)
+                                                 reg_entity_obj.reg_entity_id, None, properties)
         else:
             # get dev_type, and prop_dict if possible
             with self.file_ops_lock:
                 self.store_reg_entity_attributes("Devices", entity.name, reg_entity_obj.reg_entity_id,
-                    entity.entity_type, properties)
+                                                 entity.entity_type, properties)
 
     def publish_unit(self, reg_entity_obj, metric_name, unit):
         str_prefix, str_unit_name = parse_unit(unit)
@@ -287,194 +290,243 @@ class IotControlCenter(DataCenterComponent):
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="    ")
 
-    def store_edge_system_info(self, uuid, name, prop_dict):
-        """
-        create (can overwrite) edge system info file of UUID.xml, with format of
-        <attributes>
-        <attribute name=attribute name value=attribute value/>
-        …
-        </attributes>
-        except the first attribute is edge system name, all other attributes may vary
-        """
-
-        log.debug("store_edge_system_info")
-        log.debug('{0}:{1}, prop_list: {2}'.format(uuid, name, prop_dict))
-        root = ET.Element("attributes")
-        # add edge system name as an attribute
-        ET.SubElement(root, "attribute", name="edge system name", value=name)
-        # add edge system properties as attributes
-        if prop_dict is not None:
-            for key in prop_dict.iterkeys():
-                value = prop_dict[key]
-                if key == 'entity type' or key == 'name' or key == 'device type':
-                    continue
-                ET.SubElement(root, "attribute", name=key, value=value)
-        # add time stamp
-        ET.SubElement(root, "attribute", name="LastSeenTimestamp",
-                      value=strftime("%Y-%m-%dT%H:%M:%S", gmtime()))
-
-        log.debug("store_edge_system_info dev_file_path:{0}".format(self.dev_file_path))
-        file_path = self.dev_file_path + '/' + uuid + '.xml'
-        with open(file_path, "w") as fp:
-            fp.write(self.prettify(root))
-        return
-
-    def store_device_info(self, uuid, name, dev_type, prop_dict):
-        """
-        create (can overwrite) device info file of device_UUID.json, with format of
-        {
-            "discovery":  {
-                "remove" : false,
-                "attributes": [
-                    {"IoTDeviceType" : "LM35"},
-                    {"IoTDeviceName" : "LM35-12345"},
-                    {"model": "LM35-A2"},
-                    {"function": "thermistor"},
-                    {"port" : "GPIO-3"},
-                    {"manufacturer" : "Texas Instrument"},
-                    {"LastSeenTimestamp" : "04 NOV 2016"}
-                ]
-            }
-        }
-        except IoTDeviceType and IoTDeviceName, all other attributes may vary
-        """
-        log.debug("store_device_info")
-        log.debug('prop_dict: {0}'.format(prop_dict))
-        attribute_list = [{"IoTDeviceType": dev_type},
-                    {"IoTDeviceName": name}]
-        # attribute_list.append(prop_dict)
-        if prop_dict is not None:
-            for key in prop_dict.iterkeys():
-                value = prop_dict[key]
-                if key == 'entity type' or key == 'name' or key == 'device type':
-                    continue
-                attribute_list.append({key: value})
-        attribute_list.append({"LastSeenTimestamp": strftime("%Y-%m-%dT%H:%M:%S", gmtime())})
-        log.debug('attribute_list: {0}'.format(attribute_list))
+    def _init_info(self):
         msg = {
-            "discovery":  {
-                "remove" : False,
-                "attributes": attribute_list
+            "iotcc": {
+                "EdgeSystem": {"SystemName": "", "uuid": ""},
+                "OGProperties": {"OrganizationGroup": ""},
+                "Devices": []
             }
         }
-        log.debug('msg: {0}'.format(msg))
-        log.debug("store_device_info dev_file_path:{0}".format(self.dev_file_path))
-        file_path = self.dev_file_path + '/' + uuid + '.json'
+
+        iotcc_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
+        path = os.path.dirname(iotcc_path)
+        mkdir_log(path)
         try:
-            with open(file_path, 'w') as f:
-                json.dump(msg, f, sort_keys = True, indent = 4, ensure_ascii=False)
-                log.debug('Initialized ' + file_path)
+            with open(iotcc_path, 'w') as f:
+                json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
+                log.debug('Initialized ' + iotcc_path)
             f.close()
         except IOError, err:
-            log.error('Could not open {0} file '.format(file_path) + err)
+            log.error('Could not open {0} file '.format(iotcc_path) + err)
+        return iotcc_path
 
-    def write_entity_file(self, prop_dict, res_uuid):
-        file_path = self.entity_file_path + '/' + res_uuid + '.json'
+    def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id):
+        msg = ''
+        if self.info_file == '':
+            log.warn('iotcc.json file missing')
+            return
         try:
-            with open(file_path, "w") as json_file:
-                if (prop_dict is not None):
-                    json_string = json.dumps(prop_dict)
-                    json_file.write(json_string)
-        except:
-            log.error('Write file error')
+            with open(self.info_file, 'r') as f:
+                msg = json.load(f)
+            f.close()
+        except IOError, err:
+            log.error('Could not open {0} file '.format(self.info_file) + str(err))
+        log.debug('{0}:{1}'.format(entity_name, reg_entity_id))
+        if entity_type == "EdgeSystem":
+            msg["iotcc"]["EdgeSystem"]["SystemName"] = entity_name
+            msg["iotcc"]["EdgeSystem"]["uuid"] = reg_entity_id
+        elif entity_type == "Devices":
+            msg["iotcc"]["Devices"].append({"DeviceName": entity_name, "uuid": reg_entity_id})
+        else:
+            return
+        if msg != '':
+            with open(self.info_file, 'w') as f:
+                json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
+            f.close()
 
-    def read_entity_file(self, res_uuid):
-        file_path = self.entity_file_path + '/' + res_uuid + '.json'
-        prop_dict = None
-        try:
-            with open(file_path, "r") as json_file:
-                prop_dict = json.loads(json_file.read())
-        except:
-            log.error('Read file error')
-        return prop_dict
 
-    def store_reg_entity_attributes(self, entity_type, entity_name, reg_entity_id,
-        dev_type, prop_dict):
+def store_edge_system_info(self, uuid, name, prop_dict):
+    """
+    create (can overwrite) edge system info file of UUID.xml, with format of
+    <attributes>
+    <attribute name=attribute name value=attribute value/>
+    …
+    </attributes>
+    except the first attribute is edge system name, all other attributes may vary
+    """
 
-        log.debug('store_reg_entity_attributes\n {0}:{1}:{2}:{3}'.format(entity_type,
-             entity_name, reg_entity_id, prop_dict))
+    log.debug("store_edge_system_info")
+    log.debug('{0}:{1}, prop_list: {2}'.format(uuid, name, prop_dict))
+    root = ET.Element("attributes")
+    # add edge system name as an attribute
+    ET.SubElement(root, "attribute", name="edge system name", value=name)
+    # add edge system properties as attributes
+    if prop_dict is not None:
+        for key in prop_dict.iterkeys():
+            value = prop_dict[key]
+            if key == 'entity type' or key == 'name' or key == 'device type':
+                continue
+            ET.SubElement(root, "attribute", name=key, value=value)
+    # add time stamp
+    ET.SubElement(root, "attribute", name="LastSeenTimestamp",
+                  value=strftime("%Y-%m-%dT%H:%M:%S", gmtime()))
 
-        ### Update IOTCC local entity file first
-        # look for uuid.json file first, if not, first time to write
-        # name + type (edge system or device) + if device, device type, + prop_dict
-        # if file exists, check name, type and device type match or not
-        # if match, merge prop_dict to that file (with existing properties)
-        # if not match, replace with new above info + only prop_dict
-        # (old property will not be used since outdated already)
-        file_path = self.entity_file_path + '/' + reg_entity_id + '.json'
-        if not os.path.exists(file_path):
-            tmp_dict = {'entity type': str(entity_type), 'name': str(entity_name)}
-            if (dev_type is not None):
-                tmp_dict.update({"device type":str(dev_type)})
-            else:
-                tmp_dict.update({"device type":""})
+    log.debug("store_edge_system_info dev_file_path:{0}".format(self.dev_file_path))
+    file_path = self.dev_file_path + '/' + uuid + '.xml'
+    with open(file_path, "w") as fp:
+        fp.write(self.prettify(root))
+    return
+
+
+def store_device_info(self, uuid, name, dev_type, prop_dict):
+    """
+    create (can overwrite) device info file of device_UUID.json, with format of
+    {
+        "discovery":  {
+            "remove" : false,
+            "attributes": [
+                {"IoTDeviceType" : "LM35"},
+                {"IoTDeviceName" : "LM35-12345"},
+                {"model": "LM35-A2"},
+                {"function": "thermistor"},
+                {"port" : "GPIO-3"},
+                {"manufacturer" : "Texas Instrument"},
+                {"LastSeenTimestamp" : "04 NOV 2016"}
+            ]
+        }
+    }
+    except IoTDeviceType and IoTDeviceName, all other attributes may vary
+    """
+    log.debug("store_device_info")
+    log.debug('prop_dict: {0}'.format(prop_dict))
+    attribute_list = [{"IoTDeviceType": dev_type},
+                      {"IoTDeviceName": name}]
+    # attribute_list.append(prop_dict)
+    if prop_dict is not None:
+        for key in prop_dict.iterkeys():
+            value = prop_dict[key]
+            if key == 'entity type' or key == 'name' or key == 'device type':
+                continue
+            attribute_list.append({key: value})
+    attribute_list.append({"LastSeenTimestamp": strftime("%Y-%m-%dT%H:%M:%S", gmtime())})
+    log.debug('attribute_list: {0}'.format(attribute_list))
+    msg = {
+        "discovery": {
+            "remove": False,
+            "attributes": attribute_list
+        }
+    }
+    log.debug('msg: {0}'.format(msg))
+    log.debug("store_device_info dev_file_path:{0}".format(self.dev_file_path))
+    file_path = self.dev_file_path + '/' + uuid + '.json'
+    try:
+        with open(file_path, 'w') as f:
+            json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
+            log.debug('Initialized ' + file_path)
+        f.close()
+    except IOError, err:
+        log.error('Could not open {0} file '.format(file_path) + err)
+
+
+def write_entity_file(self, prop_dict, res_uuid):
+    file_path = self.entity_file_path + '/' + res_uuid + '.json'
+    try:
+        with open(file_path, "w") as json_file:
+            if (prop_dict is not None):
+                json_string = json.dumps(prop_dict)
+                json_file.write(json_string)
+    except:
+        log.error('Write file error')
+
+
+def read_entity_file(self, res_uuid):
+    file_path = self.entity_file_path + '/' + res_uuid + '.json'
+    prop_dict = None
+    try:
+        with open(file_path, "r") as json_file:
+            prop_dict = json.loads(json_file.read())
+    except:
+        log.error('Read file error')
+    return prop_dict
+
+
+def store_reg_entity_attributes(self, entity_type, entity_name, reg_entity_id,
+                                dev_type, prop_dict):
+    log.debug('store_reg_entity_attributes\n {0}:{1}:{2}:{3}'.format(entity_type,
+                                                                     entity_name, reg_entity_id, prop_dict))
+
+    ### Update IOTCC local entity file first
+    # look for uuid.json file first, if not, first time to write
+    # name + type (edge system or device) + if device, device type, + prop_dict
+    # if file exists, check name, type and device type match or not
+    # if match, merge prop_dict to that file (with existing properties)
+    # if not match, replace with new above info + only prop_dict
+    # (old property will not be used since outdated already)
+    file_path = self.entity_file_path + '/' + reg_entity_id + '.json'
+    if not os.path.exists(file_path):
+        tmp_dict = {'entity type': str(entity_type), 'name': str(entity_name)}
+        if (dev_type is not None):
+            tmp_dict.update({"device type": str(dev_type)})
+        else:
+            tmp_dict.update({"device type": ""})
+        if (tmp_dict is not None) and (prop_dict is not None):
+            new_prop_dict = dict(tmp_dict.items() + prop_dict.items())
+        else:
+            new_prop_dict = tmp_dict
+    else:
+        tmp_dict = self.read_entity_file(reg_entity_id)
+        if ((tmp_dict["entity type"] == entity_type) and (tmp_dict["name"] == entity_name)
+            and (tmp_dict["device type"] == dev_type)):
+            # the same entity
             if (tmp_dict is not None) and (prop_dict is not None):
                 new_prop_dict = dict(tmp_dict.items() + prop_dict.items())
             else:
                 new_prop_dict = tmp_dict
         else:
-            tmp_dict = self.read_entity_file(reg_entity_id)
-            if ((tmp_dict["entity type"] == entity_type) and (tmp_dict["name"] == entity_name)
-                and (tmp_dict["device type"] == dev_type)):
-                # the same entity
-                if (tmp_dict is not None) and (prop_dict is not None):
-                    new_prop_dict = dict(tmp_dict.items() + prop_dict.items())
-                else:
-                    new_prop_dict = tmp_dict
+            tmp_dict = {'entity type': str(entity_type), 'name': str(entity_name)}
+            if (dev_type is not None):
+                tmp_dict.update({"device type": str(dev_type)})
             else:
-                tmp_dict = {'entity type': str(entity_type), 'name': str(entity_name)}
-                if (dev_type is not None):
-                    tmp_dict.update({"device type":str(dev_type)})
-                else:
-                    tmp_dict.update({"device type":""})
-                if (tmp_dict is not None) and (prop_dict is not None):
-                    new_prop_dict = dict(tmp_dict.items() + prop_dict.items())
-                else:
-                    new_prop_dict = tmp_dict
+                tmp_dict.update({"device type": ""})
+            if (tmp_dict is not None) and (prop_dict is not None):
+                new_prop_dict = dict(tmp_dict.items() + prop_dict.items())
+            else:
+                new_prop_dict = tmp_dict
 
-        # write new property dictionary to local entity file
-        self.write_entity_file(new_prop_dict, reg_entity_id)
-        ### Write IOTCC device file for AW agents
-        if entity_type == "EdgeSystem":
-            self.store_edge_system_info(reg_entity_id, entity_name, new_prop_dict)
-        elif entity_type == "Devices":
-            self.store_device_info(reg_entity_id, entity_name, dev_type, new_prop_dict)
-        else:
-            return
+    # write new property dictionary to local entity file
+    self.write_entity_file(new_prop_dict, reg_entity_id)
+    ### Write IOTCC device file for AW agents
+    if entity_type == "EdgeSystem":
+        self.store_edge_system_info(reg_entity_id, entity_name, new_prop_dict)
+    elif entity_type == "Devices":
+        self.store_device_info(reg_entity_id, entity_name, dev_type, new_prop_dict)
+    else:
+        return
 
-    def _get_file_storage_path(self, name):
 
-        log.debug("_get_{0}".format(name))
-        config = ConfigParser.RawConfigParser()
-        fullPath = LiotaConfigPath().get_liota_fullpath()
-        if fullPath != '':
-            try:
-                if config.read(fullPath) != []:
-                    try:
-                        # retrieve device info file storage directory
-                        file_path = config.get('IOTCC_PATH', name)
-                        log.debug("_get_{0} file_path:{1}".format(name, file_path))
-                    except ConfigParser.ParsingError as err:
-                        log.error('Could not open config file ' + err)
-                        return None
-                    if not os.path.exists(file_path):
-                        try:
-                            os.makedirs(file_path)
-                        except OSError as exc:  # Python >2.5
-                            if exc.errno == errno.EEXIST and os.path.isdir(file_path):
-                                pass
-                            else:
-                                log.error('Could not create file storage directory')
-                                return None
+def _get_file_storage_path(self, name):
+    log.debug("_get_{0}".format(name))
+    config = ConfigParser.RawConfigParser()
+    fullPath = LiotaConfigPath().get_liota_fullpath()
+    if fullPath != '':
+        try:
+            if config.read(fullPath) != []:
+                try:
+                    # retrieve device info file storage directory
+                    file_path = config.get('IOTCC_PATH', name)
                     log.debug("_get_{0} file_path:{1}".format(name, file_path))
-                    return file_path
-                else:
-                    log.error('Could not open config file ' + fullPath)
+                except ConfigParser.ParsingError as err:
+                    log.error('Could not open config file ' + err)
                     return None
-            except IOError, err:
-                log.error('Could not open config file')
+                if not os.path.exists(file_path):
+                    try:
+                        os.makedirs(file_path)
+                    except OSError as exc:  # Python >2.5
+                        if exc.errno == errno.EEXIST and os.path.isdir(file_path):
+                            pass
+                        else:
+                            log.error('Could not create file storage directory')
+                            return None
+                log.debug("_get_{0} file_path:{1}".format(name, file_path))
+                return file_path
+            else:
+                log.error('Could not open config file ' + fullPath)
                 return None
-        else:
-            # missing config file
-            log.warn('liota.conf file missing')
+        except IOError, err:
+            log.error('Could not open config file')
             return None
+    else:
+        # missing config file
+        log.warn('liota.conf file missing')
+        return None
