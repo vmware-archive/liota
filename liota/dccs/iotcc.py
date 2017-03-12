@@ -418,15 +418,15 @@ class IotControlCenter(DataCenterComponent):
         except IOError, err:
             log.error('Could not open {0} file '.format(file_path) + err)
 
-        def write_entity_file(self, prop_dict, res_uuid):
-            file_path = self.entity_file_path + '/' + res_uuid + '.json'
-            try:
-                with open(file_path, "w") as json_file:
-                    if (prop_dict is not None):
-                        json_string = json.dumps(prop_dict)
-                        json_file.write(json_string)
-            except:
-                log.error('Write file error')
+    def write_entity_file(self, prop_dict, res_uuid):
+        file_path = self.entity_file_path + '/' + res_uuid + '.json'
+        try:
+            with open(file_path, "w") as json_file:
+                if (prop_dict is not None):
+                    json_string = json.dumps(prop_dict)
+                    json_file.write(json_string)
+        except:
+            log.error('Write file error')
 
 
     def read_entity_file(self, res_uuid):
