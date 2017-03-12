@@ -149,7 +149,7 @@ class PackageClass(LiotaPackage):
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
-        bike_simulator = registry.get(config["DeviceName"])
+        bike_simulator = registry.get("bike_simulator")
 
         iotcc_bike = iotcc.register(bike_simulator)
         iotcc.create_relationship(iotcc_edge_system, iotcc_bike)
@@ -183,6 +183,10 @@ class PackageClass(LiotaPackage):
         iotcc.create_relationship(iotcc_bike, reg_bike_power)
         reg_bike_power.start_collecting()
         self.metrics.append(reg_bike_power)
+
+        # Use the iotcc_device_name as identifier in the registry to easily refer the registered device in other packages
+        registry.register("iotcc_"+config("DeviceName"), iotcc_bike)
+
 
     def clean_up(self):
         for metric in self.metrics:

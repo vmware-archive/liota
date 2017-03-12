@@ -124,7 +124,7 @@ class PackageClass(LiotaPackage):
         iotcc = registry.get("iotcc")
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
 
-        thermistor_simulator = registry.get(config["DeviceName"])
+        thermistor_simulator = registry.get("thermistor_simulator")
         iotcc_thermistor = iotcc.register(thermistor_simulator)
         iotcc.create_relationship(iotcc_edge_system, iotcc_thermistor)
 
@@ -144,6 +144,9 @@ class PackageClass(LiotaPackage):
         iotcc.create_relationship(iotcc_thermistor, reg_thermistor_temper)
         reg_thermistor_temper.start_collecting()
         self.metrics.append(reg_thermistor_temper)
+
+        # Use the iotcc_device_name as identifier in the registry to easily refer the registered device in other packages
+        registry.register("iotcc_"+config("DeviceName"), iotcc_thermistor)
 
     def clean_up(self):
         for metric in self.metrics:

@@ -62,7 +62,7 @@ class PackageClass(LiotaPackage):
 
         for i in json_obj['Devices']:
             # Use device name as identifier to get the reg_device from registry
-            iotcc_reg_device=registry.get(i["DeviceName"])
+            iotcc_reg_device=registry.get("iotcc_"+i["DeviceName"])
             # Set Organization group property for devices
             iotcc.set_properties(iotcc_reg_device, organization_group_properties)
 

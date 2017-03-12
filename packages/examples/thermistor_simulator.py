@@ -53,8 +53,7 @@ class PackageClass(LiotaPackage):
             ureg=ureg
         )
 
-        # Use the device name as identifier in the registry to easily refer the device in other packages
-        registry.register(thermistor_simulator.name, thermistor_simulator)
+        registry.register("thermistor_simulator", thermistor_simulator)
 
     def clean_up(self):
         pass

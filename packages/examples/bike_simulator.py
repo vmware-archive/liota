@@ -54,8 +54,7 @@ class PackageClass(LiotaPackage):
             ureg=ureg
         )
 
-        # Use the device name as identifier in the registry to easily refer the device in other packages
-        registry.register(bike_simulator.name, bike_simulator)
+        registry.register("bike_simulator", bike_simulator)
 
     def clean_up(self):
         pass
