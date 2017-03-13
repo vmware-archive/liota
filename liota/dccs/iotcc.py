@@ -61,7 +61,7 @@ class IotControlCenter(DataCenterComponent):
         log.info("Logging into DCC")
         self.con = con.wss
         self.proto = HelixProtocol(self.con, username, password)
-        self._iotcc_json_path = self._iotcc_json_structure()
+        self._iotcc_json = self._create_iotcc_json()
 
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
@@ -302,7 +302,7 @@ class IotControlCenter(DataCenterComponent):
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="    ")
 
-    def _iotcc_json_structure(self):
+    def _create_iotcc_json(self):
         msg = {
             "iotcc": {
                 "EdgeSystem": {"SystemName": "", "EntityType": "", "uuid": ""},
@@ -325,15 +325,15 @@ class IotControlCenter(DataCenterComponent):
 
     def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id):
         msg = ''
-        if self._iotcc_json_path == '':
+        if self._iotcc_json == '':
             log.warn('iotcc.json file missing')
             return
         try:
-            with open(self._iotcc_json_path, 'r') as f:
+            with open(self._iotcc_json, 'r') as f:
                 msg = json.load(f)
             f.close()
         except IOError, err:
-            log.error('Could not open {0} file '.format(self._iotcc_json_path) + str(err))
+            log.error('Could not open {0} file '.format(self._iotcc_json) + str(err))
         log.debug('{0}:{1}'.format(entity_name, reg_entity_id))
         if entity_type == "HelixGateway":
             msg["iotcc"]["EdgeSystem"]["SystemName"] = entity_name
@@ -348,7 +348,7 @@ class IotControlCenter(DataCenterComponent):
             if not entity_exist:
                 msg["iotcc"]["Devices"].append({"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
         if msg != '':
-            with open(self._iotcc_json_path, 'w') as f:
+            with open(self._iotcc_json, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
             f.close()
 
