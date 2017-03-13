@@ -343,7 +343,13 @@ class IotControlCenter(DataCenterComponent):
             msg["iotcc"]["EdgeSystem"]["uuid"] = reg_entity_id
             msg["iotcc"]["EdgeSystem"]["EntityType"] = entity_type
         else:
-            msg["iotcc"]["Devices"].append({"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
+            for device in msg["iotcc"]["Devices"]:
+                # Set Organization group property for devices
+                if device["uuid"] == reg_entity_id and device["EntityType"] == entity_type and device["uuid"] == reg_entity_id :
+                    entity_exist = True
+                    break
+            if not entity_exist:
+                msg["iotcc"]["Devices"].append({"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
         if msg != '':
             with open(self.info_file, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
