@@ -147,7 +147,7 @@ class PackageClass(LiotaPackage):
 
         # Acquire resources from registry
         graphite = registry.get("graphite")
-        bike_simulator = registry.get(config["DeviceName"])
+        bike_simulator = registry.get("bike_simulator")
         graphite_bike = graphite.register(bike_simulator)
 
         ureg = bike_simulator.ureg

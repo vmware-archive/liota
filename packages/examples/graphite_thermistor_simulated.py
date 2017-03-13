@@ -121,7 +121,7 @@ class PackageClass(LiotaPackage):
 
         # Acquire resources from registry
         graphite = registry.get("graphite")
-        thermistor_simulator = registry.get(config["DeviceName"])
+        thermistor_simulator = registry.get("thermistor_simulator")
         graphite_thermistor = graphite.register(thermistor_simulator)
 
         ureg = thermistor_simulator.ureg

@@ -138,13 +138,13 @@ class IotControlCenter(DataCenterComponent):
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
-                self.store_reg_entity_details("EdgeSystem", entity_obj.name, self.reg_entity_id)
+                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id)
                 self.store_edge_system_uuid(entity_obj.name, self.reg_entity_id)
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
                                                      self.reg_entity_id, None, None)
             else:
-                self.store_reg_entity_details("Devices", entity_obj.name, self.reg_entity_id)
+                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id)
                 # get dev_type, and prop_dict if possible
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("Devices", entity_obj.name, self.reg_entity_id,
@@ -234,6 +234,21 @@ class IotControlCenter(DataCenterComponent):
             }],
         }
 
+    def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, properties):
+        log.info("Organization Group Properties defined for resource {0}".format(reg_entity_name))
+        self.con.send(
+            self._properties(self.con.next_id(), reg_entity_id, reg_entity_type,
+                             getUTCmillis(), properties))
+        if reg_entity_type == "HelixGateway":
+            with self.file_ops_lock:
+                self.store_reg_entity_attributes("EdgeSystem", reg_entity_name,
+                                                 reg_entity_id, None, properties)
+        else:
+            # get dev_type, and prop_dict if possible
+            with self.file_ops_lock:
+                self.store_reg_entity_attributes("Devices", reg_entity_name, reg_entity_id,
+                                                 reg_entity_type, properties)
+
     def set_properties(self, reg_entity_obj, properties):
         # RegisteredMetric get parent's resid; RegisteredEntity gets own resid
         reg_entity_id = reg_entity_obj.reg_entity_id
@@ -293,7 +308,7 @@ class IotControlCenter(DataCenterComponent):
     def _init_info(self):
         msg = {
             "iotcc": {
-                "EdgeSystem": {"SystemName": "", "uuid": ""},
+                "EdgeSystem": {"SystemName": "", "EntityType": "", "uuid": ""},
                 "OGProperties": {"OrganizationGroup": ""},
                 "Devices": []
             }
@@ -323,18 +338,16 @@ class IotControlCenter(DataCenterComponent):
         except IOError, err:
             log.error('Could not open {0} file '.format(self.info_file) + str(err))
         log.debug('{0}:{1}'.format(entity_name, reg_entity_id))
-        if entity_type == "EdgeSystem":
+        if entity_type == "HelixGateway":
             msg["iotcc"]["EdgeSystem"]["SystemName"] = entity_name
             msg["iotcc"]["EdgeSystem"]["uuid"] = reg_entity_id
-        elif entity_type == "Devices":
-            msg["iotcc"]["Devices"].append({"DeviceName": entity_name, "uuid": reg_entity_id})
+            msg["iotcc"]["EdgeSystem"]["EntityType"] = entity_type
         else:
-            return
+            msg["iotcc"]["Devices"].append({"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
         if msg != '':
             with open(self.info_file, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
             f.close()
-
 
     def store_edge_system_info(self, uuid, name, prop_dict):
         """
@@ -367,7 +380,6 @@ class IotControlCenter(DataCenterComponent):
         with open(file_path, "w") as fp:
             fp.write(self.prettify(root))
         return
-
 
     def store_device_info(self, uuid, name, dev_type, prop_dict):
         """
@@ -428,7 +440,6 @@ class IotControlCenter(DataCenterComponent):
         except:
             log.error('Write file error')
 
-
     def read_entity_file(self, res_uuid):
         file_path = self.entity_file_path + '/' + res_uuid + '.json'
         prop_dict = None
@@ -438,7 +449,6 @@ class IotControlCenter(DataCenterComponent):
         except:
             log.error('Read file error')
         return prop_dict
-
 
     def store_reg_entity_attributes(self, entity_type, entity_name, reg_entity_id,
                                     dev_type, prop_dict):
@@ -492,7 +502,6 @@ class IotControlCenter(DataCenterComponent):
             self.store_device_info(reg_entity_id, entity_name, dev_type, new_prop_dict)
         else:
             return
-
 
     def _get_file_storage_path(self, name):
         log.debug("_get_{0}".format(name))

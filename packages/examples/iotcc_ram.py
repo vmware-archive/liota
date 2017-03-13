@@ -81,7 +81,7 @@ class PackageClass(LiotaPackage):
         self.metrics.append(reg_mem_free_metric)
 
         # Use the iotcc_device_name as identifier in the registry to easily refer the device in other packages
-        registry.register("iotcc_"+ram_device.name, reg_ram_device)
+        registry.register("reg_ram_device", reg_ram_device)
 
     def clean_up(self):
         for metric in self.metrics:

@@ -36,13 +36,12 @@ import json
 
 dependencies = ["iotcc"]
 
-class PackageClass(LiotaPackage):
 
+class PackageClass(LiotaPackage):
     def run(self, registry):
-        import copy
         # Acquire resources from registry
         iotcc = registry.get("iotcc")
-        
+
         # Get values from configuration file
         iotcc_json_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
         if iotcc_json_path == '':
@@ -55,16 +54,17 @@ class PackageClass(LiotaPackage):
             return
 
         organization_group_properties = json_obj["OGProperties"]
-        # Use iotcc_edge_system as identifier to get the reg_edge_system object from registry
-        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
-        # Set organization group property for edge_system
-        iotcc.set_properties(iotcc_edge_system, organization_group_properties)
 
-        for i in json_obj['Devices']:
-            # Use device name as identifier to get the reg_device from registry
-            iotcc_reg_device=registry.get("iotcc_"+i["DeviceName"])
+        edge_system = json_obj["EdgeSystem"]
+
+        # Set organization group property for edge_system
+        iotcc.set_organization_group_properties(edge_system["SystemName"], edge_system["uuid"], edge_system["EntityType"],
+                                                organization_group_properties)
+
+        for device in json_obj['Devices']:
             # Set Organization group property for devices
-            iotcc.set_properties(iotcc_reg_device, organization_group_properties)
+            iotcc.set_organization_group_properties(device["DeviceName"], device["uuid"], device["EntityType"],
+                                                    organization_group_properties)
 
     def clean_up(self):
         pass
