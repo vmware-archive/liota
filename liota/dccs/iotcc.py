@@ -59,7 +59,10 @@ class IotControlCenter(DataCenterComponent):
 
     def __init__(self, username, password, con):
         log.info("Logging into DCC")
+        self.comms = con
         self.con = con.wss
+        self.username = username
+        self.password = password
         self.proto = HelixProtocol(self.con, username, password)
         self._iotcc_json = self._create_iotcc_json()
 
