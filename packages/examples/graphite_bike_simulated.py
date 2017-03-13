@@ -140,11 +140,6 @@ class PackageClass(LiotaPackage):
     def run(self, registry):
         from liota.entities.metrics.metric import Metric
 
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
-
         # Acquire resources from registry
         graphite = registry.get("graphite")
         bike_simulator = registry.get("bike_simulator")

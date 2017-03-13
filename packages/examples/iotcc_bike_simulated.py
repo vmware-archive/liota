@@ -179,6 +179,7 @@ class PackageClass(LiotaPackage):
         reg_bike_power.start_collecting()
         self.metrics.append(reg_bike_power)
 
+        # Use the iotcc_device_name as identifier in the registry to easily refer the registered device in other packages
         registry.register("iotcc_bike_simulated", iotcc_bike)
 
 
