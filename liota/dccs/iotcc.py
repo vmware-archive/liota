@@ -44,7 +44,7 @@ from xml.dom import minidom
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
-from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir_log, read_liota_config
+from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir, read_liota_config
 from liota.lib.utilities.si_unit import parse_unit
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
@@ -59,12 +59,9 @@ class IotControlCenter(DataCenterComponent):
 
     def __init__(self, username, password, con):
         log.info("Logging into DCC")
-        self.comms = con
         self.con = con.wss
-        self.username = username
-        self.password = password
         self.proto = HelixProtocol(self.con, username, password)
-        self.info_file = self._init_info()
+        self._iotcc_json_path = self._iotcc_json_structure()
 
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
@@ -305,7 +302,7 @@ class IotControlCenter(DataCenterComponent):
         reparsed = minidom.parseString(rough_string)
         return reparsed.toprettyxml(indent="    ")
 
-    def _init_info(self):
+    def _iotcc_json_structure(self):
         msg = {
             "iotcc": {
                 "EdgeSystem": {"SystemName": "", "EntityType": "", "uuid": ""},
@@ -316,7 +313,7 @@ class IotControlCenter(DataCenterComponent):
 
         iotcc_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
         path = os.path.dirname(iotcc_path)
-        mkdir_log(path)
+        mkdir(path)
         try:
             with open(iotcc_path, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
@@ -328,15 +325,15 @@ class IotControlCenter(DataCenterComponent):
 
     def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id):
         msg = ''
-        if self.info_file == '':
+        if self._iotcc_json_path == '':
             log.warn('iotcc.json file missing')
             return
         try:
-            with open(self.info_file, 'r') as f:
+            with open(self._iotcc_json_path, 'r') as f:
                 msg = json.load(f)
             f.close()
         except IOError, err:
-            log.error('Could not open {0} file '.format(self.info_file) + str(err))
+            log.error('Could not open {0} file '.format(self._iotcc_json_path) + str(err))
         log.debug('{0}:{1}'.format(entity_name, reg_entity_id))
         if entity_type == "HelixGateway":
             msg["iotcc"]["EdgeSystem"]["SystemName"] = entity_name
@@ -345,14 +342,13 @@ class IotControlCenter(DataCenterComponent):
         else:
             entity_exist = False
             for device in msg["iotcc"]["Devices"]:
-                # Set Organization group property for devices
                 if device["uuid"] == reg_entity_id and device["EntityType"] == entity_type and device["uuid"] == reg_entity_id :
                     entity_exist = True
                     break
             if not entity_exist:
                 msg["iotcc"]["Devices"].append({"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
         if msg != '':
-            with open(self.info_file, 'w') as f:
+            with open(self._iotcc_json_path, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
             f.close()
 

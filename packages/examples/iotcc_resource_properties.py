@@ -31,40 +31,49 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
-from liota.lib.utilities.utility import read_liota_config
-import json
 
-dependencies = ["iotcc"]
+dependencies = ["edge_systems/dell5k/edge_system"]
 
 
 class PackageClass(LiotaPackage):
+    """
+    This package creates a IoTControlCenter DCC object and registers edge system on
+    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
+    """
+
     def run(self, registry):
+        import copy
+        from liota.dccs.iotcc import IotControlCenter
+        from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
+        from liota.dccs.dcc import RegistrationFailure
+
         # Acquire resources from registry
-        iotcc = registry.get("iotcc")
+        # Creating a copy of edge_system object to keep original object "clean"
+        edge_system = copy.copy(registry.get("edge_system"))
 
         # Get values from configuration file
-        iotcc_json_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
-        if iotcc_json_path == '':
-            return
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
+        # Initialize DCC object with transport
+        self.iotcc = IotControlCenter(
+            config['IotCCUID'], config['IotCCPassword'],
+            WebSocketDccComms(url=config['WebSocketUrl'])
+        )
+
         try:
-            with open(iotcc_json_path, 'r') as f:
-                json_obj = json.load(f)["iotcc"]
-            f.close()
-        except IOError, err:
-            return
-
-        organization_group_properties = json_obj["OGProperties"]
-
-        edge_system = json_obj["EdgeSystem"]
-
-        # Set organization group property for edge_system
-        iotcc.set_organization_group_properties(edge_system["SystemName"], edge_system["uuid"], edge_system["EntityType"],
-                                                organization_group_properties)
-
-        for device in json_obj['Devices']:
-            # Set Organization group property for devices
-            iotcc.set_organization_group_properties(device["DeviceName"], device["uuid"], device["EntityType"],
-                                                    organization_group_properties)
+            # Register edge system (gateway)
+            iotcc_edge_system = self.iotcc.register(edge_system)
+            """
+            Use iotcc & iotcc_edge_system as common identifiers
+            in the registry to easily refer the objects in other packages
+            """
+            registry.register("iotcc", self.iotcc)
+            registry.register("iotcc_edge_system", iotcc_edge_system)
+        except RegistrationFailure:
+            print "EdgeSystem registration to IOTCC failed"
+        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
 
     def clean_up(self):
-        pass
+        self.iotcc.comms.wss.close()
