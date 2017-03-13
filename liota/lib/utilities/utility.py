@@ -113,8 +113,7 @@ def get_linux_version():
 def getUTCmillis():
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
-
-def mkdir_log(path):
+def mkdir(path):
     if not os.path.exists(path):
         try:
             os.makedirs(path)

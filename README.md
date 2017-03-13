@@ -138,6 +138,7 @@ uuid_path = /etc/liota/conf/uuid.ini
 [IOTCC_PATH]
 dev_file_path = /etc/liota/conf/devs
 entity_file_path = /etc/liota/conf/entity
+iotcc_path = /etc/liota/conf/iotcc.json
 
 [PKG_CFG]
 pkg_path = /etc/liota/packages

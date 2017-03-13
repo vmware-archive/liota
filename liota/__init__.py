@@ -37,7 +37,7 @@ import logging
 import logging.config
 import os
 
-from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir_log
+from lib.utilities.utility import systemUUID, LiotaConfigPath, mkdir
 
 
 def setup_logging(default_level=logging.WARNING):
@@ -60,7 +60,7 @@ def setup_logging(default_level=logging.WARNING):
                 raise IOError('Cannot open configuration file ' + fullPath)
         except IOError as err:
             log.error('Could not open log config file')
-        mkdir_log(log_path)
+        mkdir(log_path)
         if os.path.exists(log_cfg):
             with open(log_cfg, 'rt') as f:
                 config = json.load(f)
