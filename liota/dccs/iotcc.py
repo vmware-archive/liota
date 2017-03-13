@@ -345,6 +345,7 @@ class IotControlCenter(DataCenterComponent):
         else:
             for device in msg["iotcc"]["Devices"]:
                 # Set Organization group property for devices
+                entity_exist=False
                 if device["uuid"] == reg_entity_id and device["EntityType"] == entity_type and device["uuid"] == reg_entity_id :
                     entity_exist = True
                     break
