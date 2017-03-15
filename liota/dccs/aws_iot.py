@@ -103,6 +103,7 @@ class AWSIoT(DataCenterComponent):
 
     def _get_entity_hierarchy(self, reg_entity):
         """
+        NOTE: This method should be moved to utility if other DCCs require this functionality.
         :param reg_entity: RegisteredMetric Object
         :return: A list with entity names
                  - [edge_system_name, device_name, metric_name] (or)
