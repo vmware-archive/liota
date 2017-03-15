@@ -29,46 +29,27 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-import os
-import sys
 import json
-import stat
 import time
-import fcntl
-import inspect
 import logging
-from Queue import Queue
-from threading import Thread
-
-from twisted.internet.defer import Deferred
-from twisted.internet.protocol import DatagramProtocol
-from twisted.internet import reactor
-from twisted.python import log
-
-import txthings.coap as coap
-import txthings.resource as resource
-
+from coapthon.client.helperclient import HelperClient
 from liota.dev_sims.device_simulator import DeviceSimulator
 
 logg = logging.getLogger(__name__)
 
 class Agent():
-    """
-    Example class which performs single PUT request to iot.eclipse.org
-    port 5683 (official IANA assigned CoAP port), URI "/large-update".
-    Request is sent 1 second after initialization.
 
-    Payload is bigger than 64 bytes, and with default settings it
-    should be sent as several blocks.
-    """
-
-    def __init__(self, protocol, ip, port):
-        self.protocol = protocol
-        reactor.callLater(1, self.putResource)
+    def __init__(self, ip, port, path):
         self.ip = ip
         self.port = port
+        self.path = path
         self.cnt = 0
+        self.client = HelperClient(server=(ip, port))
         self.flag = True
+
+    def getResource(self):
+        response = self.client.get(self.path)
+        logg.debug("getResouce response:{0}".format(response.pretty_print()))
 
     def putResource(self):
         msg = {
@@ -85,20 +66,15 @@ class Agent():
                 msg["Banana23"]["serial"] = str(self.cnt)
                 logg.debug("send msg:{0}".format(msg))
                 payload = json.dumps(msg)
-                request = coap.Message(code=coap.PUT, payload=payload)
-                request.opt.uri_path = ("messages",)
-                request.opt.content_format = coap.media_types_rev['text/plain']
-                request.remote = (self.ip, self.port)
-                d = self.protocol.request(request)
-                d.addCallback(self.printResponse)
+                response = self.client.put(self.path, payload)
+                logg.debug("getResouce response:{0}".format(response.pretty_print()))
                 time.sleep(5);
             self.cnt += 1
             if self.cnt > 20:
                 self.flag = False
 
-    def printResponse(self, response):
-        logg.warnings('Response Code: {0}'.format(coap.responses[response.code]))
-        logg.warnings('Payload: {0}'.format(response.payload))
+    def close(self):
+        self.client.stop()
 
 class CoapSimulator(DeviceSimulator):
     """
@@ -111,17 +87,12 @@ class CoapSimulator(DeviceSimulator):
         str_list = ip_port.split(':')
         self.ip = str(str_list[0])
         if str_list[1] == "" or str_list[1] == None:
-            logg.error("No port is specified!")
-            self.port = coap.COAP_PORT
+            logg.warning("No port is specified!")
+            self.port = 5683
         else:
             self.port = int(str_list[1])
-        logg.debug("coap_init:{0}:{1}".format(self.ip, self.port))
         self.simulator = simulator
-
-        #log.startLogging(sys.stdout)
-        self.endpoint = resource.Endpoint(None)
-        self.protocol = coap.Coap(self.endpoint)
-        self.client = Agent(self.protocol, self.ip, self.port)
+        self.agent = Agent(self.ip, self.port, "message")
 
         logg.debug("CoapSimulator is initialized")
         print "CoapSimulator is initialized"
@@ -132,15 +103,14 @@ class CoapSimulator(DeviceSimulator):
         if self.flag_alive:
             logg.info('CoapSimulator is running')
             print 'CoapSimulator is running'
-            reactor.listenUDP(61616, self.protocol)
-            Thread(target=reactor.run, name="CoapSimulator_Thread", args=(False,)).start()
+            self.agent.putResource()
             while self.flag_alive:
                 time.sleep(100)
-            logg.info("Thread exits: %s" % str(self.name))
         else:
-            logg.info("Thread exits: %s" % str(self.name))
+            print "Thread exits"
+        logg.info("Thread exits: %s" % str(self.name))
 
     def clean_up(self):
         self.flag_alive = False
-        if (self.protocol is not None) and (self.client is not None):
-            reactor.stop()
+        if (self.agent is not None):
+            self.agent.close()

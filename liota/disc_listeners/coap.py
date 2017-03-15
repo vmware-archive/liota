@@ -29,37 +29,28 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-import os
-import sys
 import json
-import stat
-import time
-import fcntl
-import thread
 import logging
-import inspect
-import datetime
-from Queue import Queue
+import time
 from threading import Thread
 
-from twisted.internet import defer
-from twisted.internet.protocol import DatagramProtocol
-from twisted.internet import reactor
-from twisted.python import log
-
-import txthings.resource as resource
-import txthings.coap as coap
-
+from coapthon.server.coap import CoAP
+from coapthon.resources.resource import Resource
 from liota.disc_listeners.discovery_listener import DiscoveryListener
+from liota.lib.utilities.utility import LiotaConfigPath
 
 logg = logging.getLogger(__name__)
+LiotaConfigPath().setup_logging()
 
-class MsgResource (resource.CoAPResource):
+class MsgResource (Resource):
 
-    def __init__(self, disc):
-        resource.CoAPResource.__init__(self)
-        self.visible = True
-        self.addParam(resource.LinkParam("title", "Message resource"))
+    def __init__(self, disc=None, name="MsgResource", coap_server=None):
+        super(MsgResource, self).__init__(name, coap_server, visible=True,
+                                            observable=True, allow_children=True)
+        self.payload = "Msg Resource"
+        self.resource_type = "rt1"
+        self.content_type = "text/plain"
+        self.interface_type = "if1"
         self.disc = disc
 
     def render_PUT(self, request):
@@ -68,49 +59,24 @@ class MsgResource (resource.CoAPResource):
         # better create another thread to process received messages
         try:
             payload = json.loads(request.payload)
-            Thread(target=self.proc_dev_msg, name="CoapMsgProc_Thread", args=(payload,)).start()
-            payload = "Received~"
+
+            Thread(target=self.proc_dev_msg, name="CoapMsgProc_Thread", args=(payload, self.disc, )).start()
         except ValueError, err:
             # json can't be parsed
             logg.error('Value: {0}, Error:{1}'.format(request.payload, str(err)))
-            payload = "Received wrong message (no jason message)"
 
-        # send response
-        response = coap.Message(code=coap.CHANGED, payload=payload)
-        return defer.succeed(response)
+        self.edit_resource(request)
+        return self
 
-    def proc_dev_msg(self, payload):
-        self.disc.device_msg_process(payload)
+    def proc_dev_msg(self, payload, disc):
+        logg.debug("proc_dev_msg payload:{0}".format(payload))
+        disc.device_msg_process(payload)
 
-class CoreResource(resource.CoAPResource):
-    """
-    Example Resource that provides list of links hosted by a server.
-    Normally it should be hosted at /.well-known/core
-
-    Resource should be initialized with "root" resource, which can be used
-    to generate the list of links.
-
-    For the response, an option "Content-Format" is set to value 40,
-    meaning "application/link-format". Without it most clients won't
-    be able to automatically interpret the link format.
-
-    Notice that self.visible is not set - that means that resource won't
-    be listed in the link format it hosts.
-    """
-
-    def __init__(self, root):
-        resource.CoAPResource.__init__(self)
-        self.root = root
-
-    def render_GET(self, request):
-        data = []
-        self.root.generateResourceList(data, "")
-        payload = ",".join(data)
-        logg.debug("coap_svr Get: {0}".format(payload))
-        response = coap.Message(code=coap.CONTENT, payload=payload)
-        response.opt.content_format = coap.media_types_rev['application/link-format']
-        return defer.succeed(response)
-
+class CoAPServer(CoAP):
+    def __init__(self, host, port, multicast=False, disc=None):
+        CoAP.__init__(self, (host, port), multicast)
+        self.disc = disc
+        self.add_resource('message/', MsgResource(disc=disc))
 
 class CoapListener(DiscoveryListener):
     """
@@ -121,44 +87,43 @@ class CoapListener(DiscoveryListener):
     def __init__(self, ip_port, name=None, discovery=None):
         super(CoapListener, self).__init__(name=name)
         str_list = ip_port.split(':')
+        if str_list[0] == "" or str_list[0] == None:
+            logg.warning("No ip is specified!")
+            self.ip = "127.0.0.1"
+        else:
+            self.ip = str(str_list[0])
         if str_list[1] == "" or str_list[1] == None:
             logg.error("No port is specified!")
-            self.port = coap.COAP_PORT
+            self.port = 5683
         else:
             self.port = int(str_list[1])
         self.discovery = discovery
-
-        # Resource tree creation
-        #log.startLogging(sys.stdout)
-        self.root = resource.CoAPResource()
-
-        well_known = resource.CoAPResource()
-        self.root.putChild('.well-known', well_known)
-        core = CoreResource(self.root)
-        well_known.putChild('core', core)
-
-        self.msg = MsgResource(discovery)
-        self.root.putChild('messages', self.msg)
-
+        self.flag_alive = True
         logg.debug("CoapListener is initialized")
         print "CoapListener is initialized"
-        self.flag_alive = True
         self.start()
 
     def run(self):
         if self.flag_alive:
             logg.info('CoapListerner is running')
             print 'CoapListerner is running'
-            self.endpoint = resource.Endpoint(self.root)
-            reactor.listenUDP(self.port, coap.Coap(self.endpoint))
-            Thread(target=reactor.run, name="CoapListerner_Thread", args=(False,)).start()
-            while self.flag_alive:
-                time.sleep(100)
-            logg.info("Thread exits: %s" % str(self.name))
+
+            # start coap server
+            self.server = CoAPServer(self.ip, self.port, multicast=False, disc=self.discovery)
+            try:
+                self.server.listen(10)
+                while self.flag_alive:
+                    time.sleep(100)
+                logg.info("Thread exits: %s" % str(self.name))
+            except KeyboardInterrupt:
+                print "Server Shutdown"
+                self.server.close()
+                print "Exiting..."
         else:
             logg.info("Thread exits: %s" % str(self.name))
+            print "Thread exits:", str(self.name)
 
     def clean_up(self):
         self.flag_alive = False
-        if self.endpoint is not None:
-            reactor.stop()
+        if self.server is not None:
+            self.server.close()
