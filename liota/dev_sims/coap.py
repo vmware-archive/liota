@@ -67,7 +67,7 @@ class Agent():
                 logg.debug("send msg:{0}".format(msg))
                 payload = json.dumps(msg)
                 response = self.client.put(self.path, payload)
-                logg.debug("getResouce response:{0}".format(response.pretty_print()))
+                logg.debug("putResouce response:{0}".format(response.pretty_print()))
                 time.sleep(5);
             self.cnt += 1
             if self.cnt > 20:
