@@ -72,6 +72,9 @@ class MsgResource (Resource):
         logg.debug("proc_dev_msg payload:{0}".format(payload))
         disc.device_msg_process(payload)
 
+    def render_GET(self, request):
+        return self
+
 class CoAPServer(CoAP):
     def __init__(self, host, port, multicast=False, disc=None):
         CoAP.__init__(self, (host, port), multicast)
