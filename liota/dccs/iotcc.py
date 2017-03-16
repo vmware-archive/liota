@@ -146,6 +146,36 @@ class IotControlCenter(DataCenterComponent):
 
             return RegisteredEntity(entity_obj, self, self.reg_entity_id)
 
+    def unregister(self, entity_obj):
+        """ Unregister the objects
+        """
+        log.info("Unregistering resource with IoTCC {0}".format(entity_obj.ref_entity.name))
+
+        def on_receive_safe(msg):
+            try:
+                log.debug("Received msg: {0}".format(msg))
+                if msg != "":
+                    json_msg = json.loads(msg)
+                    self.proto.on_receive(json.loads(msg))
+                    log.debug("Processed msg: {0}".format(json_msg["type"]))
+                    if json_msg["type"] == "remove_resource_response":
+                        self.con.send(self._unregistration(self.con.next_id(), entity_obj.reg_entity_id))
+                        if json_msg["body"]["result"] == "succeeded":
+                            log.info("Unregistration succeeded")
+                            exit()
+                        else:
+                            log.info("Unregistration failed")
+            except:
+                raise
+
+        thread = threading.Thread(target=self.con.run)
+        self.con.on_receive = on_receive_safe
+        thread.daemon = True
+        thread.start()
+        self.con.send(self._unregistration(self.con.next_id(), entity_obj.reg_entity_id))
+        thread.join()
+        log.info("Unregistration complete")
+
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """ This function initializes all relations between Registered Entities.
 
@@ -533,3 +563,12 @@ class IotControlCenter(DataCenterComponent):
         self.counter = (self.counter + 1) & 0xffffff
         # Enforce even IDs
         return int(self.counter * 2)
+
+    def _unregistration(self, msg_id, uuid):
+        return {
+            "transactionID": msg_id,
+            "type": "remove_resource_request",
+            "body": {
+                "uuid": uuid
+            }
+        }

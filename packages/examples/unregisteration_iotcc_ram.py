@@ -31,66 +31,61 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from linux_metrics import mem_stat
 
-dependencies = ["edge_systems/dell5k/edge_system"]
+dependencies = ["iotcc"]
 
+def read_mem_free():
+    total_mem = round(mem_stat.mem_stats()[1],4)
+    free_mem = round(mem_stat.mem_stats()[3],4)
+    mem_free_percent = ((total_mem-free_mem)/total_mem)*100
+    return round(mem_free_percent, 2)
+    
 
 class PackageClass(LiotaPackage):
-    """
-    This is a sample package which creates a IoTControlCenter DCC object and registers edge system on
-    IoTCC over WebSocket to acquire "registered edge system", i.e. iotcc_edge_system.
-    """
-    global config_path
-    global iotcc_edge_system
 
     def run(self, registry):
+        from liota.entities.devices.simulated_device import SimulatedDevice
+        from liota.entities.metrics.metric import Metric
         import copy
-        from liota.dccs.iotcc import IotControlCenter
-        from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
-        from liota.dccs.dcc import RegistrationFailure
-
-	global config_path
-        global iotcc_edge_system
 
         # Acquire resources from registry
+        self.iotcc = registry.get("iotcc")
         # Creating a copy of edge_system object to keep original object "clean"
-        edge_system = copy.copy(registry.get("edge_system"))
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
         config = {}
         execfile(config_path + '/sampleProp.conf', config)
 
-        # Initialize DCC object with transport
-        self.iotcc = IotControlCenter(
-            config['IotCCUID'], config['IotCCPassword'],
-            WebSocketDccComms(url=config['WebSocketUrl'])
-        )
+        # Register device
+        ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
+        self.reg_ram_device = self.iotcc.register(ram_device)
+        self.iotcc.set_properties(self.reg_ram_device, config['DevicePropList'])
 
-        try:
-            # Register edge system (gateway)
-            iotcc_edge_system = self.iotcc.register(edge_system)
-            """
-            Use iotcc & iotcc_edge_system as common identifiers
-            in the registry to easily refer the objects in other packages
-            """
-            registry.register("iotcc", self.iotcc)
-            registry.register("iotcc_edge_system", iotcc_edge_system)
-        except RegistrationFailure:
-            print "EdgeSystem registration to IOTCC failed"
-        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
+        self.iotcc.create_relationship(iotcc_edge_system, self.reg_ram_device)
+
+        # Create metrics
+        self.metrics = []
+
+        mem_free_metric = Metric(
+            name="Memory Free",
+            unit=None,
+            interval=10,
+            sampling_function=read_mem_free
+        )
+        reg_mem_free_metric = self.iotcc.register(mem_free_metric)
+        self.iotcc.create_relationship(self.reg_ram_device, reg_mem_free_metric)
+        reg_mem_free_metric.start_collecting()
+        self.metrics.append(reg_mem_free_metric)
+
+        # Use the iotcc_device_name as identifier in the registry to easily refer the device in other packages
+        registry.register("reg_ram_device", self.reg_ram_device)
 
     def clean_up(self):
-
-        global config_path
-        global iotcc_edge_system
-
-        # Get values from configuration file
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
-
-        #Unregister edge system
-        if config['Unregister'] == "True":
-            self.iotcc.unregister(iotcc_edge_system)
-        self.iotcc.comms.client.close()
-
+	from time import sleep
+        for metric in self.metrics:
+            metric.stop_collecting()
+	#sleep(60)
+	self.iotcc.unregister(self.reg_ram_device)
