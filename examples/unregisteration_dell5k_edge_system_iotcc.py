@@ -42,7 +42,8 @@ from liota.dccs.dcc import RegistrationFailure
 config = {}
 execfile('sampleProp.conf', config)
 
-# The program illustrates the ease of use Liota brings to IoT application developers.
+# The program demonstrates how unregisteration can be done in iotcc. The reg_edge_system will get deleted 
+# at the end of the program (after 100s) from ICE.
 
 if __name__ == '__main__':
 
@@ -62,7 +63,7 @@ if __name__ == '__main__':
         # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given
         reg_edge_system = iotcc.register(edge_system)
         
-	time.sleep(100)
+		time.sleep(100)
 
         #Unregistration of the edge system
         iotcc.unregister(reg_edge_system)

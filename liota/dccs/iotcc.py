@@ -159,12 +159,11 @@ class IotControlCenter(DataCenterComponent):
                     self.proto.on_receive(json.loads(msg))
                     log.debug("Processed msg: {0}".format(json_msg["type"]))
                     if json_msg["type"] == "remove_resource_response":
-                        self.con.send(self._unregistration(self.con.next_id(), entity_obj.reg_entity_id))
                         if json_msg["body"]["result"] == "succeeded":
-                            log.info("Unregistration succeeded")
+                            log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
                             exit()
                         else:
-                            log.info("Unregistration failed")
+                            log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
             except:
                 raise
 
@@ -174,7 +173,7 @@ class IotControlCenter(DataCenterComponent):
         thread.start()
         self.con.send(self._unregistration(self.con.next_id(), entity_obj.reg_entity_id))
         thread.join()
-        log.info("Unregistration complete")
+        log.info("Unregistration of resource {0} with IoTCC complete".format(entity_obj.ref_entity.name))
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """ This function initializes all relations between Registered Entities.

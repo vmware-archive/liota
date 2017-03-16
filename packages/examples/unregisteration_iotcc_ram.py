@@ -84,8 +84,6 @@ class PackageClass(LiotaPackage):
         registry.register("reg_ram_device", self.reg_ram_device)
 
     def clean_up(self):
-	from time import sleep
         for metric in self.metrics:
             metric.stop_collecting()
-	#sleep(60)
 	self.iotcc.unregister(self.reg_ram_device)

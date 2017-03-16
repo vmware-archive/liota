@@ -90,7 +90,7 @@ class PackageClass(LiotaPackage):
         execfile(config_path + '/sampleProp.conf', config)
 
         #Unregister edge system
-        if config['Unregister'] == "True":
+        if config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(iotcc_edge_system)
         self.iotcc.comms.client.close()
 
