@@ -62,7 +62,7 @@ def get_living_room_luminance():
 
 # ------------------------------------------------------------------------------------------------------------------
 # In this example, we demonstrate how data for a simulated metric generating
-# random numbers can be directed to GenericMqtt data center component using Liota.
+# random numbers can be directed to AWSIoT data center component using Liota.
 #
 # A Simulated DHT sensor with Temperature and Humidity Metrics and a Simulated
 # Digital Light sensor with binary luminance Metrics are used.

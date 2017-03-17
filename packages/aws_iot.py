@@ -58,8 +58,8 @@ class PackageClass(LiotaPackage):
         config = {}
         execfile(config_path + '/sampleProp.conf', config)
         # Encapsulates Identity
-        identity = Identity(config['broker_root_ca_cert'], None, None, config['edge_system_cert_file'],
-                                  config['edge_system_key_file'])
+        identity = Identity(root_ca_cert=config['broker_root_ca_cert'], username=None, password=None,
+                            cert_file=config['edge_system_cert_file'], key_file=config['edge_system_key_file'])
         # Encapsulate TLS parameters
         tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
         # Encapsulate QoS related parameters

@@ -75,7 +75,7 @@ def get_living_room_luminance():
 
 # ----------------------------------------------------------------------------------------------------------------
 # In this example, we demonstrate how data for a simulated metric generating
-# random numbers can be directed to GenericMqtt data center component using Liota.
+# random numbers can be directed to AWSIoT data center component using Liota.
 #
 # A Simulated DHT sensor with Temperature and Humidity Metrics and a Simulated
 # Digital Light sensor with binary luminance Metrics are used.
@@ -123,8 +123,8 @@ if __name__ == '__main__':
     #  Creating EdgeSystem
     edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
     #  Encapsulates Identity
-    identity = Identity(config['broker_root_ca_cert'], None, None,
-                              config['edge_system_cert_file'], config['edge_system_key_file'])
+    identity = Identity(root_ca_cert=config['broker_root_ca_cert'], username=None, password=None,
+                        cert_file=config['edge_system_cert_file'], key_file=config['edge_system_key_file'])
     # Encapsulate TLS parameters
     tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
     # Encapsulate QoS related parameters

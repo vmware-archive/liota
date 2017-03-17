@@ -53,4 +53,6 @@ class Identity:
         self.password = password
         self.cert_file = cert_file
         self.key_file = key_file
-        log.debug("Created Identity.")
+        log.debug("Created Identity with rootCA path: {0}, username: {1}, device_cert_path: {2}"
+                  "device_key_file_path: {3}".format(self.root_ca_cert, self.username, self.cert_file,
+                                                     self.key_file))
