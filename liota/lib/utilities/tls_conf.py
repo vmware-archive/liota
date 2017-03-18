@@ -36,9 +36,8 @@ log = logging.getLogger(__name__)
 
 
 class TLSConf:
-
     """
-    This class encapsulates TLS options.
+    This class encapsulates TLS config related parameters.
     """
 
     def __init__(self, cert_required, tls_version, cipher):
@@ -51,3 +50,4 @@ class TLSConf:
         self.cert_required = cert_required
         self.tls_version = tls_version
         self.cipher = cipher
+        log.debug("Created TLSConf.")

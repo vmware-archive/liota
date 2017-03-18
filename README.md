@@ -13,7 +13,9 @@ Entities represent abstractions for the three main passive constructs: System, D
 Each DCC must implement a register() method and return a RegisteredEntity object. The registered entity object may include any specific data, e.g., uuid, that the DCC may need to refer to the Resource representing the entity object. An entity may be registered with multiple DCCs in the same liota package or set of packages. 
 
 ### EdgeSystems and Devices
-The abstract subclasses of Entities, EdgeSystem and Device are for now mostly placeholders in the hierarchy. We expect, as concrete implementations are created over time we'll see some common data and logic that we can move up into the abstract classes. 
+The abstract subclasses of Entities, EdgeSystem and Device are for now mostly placeholders in the hierarchy. We expect, as concrete implementations are created over time we'll see some common data and logic that we can move up into the abstract classes.
+
+**Note:** We recommend creating EdgeSystem Objects before creating DCCComms or DeviceComms objects.
 
 ### Metrics
 The Metric subclass of Entity is the local object representing a stream of (number, timestamp) tuples. Metrics may be registered with one or more DCCs and the DCC returns a registered metric object. The metric object includes a sampling function which is a user defined method (udm), a sampling frequency stating the interval between subsequent executions of the udm and an aggregation count stating how many executions of the udm to aggregate before sending to the DCCs to which the metric has been registered. An important piece of meta-data liota supports are SI units and a prefix eliminating any confusion as to what the stream of numbers represent. 
@@ -22,14 +24,18 @@ The Metric subclass of Entity is the local object representing a stream of (numb
 The abstract class DeviceComms represent mechanisms through which devices send and receive data to/from edge systems. Some examples are CAN bus, Modbus, ProfiNet, Zibgee, GPIO pins, Industrial Serial Protocols as well as sockets, websockets, MQTT, CoAP. The DeviceComms abstract class is a placeholder for these various communication mechanisms. 
 
 ## DCCComms
-The abstract class DCCComms represents communication protocols between edge systems and DCCs. Currently, liota supports WebSocket and plain old BSD sockets. In near future it will support MQTT and CoAP. Both are ‘Session’ or layer-5 protocols. MQTT is a pub-sub system using TCP and CoAP implements reliable UDP datagrams and a data format specification. These protocols are capable of satisfying most of the use cases for transferring data from IoT gateways to data-center components. With the current implementation the gateway acts as either a WebSocket client, establishing a connection with the server using the WebSocket protocol. e.g.
-```web
-wss://host:port/path
-```
-or a traditional socket endpoint.
+The abstract class DCCComms represents communication protocols between edge systems and DCCs. Currently, liota supports MQTT, WebSocket and plain old BSD sockets. In near future it will support CoAP. MQTT, WebSocket and CoAP are ‘Application’ or layer-7 protocols. MQTT is a pub-sub system using TCP and CoAP implements reliable UDP datagrams and a data format specification. These protocols are capable of satisfying most of the use cases for transferring data from IoT gateways to data-center components. With the current implementation the gateway acts as MQTT, WebSocket or a traditional Socket client.
 
 ## DCC (Data Center Component)
 The abstract class DCC represents an application in a data-center. It is potentially the most important and complex abstraction of liota. It provides flexibility to developers for choosing the data-center components they need and using API’s provided by liota. With help of this abstraction developers may build custom solutions. The abstract class states basic methods and encapsulates them into unified common API’s required to send data to various DCC’s. Graphite and Project Ice are currently the data-center components supported with AWS, BlueMix and ThingWorx to come soon. New DCC’s can easily be integrated in the abstraction.
+
+## Transports
+Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols.  Refer ![MQTT](/examples/mqtt/README.md) to know more on different MQTT configuration options available.
+
+## Identity and TLS Configurations
+* Identity class encapsulates certificates or credentials related to a connection used at both DCC and Device side.
+* TLSConf class encapsulates parameters related to TLS configuration.
+
 
 ## Package Manager
 Liota applications can be broken into small pieces that can be loaded and unloaded into a running liota process. We recommend putting the EdgeSystems, Devices, Metrics and DCC(s) in separate packages. Then each construct can be loaded and unloaded at will. See the README in the package directory for complete details.
@@ -51,7 +57,7 @@ Liota supports SI units and the conversion of the units with help of Pint librar
 ## Liota – Future Enhancements
 Toward the goal of ubiquity for liota we plan to include the following enhancements:
 * Full support for IEEE 1451, Electronic Transducer Data Sheets
-* Support for MQTT and CoAP as transports
+* Support for CoAP as transports
 * A mechanism for IoT Edge Systems to create planet-wide unique identifiers (possibly based on the blockchain mechanism)
 * Support for actions framework for edge-system defined actions initiated either locally or by data-center components
 * Support for popular IoT ingestion engines

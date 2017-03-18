@@ -44,7 +44,7 @@ from xml.dom import minidom
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
-from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir, read_liota_config
+from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir, read_liota_config, store_edge_system_uuid
 from liota.lib.utilities.si_unit import parse_unit
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
@@ -139,7 +139,8 @@ class IotControlCenter(DataCenterComponent):
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
                 self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id)
-                self.store_edge_system_uuid(entity_obj.name, self.reg_entity_id)
+                store_edge_system_uuid(entity_name=entity_obj.name, entity_id=entity_obj.entity_id,
+                                       reg_entity_id=self.reg_entity_id)
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
                                                      self.reg_entity_id, None, None)
@@ -284,19 +285,6 @@ class IotControlCenter(DataCenterComponent):
         }
         self.set_properties(reg_entity_obj, properties_added)
         log.info("Published metric unit with prefix to IoTCC")
-
-    def store_edge_system_uuid(self, entity_name, reg_entity_id):
-        try:
-            uuid_path = read_liota_config('UUID_PATH', 'uuid_path')
-            uuid_config = ConfigParser.RawConfigParser()
-            uuid_config.optionxform = str
-            uuid_config.add_section('GATEWAY')
-            uuid_config.set('GATEWAY', 'uuid', reg_entity_id)
-            uuid_config.set('GATEWAY', 'name', entity_name)
-            with open(uuid_path, 'w') as configfile:
-                uuid_config.write(configfile)
-        except ConfigParser.ParsingError, err:
-            log.error('Could not open config file ' + err)
 
     def prettify(self, elem):
         """Return a pretty-printed XML string for the Element.
