@@ -10,7 +10,7 @@ LIOTA also supports configuration of QoS related parameters like in_flight size,
 ## Using MqttDeviceComms
 
 For both ProjectICE & non-ProjectICE use-cases, MQTT related parameters required in `publish()` and `subscribe()` like topic, qos, etc., are fetched directly from the user's
-configuration file.  Please refer this ![example](/examples/mqtt/device_comms/iot_cc/iotcc_simulated_mqtt.py) for detailed explanation.
+configuration file.  Please refer this ![example](/examples/mqtt/device_comms/iotcc/iotcc_simulated_mqtt.py) for detailed explanation.
 
 
 ## Using MqttDccComms
