@@ -25,7 +25,6 @@ To `unregister` an entity while unloading set the following flag in `packages/sa
 ```bash
 ShouldUnregisterOnUnload = "True"
 ```
-Please refer to package `examples\unregisteration_dell5k_edge_system_iotcc.py` to see how it works. To demonstrate unregisteration of device `packages/examples/unregisteration_iotcc_ram.py` has been provided.
 
 * **reload** package_name
 
