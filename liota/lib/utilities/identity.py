@@ -35,19 +35,24 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class TLSConf:
-
+class Identity:
     """
-    This class encapsulates TLS options.
+    This class encapsulates certificates and credentials related to a connection both at Dcc and Device side.
     """
 
-    def __init__(self, cert_required, tls_version, cipher):
+    def __init__(self, root_ca_cert, username, password, cert_file, key_file):
         """
-        :param cert_required: Defines the certificate requirements
-        :param tls_version: Version of SSL/TLS protocol to be used
-        :param cipher: Ciphers is a string specifying which encryption ciphers are allowable
-                        for a connection, or None to use the defaults.
+        :param root_ca_cert: Root CA certificate path or Self-signed server certificate path
+        :param username: Username
+        :param password: Corresponding password
+        :param cert_file: Device certificate file path
+        :param key_file: Device certificate key-file path
         """
-        self.cert_required = cert_required
-        self.tls_version = tls_version
-        self.cipher = cipher
+        self.root_ca_cert = root_ca_cert
+        self.username = username
+        self.password = password
+        self.cert_file = cert_file
+        self.key_file = key_file
+        log.debug("Created Identity with rootCA path: {0}, username: {1}, device_cert_path: {2}"
+                  "device_key_file_path: {3}".format(self.root_ca_cert, self.username, self.cert_file,
+                                                     self.key_file))

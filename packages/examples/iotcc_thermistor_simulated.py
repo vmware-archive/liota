@@ -140,6 +140,9 @@ class PackageClass(LiotaPackage):
         reg_thermistor_temper.start_collecting()
         self.metrics.append(reg_thermistor_temper)
 
+        # Use the iotcc_device_name as identifier in the registry to easily refer the registered device in other packages
+        registry.register("iotcc_thermistor_simulated", iotcc_thermistor)
+
     def clean_up(self):
         for metric in self.metrics:
             metric.stop_collecting()

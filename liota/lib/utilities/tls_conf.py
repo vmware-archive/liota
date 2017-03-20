@@ -32,53 +32,22 @@
 
 import logging
 
-from liota.entities.edge_systems.edge_system import EdgeSystem
-
 log = logging.getLogger(__name__)
 
 
-class RemoteSystemIdentity:
+class TLSConf:
     """
-    This encapsulates identity details used to connect to a remote systems both at Dcc and Device side.
-        - CA certificate path or Self-signed server certificate path
-        - Username-Password combination when authentication is required
+    This class encapsulates TLS config related parameters.
     """
 
-    def __init__(self, root_ca_cert, username, password):
-
+    def __init__(self, cert_required, tls_version, cipher):
         """
-        :param root_ca_cert: Root CA certificate path or Self-signed server certificate path
-        :param username: Username
-        :param password: Corresponding password
+        :param cert_required: Defines the certificate requirements
+        :param tls_version: Version of SSL/TLS protocol to be used
+        :param cipher: Ciphers is a string specifying which encryption ciphers are allowable
+                        for a connection, or None to use the defaults.
         """
-        if (root_ca_cert is None) and (username is None or password is None):
-            log.error("Either root_ca_cert or username and password must be provided")
-            raise ValueError("Either root_ca_cert or username and password must be provided")
-
-        self.root_ca_cert = root_ca_cert
-        self.username = username
-        self.password = password
-
-
-class EdgeSystemIdentity:
-    """
-    This class encapsulates identity details of an Edge System.
-        - Edge System's name
-        - Client (Edge System) certificate and key file
-    """
-
-    def __init__(self, edge_system, cert_file, key_file):
-
-        """
-        :param edge_system: EdgeSystem Object
-        :param cert_file: Device certificate path
-        :param key_file: Device certificate key file
-        """
-        if not isinstance(edge_system, EdgeSystem):
-            log.error("EdgeSystem object is expected.")
-            raise TypeError("EdgeSystem object is expected")
-
-        # NOTE:  Only EdgeSystem's name is stored here.
-        self.edge_system_name = edge_system.name
-        self.cert_file = cert_file
-        self.key_file = key_file
+        self.cert_required = cert_required
+        self.tls_version = tls_version
+        self.cipher = cipher
+        log.debug("Created TLSConf.")

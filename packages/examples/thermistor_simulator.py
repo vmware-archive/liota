@@ -36,7 +36,6 @@ dependencies = ["edge_systems/dell5k/edge_system"]
 
 
 class PackageClass(LiotaPackage):
-
     def run(self, registry):
         from liota.entities.devices.thermistor_simulated import ThermistorSimulated
         import pint

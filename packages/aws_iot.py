@@ -37,15 +37,17 @@ dependencies = ["edge_systems/dell5k/edge_system"]
 
 class PackageClass(LiotaPackage):
     """
-    This package creates a IoTControlCenter DCC object and registers edge system on
-    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
+    This package creates a AWSIoT DCC object and registers edge system on
+    AWSIoT to acquire "registered edge system", i.e. aws_iot_edge_system.
     """
 
     def run(self, registry):
         import copy
-        from liota.dccs.iotcc import IotControlCenter
-        from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
-        from liota.dccs.dcc import RegistrationFailure
+        from liota.dccs.aws_iot import AWSIoT
+        from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
+        from liota.lib.transports.mqtt import QoSDetails
+        from liota.lib.utilities.identity import Identity
+        from liota.lib.utilities.tls_conf import TLSConf
 
         # Acquire resources from registry
         # Creating a copy of edge_system object to keep original object "clean"
@@ -55,25 +57,31 @@ class PackageClass(LiotaPackage):
         config_path = registry.get("package_conf")
         config = {}
         execfile(config_path + '/sampleProp.conf', config)
+        # Encapsulates Identity
+        identity = Identity(root_ca_cert=config['broker_root_ca_cert'], username=None, password=None,
+                            cert_file=config['edge_system_cert_file'], key_file=config['edge_system_key_file'])
+        # Encapsulate TLS parameters
+        tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
+        # Encapsulate QoS related parameters
+        qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
-        # Initialize DCC object with transport
-        self.iotcc = IotControlCenter(
-            config['IotCCUID'], config['IotCCPassword'],
-            WebSocketDccComms(url=config['WebSocketUrl'])
-        )
+        #  Connecting to AWSIoT
+        #  Publish topic for all Metrics will be 'liota/generated_local_uuid_of_edge_system/request'
+        #  Create and pass custom MqttMessagingAttributes object to MqttDccComms to have custom topic
+        self.aws_iot = AWSIoT(MqttDccComms(edge_system_name=edge_system.name,
+                                           url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
+                                           tls_conf=tls_conf,
+                                           qos_details=qos_details,
+                                           clean_session=True, userdata=config['userdata'],
+                                           protocol=config['protocol'], transport=['transport'],
+                                           conn_disconn_timeout=config['ConnectDisconnectTimeout']),
+                              enclose_metadata=True)
 
-        try:
-            # Register edge system (gateway)
-            iotcc_edge_system = self.iotcc.register(edge_system)
-            """
-            Use iotcc & iotcc_edge_system as common identifiers
-            in the registry to easily refer the objects in other packages
-            """
-            registry.register("iotcc", self.iotcc)
-            registry.register("iotcc_edge_system", iotcc_edge_system)
-        except RegistrationFailure:
-            print "EdgeSystem registration to IOTCC failed"
-        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
+        # Register edge system (gateway)
+        aws_iot_edge_system = self.aws_iot.register(edge_system)
+
+        registry.register("aws_iot", self.aws_iot)
+        registry.register("aws_iot_edge_system", aws_iot_edge_system)
 
     def clean_up(self):
-        self.iotcc.comms.wss.close()
+        self.aws_iot.comms.client.disconnect()

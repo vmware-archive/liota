@@ -34,6 +34,7 @@ import logging
 
 from liota.dcc_comms.dcc_comms import DCCComms
 from liota.lib.transports.mqtt import Mqtt, MqttMessagingAttributes
+from liota.lib.utilities.utility import store_edge_system_uuid, systemUUID
 
 log = logging.getLogger(__name__)
 
@@ -43,17 +44,17 @@ class MqttDccComms(DCCComms):
     DccComms for MQTT Transport
     """
 
-    def __init__(self, dcc_identity, edge_system_identity, tls_details, qos_details, url, port, client_id=None, clean_session=False,
-                 userdata=None, protocol="MQTTv311", transport="tcp", mqtt_msg_attr=None, keep_alive=60,
-                 enable_authentication=False, conn_disconn_timeout=10):
+    def __init__(self, edge_system_name, url, port, identity=None, tls_conf=None, qos_details=None,
+                 client_id="", clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
+                 mqtt_msg_attr=None, enable_authentication=False, conn_disconn_timeout=10):
 
         """
-        :param dcc_identity: RemoteSystemIdentity object
-        :param edge_system_identity: EdgeSystemIdentity object
-        :param tls_details: TLSDetails object
-        :param qos_details: QoSDetails object
+        :param edge_system_name: EdgeSystem's name for auto-generation of topic
         :param url: MQTT Broker URL or IP
         :param port: MQTT Broker Port
+        :param tls_conf: TLSConf object
+        :param identity: Identity object
+        :param qos_details: QoSDetails object
         :param client_id: Client ID
         :param clean_session: Connect with Clean session or not
         :param userdata: userdata is user defined data of any type that is passed as the "userdata"
@@ -63,33 +64,46 @@ class MqttDccComms(DCCComms):
         :param transport: Set transport to "websockets" to use WebSockets as the transport
                           mechanism. Set to "tcp" to use raw TCP, which is the default.
 
-        :param mqtt_msg_attr: MqttMessagingAttributes object or None
         :param keep_alive: KeepAliveInterval
+        :param mqtt_msg_attr: MqttMessagingAttributes object or None.
+                            In case of None, topics will be auto-generated. User provided topic will be used otherwise.
         :param enable_authentication: Enable user-name password authentication or not
         :param conn_disconn_timeout: Connect-Disconnect-Timeout
         """
-        self.dcc_identity = dcc_identity
-        self.edge_system_identity = edge_system_identity
+
+        self.client_id = client_id
 
         if mqtt_msg_attr is None:
             #  pub-topic and sub-topic will be auto-generated
-            self.msg_attr = MqttMessagingAttributes(edge_system_identity.edge_system_name)
+            log.info("pub-topic and sub-topic is auto-generated")
+            self.msg_attr = MqttMessagingAttributes(edge_system_name)
+            if self.client_id is None or self.client_id == "":
+                #  local_uuid generated will be the client ID
+                self.client_id = systemUUID().get_uuid(edge_system_name)
+                log.info("generated local uuid will be the client ID")
+            else:
+                log.info("Client ID is provided by user")
+            #  Storing edge_system name and generated local_uuid which will be used in auto-generation of pub-sub topic
+            store_edge_system_uuid(entity_name=edge_system_name,
+                                   entity_id=self.client_id,
+                                   reg_entity_id=None)
         elif isinstance(mqtt_msg_attr, MqttMessagingAttributes):
+            log.info("User configured pub-topic and sub-topic")
             self.msg_attr = mqtt_msg_attr
         else:
             log.error("mqtt_mess_attr should either be None or of type MqttMessagingAttributes")
             raise TypeError("mqtt_mess_attr should either be None or of type MqttMessagingAttributes")
 
-        self.tls_details = tls_details
         self.url = url
         self.port = port
-        self.client_id = client_id
+        self.identity = identity
+        self.tls_conf = tls_conf
+        self.qos_details = qos_details
         self.clean_session = clean_session
         self.userdata = userdata
         self.protocol = protocol
         self.transport = transport
         self.keep_alive = keep_alive
-        self.qos_details = qos_details
         self.enable_authentication = enable_authentication
         self.conn_disconn_timeout = conn_disconn_timeout
         self._connect()
@@ -99,9 +113,9 @@ class MqttDccComms(DCCComms):
         Initializes Mqtt Transport and connects to MQTT broker.
         :return:
         """
-        self.client = Mqtt(self.dcc_identity, self.edge_system_identity, self.tls_details, self.qos_details, self.url,
-                           self.port, self.client_id, self.clean_session, self.userdata, self.protocol, self.transport,
-                           self.keep_alive, self.enable_authentication, self.conn_disconn_timeout)
+        self.client = Mqtt(self.url, self.port, self.identity, self.tls_conf, self.qos_details, self.client_id,
+                           self.clean_session, self.userdata, self.protocol, self.transport, self.keep_alive,
+                           self.enable_authentication, self.conn_disconn_timeout)
 
     def _disconnect(self):
         """
@@ -110,15 +124,15 @@ class MqttDccComms(DCCComms):
         """
         self.client.disconnect()
 
-    def subscribe(self, mess_attr=None):
+    def subscribe(self, msg_attr=None):
         """
         Subscribes to a topic with specified QoS and callback.
 
-        :param mess_attr: MqttMessagingAttributes Object
+        :param msg_attr: MqttMessagingAttributes Object
         :return:
         """
-        if mess_attr:
-            self.client.subscribe(mess_attr.sub_topic, mess_attr.sub_qos, mess_attr.sub_callback)
+        if msg_attr:
+            self.client.subscribe(msg_attr.sub_topic, msg_attr.sub_qos, msg_attr.sub_callback)
         else:
             self.client.subscribe(self.msg_attr.sub_topic, self.msg_attr.sub_qos, self.msg_attr.sub_callback)
 
