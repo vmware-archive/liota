@@ -101,8 +101,6 @@ class Mqtt():
         """
         log.debug("mid: {0}".format(str(mid)))
 
-    def receive_message(self, client,userdata,msg, queue):
-        queue.put(msg)
 
     def on_subscribe(self, client, userdata, mid, granted_qos):
         """

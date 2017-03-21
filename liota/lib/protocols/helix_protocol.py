@@ -131,9 +131,9 @@ class HandshakeRequestedState(State):
         self.name = "HandshakeRequestedState"
         # require_field(msg, "transactionID")
         log.info("Sending message")
-        self.con.send({
+        self.con.send(json.dumps({
             "type": "hello"
-        })
+        }))
 
     def on_receive(self, msg):
         log.debug("Received message in HandshakeRequestedState: {0}".format(msg))
@@ -150,7 +150,7 @@ class HandshakeAwaitingState(State):
         State.__init__(self, previous, proto)
         self.name = "HandshakeAwaitingState"
         require_field(msg, "transactionID")
-        self.con.send({
+        self.con.send(json.dumps({
             "type": "connection_request",
             "transactionID": msg["transactionID"],
             "body": {
@@ -158,7 +158,7 @@ class HandshakeAwaitingState(State):
                 "username": self.user,
                 "password": self.password
             }
-        })
+        }))
 
     def on_receive(self, msg):
         log.debug("Received message in HandshakeAwaitingState: {0}".format(msg))

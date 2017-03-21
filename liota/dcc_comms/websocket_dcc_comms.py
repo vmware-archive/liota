@@ -30,6 +30,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 import logging
+import Queue
 from liota.lib.transports.web_socket import WebSocket
 
 from liota.dcc_comms.dcc_comms import DCCComms
@@ -42,6 +43,7 @@ class WebSocketDccComms(DCCComms):
 
     def __init__(self, url):
         self.url = url
+        self.userdata = Queue.Queue()
         self._connect()
 
     def _connect(self):
@@ -53,5 +55,5 @@ class WebSocketDccComms(DCCComms):
     def send(self, message, msg_attr=None):
         self.client.send(message)
 
-    def receive(self,queue):
-        self.client.receive(queue)
+    def receive(self, msg_attr=None):
+        self.client.receive(self.userdata)

@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import logging
+import Queue
 
 from liota.dcc_comms.dcc_comms import DCCComms
 from liota.lib.transports.mqtt import Mqtt, MqttMessagingAttributes
@@ -100,7 +101,7 @@ class MqttDccComms(DCCComms):
         self.tls_conf = tls_conf
         self.qos_details = qos_details
         self.clean_session = clean_session
-        self.userdata = userdata
+        self.userdata = Queue.Queue()
         self.protocol = protocol
         self.transport = transport
         self.keep_alive = keep_alive
@@ -124,9 +125,10 @@ class MqttDccComms(DCCComms):
         """
         self.client.disconnect()
 
-    def receive(self,queue, msg_attr=None):
+    def receive(self,msg_attr=None):
         """
         Subscribes to a topic with specified QoS and callback.
+        Set call back to receive_message method if no callback method is passed by user.
 
         :param msg_attr: MqttMessagingAttributes Object
         :return:
@@ -134,7 +136,18 @@ class MqttDccComms(DCCComms):
         if msg_attr:
             self.client.subscribe(msg_attr.sub_topic, msg_attr.sub_qos, msg_attr.sub_callback)
         else:
-            self.client.subscribe(self.msg_attr.sub_topic, self.msg_attr.sub_qos, self.client.receive_message(queue=queue))
+            self.client.subscribe(self.msg_attr.sub_topic, self.msg_attr.sub_qos, self.receive_message)
+
+    def receive_message(self, client,userdata,msg):
+        """
+           Receives message during MQTT subscription and put it in the queue.
+           This queue can be used to get message in DCC
+
+           :param msg_attr: MqttMessagingAttributes Object, userdata as queue
+           :return:
+           """
+        userdata.put(str(msg.payload))
+
 
     def send(self, message, msg_attr=None):
         """
@@ -145,6 +158,7 @@ class MqttDccComms(DCCComms):
         :param msg_attr: MqttMessagingAttributes Object
         :return:
         """
+
         if msg_attr:
             self.client.publish(msg_attr.pub_topic, message, msg_attr.pub_qos, msg_attr.pub_retain)
         else:

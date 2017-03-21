@@ -66,7 +66,7 @@ class IotControlCenter(DataCenterComponent):
         self.proto = HelixProtocol(self.comms, username, password)
         self._iotcc_json = self._create_iotcc_json()
         self.counter = 0
-        self.recv_msg_queue = Queue.Queue()
+        self.recv_msg_queue = self.comms.userdata
 
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
@@ -86,14 +86,13 @@ class IotControlCenter(DataCenterComponent):
                     on_receive_safe(self.recv_msg_queue.get())
             except Exception as error:
                 log.error("HelixProtocolException: " + repr(error))
-                exit()
 
         thread = threading.Thread(target=self.comms.receive, args=[self.recv_msg_queue])
         thread.daemon = True
+        # This thread will continuously run in background to receive response or actions from DCC
         thread.start()
-        if on_receive_safe(self.recv_msg_queue.get()):
-            log.info("Logged in to DCC successfully")
-            thread.join()
+        on_receive_safe(self.recv_msg_queue.get())
+        log.info("Logged in to DCC successfully")
 
 
     def register(self, entity_obj):
@@ -120,21 +119,17 @@ class IotControlCenter(DataCenterComponent):
                                 self.reg_entity_id = json_msg["body"]["uuid"]
                             else:
                                 log.info("Waiting for resource creation")
-                                self.comms.send(
+                                self.comms.send(json.dumps(
                                     self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name,
-                                                       entity_obj.entity_type))
+                                                       entity_obj.entity_type)))
                                 on_receive_safe(self.recv_msg_queue.get())
                 except:
                     raise
 
             if entity_obj.entity_type == "EdgeSystem":
                 entity_obj.entity_type = "HelixGateway"
-            self.comms.send(self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type))
-            resource_thread = threading.Thread(target=self.comms.receive, args=[self.recv_msg_queue])
-            resource_thread.daemon = True
-            resource_thread.start()
-            if on_receive_safe(self.recv_msg_queue.get()):
-                resource_thread.join()
+            self.comms.send(json.dumps(self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
+            on_receive_safe(self.recv_msg_queue.get())
             if not hasattr(self, 'reg_entity_id'):
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
@@ -174,8 +169,8 @@ class IotControlCenter(DataCenterComponent):
             entity_obj = reg_entity_child.ref_entity
             self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
-            self.comms.send(self._relationship(self.next_id(),
-                                               reg_entity_parent.reg_entity_id, reg_entity_child.reg_entity_id))
+            self.comms.send(json.dumps(self._relationship(self.next_id(),
+                                               reg_entity_parent.reg_entity_id, reg_entity_child.reg_entity_id)))
 
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
@@ -238,9 +233,9 @@ class IotControlCenter(DataCenterComponent):
 
     def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, properties):
         log.info("Organization Group Properties defined for resource {0}".format(reg_entity_name))
-        self.comms.send(
+        self.comms.send(json.dumps(
             self._properties(self.next_id(), reg_entity_id, reg_entity_type,
-                             getUTCmillis(), properties))
+                             getUTCmillis(), properties)))
         if reg_entity_type == "HelixGateway":
             with self.file_ops_lock:
                 self.store_reg_entity_attributes("EdgeSystem", reg_entity_name,
@@ -261,9 +256,9 @@ class IotControlCenter(DataCenterComponent):
             entity = reg_entity_obj.ref_entity
 
         log.info("Properties defined for resource {0}".format(entity.name))
-        self.comms.send(
+        self.comms.send(json.dumps(
             self._properties(self.next_id(), reg_entity_id, entity.entity_type,
-                             getUTCmillis(), properties))
+                             getUTCmillis(), properties)))
         if entity.entity_type == "HelixGateway":
             with self.file_ops_lock:
                 self.store_reg_entity_attributes("EdgeSystem", entity.name,
