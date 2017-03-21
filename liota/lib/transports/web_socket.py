@@ -118,14 +118,12 @@ class WebSocket():
                         self.close()
                         # os._exit used as websocket connection is not created even after the fourth retry
                         # os._exit(0) # need to revisit this
-        else:
-            log.exception("Exception while sending data, please check the connection and try again.")
-            self.close()
-            # sys.exit(0)
+                    else:
+                        log.exception("Exception while sending data, please check the connection and try again.")
+                        self.close()
+                        # sys.exit(0)
 
     def close(self):
         if self.ws is not None:
             self.ws.close()
         log.debug("Connection closed, cleanup done")
-
-

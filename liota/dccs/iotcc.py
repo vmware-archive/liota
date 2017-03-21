@@ -94,7 +94,6 @@ class IotControlCenter(DataCenterComponent):
         on_receive_safe(self.recv_msg_queue.get())
         log.info("Logged in to DCC successfully")
 
-
     def register(self, entity_obj):
         """ Register the objects
 
@@ -128,7 +127,8 @@ class IotControlCenter(DataCenterComponent):
 
             if entity_obj.entity_type == "EdgeSystem":
                 entity_obj.entity_type = "HelixGateway"
-            self.comms.send(json.dumps(self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
+            self.comms.send(json.dumps(
+                self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
             on_receive_safe(self.recv_msg_queue.get())
             if not hasattr(self, 'reg_entity_id'):
                 raise RegistrationFailure()
@@ -170,7 +170,8 @@ class IotControlCenter(DataCenterComponent):
             self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
             self.comms.send(json.dumps(self._relationship(self.next_id(),
-                                               reg_entity_parent.reg_entity_id, reg_entity_child.reg_entity_id)))
+                                                          reg_entity_parent.reg_entity_id,
+                                                          reg_entity_child.reg_entity_id)))
 
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
@@ -329,11 +330,13 @@ class IotControlCenter(DataCenterComponent):
         else:
             entity_exist = False
             for device in msg["iotcc"]["Devices"]:
-                if device["uuid"] == reg_entity_id and device["EntityType"] == entity_type and device["uuid"] == reg_entity_id :
+                if device["uuid"] == reg_entity_id and device["EntityType"] == entity_type and device[
+                    "uuid"] == reg_entity_id:
                     entity_exist = True
                     break
             if not entity_exist:
-                msg["iotcc"]["Devices"].append({"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
+                msg["iotcc"]["Devices"].append(
+                    {"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
         if msg != '':
             with open(self._iotcc_json, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)

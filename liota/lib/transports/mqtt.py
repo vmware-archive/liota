@@ -101,7 +101,6 @@ class Mqtt():
         """
         log.debug("mid: {0}".format(str(mid)))
 
-
     def on_subscribe(self, client, userdata, mid, granted_qos):
         """
         Invoked when the broker responds to subscribe request.

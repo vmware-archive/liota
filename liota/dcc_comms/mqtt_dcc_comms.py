@@ -158,7 +158,6 @@ class MqttDccComms(DCCComms):
         :param msg_attr: MqttMessagingAttributes Object
         :return:
         """
-
         if msg_attr:
             self.client.publish(msg_attr.pub_topic, message, msg_attr.pub_qos, msg_attr.pub_retain)
         else:
