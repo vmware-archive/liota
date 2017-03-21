@@ -110,7 +110,7 @@ setup(
                  ['packages/aws_iot.py',
                   'packages/graphite.py',
                   'packages/iotcc.py',
-                  'packages/iotcc_mqtt.py'
+                  'packages/iotcc_mqtt.py',
                   'packages/sampleProp.conf',
                   'packages/liotad.py',
                   'packages/liotapkg.sh',
