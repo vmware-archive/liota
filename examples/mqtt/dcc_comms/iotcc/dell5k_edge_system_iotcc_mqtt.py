@@ -30,12 +30,13 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from linux_metrics import cpu_stat,disk_stat,net_stat,mem_stat
+from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
 from liota.dccs.iotcc import IotControlCenter
+from liota.lib.utilities.identity import Identity
 from liota.entities.metrics.metric import Metric
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
-from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
+from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
 from liota.dccs.dcc import RegistrationFailure
 
 # getting values from conf file
@@ -62,7 +63,7 @@ def read_cpu_procs():
 def read_cpu_utilization(sample_duration_sec=1):
     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
     return round((100 - cpu_pcts['idle']), 2)
-    
+
 
 def read_disk_usage_stats():
     return round(disk_stat.disk_reads_writes('sda')[0], 2)
@@ -73,30 +74,36 @@ def read_network_bytes_received():
 
 
 def read_mem_free():
-    total_mem = round(mem_stat.mem_stats()[1],4)
-    free_mem = round(mem_stat.mem_stats()[3],4)
-    mem_free_percent = ((total_mem-free_mem)/total_mem)*100
+    total_mem = round(mem_stat.mem_stats()[1], 4)
+    free_mem = round(mem_stat.mem_stats()[3], 4)
+    mem_free_percent = ((total_mem - free_mem) / total_mem) * 100
     return round(mem_free_percent, 2)
 
-    
-#---------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------
 # In this example, we demonstrate how System health and some simulated data
-# can be directed to two data center components IoTCC using Liota.
+# can be directed to data center components IoTCC using MQTT from Liota.
 # The program illustrates the ease of use Liota brings to IoT application developers.
 
 if __name__ == '__main__':
 
-
-    # create a data center object, IoTCC in this case, using websocket as a transport layer
+    # create a data center object, IoTCC in this case, using MQTT as a transport layer
     # this object encapsulates the formats and protocols necessary for the agent to interact with the dcc
     # UID/PASS login for now.
-    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-                             WebSocketDccComms(url=config['WebSocketUrl']))
+
+    #  Creating EdgeSystem
+    edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
+    #  Encapsulates Identity
+    identity = Identity(root_ca_cert=None, username=config['broker_username'], password=config['broker_password'],
+                        cert_file=None, key_file=None)
+
+    iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
+                             MqttDccComms(edge_system_name=edge_system.name,
+                                          url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
+                                          enable_authentication=True,
+                                          clean_session=True))
 
     try:
-        # create a System object encapsulating the particulars of a IoT System
-        # argument is the name of this IoT System
-        edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
 
         # resister the IoT System with the IoTCC instance
         # this call creates a representation (a Resource) in IoTCC for this IoT System with the name given

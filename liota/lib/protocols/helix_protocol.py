@@ -53,7 +53,7 @@ def require_field(container, field):
 
 
 class HelixProtocol:
-    
+
     """
     Simple state machine for protocol to IoT Control Center adapter.
     States and messages:
