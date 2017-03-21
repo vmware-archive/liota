@@ -54,14 +54,12 @@ class WebSocket():
     def connect_soc(self):
         try:
             self.WebSocketConnection(self.url, False)
-            log.info("Connection Successful")
         except Exception:
             log.exception("WebSocket exception, please check the WebSocket address and try again.")
             # sys.exit(0)
 
     # CERTPATH to be taken in consideration later
-    def WebSocketConnection(self, host, verify_cert=False, CERTPATH="/etc/liota/cert"):
-        self.counter = 0
+    def WebSocketConnection(self, host, verify_cert=True, CERTPATH="/etc/liota/cert"):
         if not verify_cert:
             self.ws = None
             self.ws = create_connection(host, enable_multithread=True,
@@ -124,3 +122,10 @@ class WebSocket():
             log.exception("Exception while sending data, please check the connection and try again.")
             self.close()
             # sys.exit(0)
+
+    def close(self):
+        if self.ws is not None:
+            self.ws.close()
+        log.debug("Connection closed, cleanup done")
+
+

@@ -87,7 +87,7 @@ class IotControlCenter(DataCenterComponent):
             except Exception as error:
                 log.error("HelixProtocolException: " + repr(error))
 
-        thread = threading.Thread(target=self.comms.receive, args=[self.recv_msg_queue])
+        thread = threading.Thread(target=self.comms.receive)
         thread.daemon = True
         # This thread will continuously run in background to receive response or actions from DCC
         thread.start()
