@@ -98,7 +98,6 @@ class HelixProtocol:
         # so initialize it.
         self.state = None
         self.state = HandshakeRequestedState(None, self)
-        print self.state
 
     def on_receive(self, msg):
         if not self.state.on_receive(msg):
