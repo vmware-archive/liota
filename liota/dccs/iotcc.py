@@ -113,7 +113,7 @@ class IotControlCenter(DataCenterComponent):
                         json_msg = json.loads(msg)
                         log.debug("Processed msg: {0}".format(json_msg["type"]))
                         if json_msg["type"] == "create_or_find_resource_response":
-                            if json_msg["body"]["uuid"] != "null" and json_msg["body"]["id"] is entity_obj.entity_id:
+                            if json_msg["body"]["uuid"] != "null" and json_msg["body"]["id"] == entity_obj.entity_id:
                                 log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
                                 self.reg_entity_id = json_msg["body"]["uuid"]
                             else:
