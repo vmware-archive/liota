@@ -9,7 +9,7 @@ include examples/simulated_edge_system_graphite.py
 include examples/simulated_graphite_event_based.py
 include examples/simulated_graphite_temp.py
 include examples/dell5k_edge_system_graphite.py
-include examples/dell5k_edge_system_iotcc.py
+include examples/dell5k_edge_system_iotcc_websocket.py
 include examples/dell5k_edge_system_with_filter_iotcc.py
 include examples/multi_metric_simulated_edge_system_graphite.py
 include examples/dk300_edge_system_iotcc_graphite.py

@@ -86,7 +86,7 @@ setup(
                   'examples/simulated_graphite_event_based.py',
                   'examples/simulated_graphite_temp.py',
                   'examples/dell5k_edge_system_graphite.py',
-                  'examples/dell5k_edge_system_iotcc.py',
+                  'examples/dell5k_edge_system_iotcc_websocket.py',
                   'examples/dell5k_edge_system_with_filter_iotcc.py',
                   'examples/multi_metric_simulated_edge_system_graphite.py',
                   'examples/dk300_edge_system_iotcc_graphite.py',

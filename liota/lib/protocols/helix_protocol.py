@@ -34,7 +34,7 @@ import logging
 import json
 import time
 
-PROTOCOL_VERSION = "2.7"
+PROTOCOL_VERSION = "2.8"
 log = logging.getLogger(__name__)
 
 
@@ -58,36 +58,19 @@ class HelixProtocol:
     Simple state machine for protocol to IoT Control Center adapter.
     States and messages:
 
+    handshake_requested
+    ===================================================
+    --> Hello
+
     handshake_awaiting
     ===================================================
-    <-- connection_request
-
-    handshake_responded
-    ===================================================
-    --> connection_response
-    <-- connection_verified
+    <-- Hello
 
     handshake_verified
     ===================================================
-    for all output resource kinds simultaneously do
-        --> create_resource_kind_request
-        <-- create_resource_kind_response
+    --> connection_request
+    <-- create_response
 
-    steady
-    ===================================================
-    for all objects simultaneously do
-        while uuid not available do
-            --> create_or_find_resource_request
-            <-- create_or_find_resource_response
-        // Create relationship to gateway
-        --> create_relationship_request
-        <-- create_relationship_response
-
-        loop forever
-            if output
-                <-- action
-            if input
-                --> add_stats
     """
 
     def __init__(self, con, user, password):
@@ -129,7 +112,6 @@ class HandshakeRequestedState(State):
     def __init__(self, previous, proto=None):
         State.__init__(self, previous, proto)
         self.name = "HandshakeRequestedState"
-        # require_field(msg, "transactionID")
         log.info("Sending message")
         self.con.send(json.dumps({
             "type": "hello"

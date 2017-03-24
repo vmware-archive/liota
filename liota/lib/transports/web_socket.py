@@ -56,7 +56,6 @@ class WebSocket():
             self.WebSocketConnection(self.url, False)
         except Exception:
             log.exception("WebSocket exception, please check the WebSocket address and try again.")
-            # sys.exit(0)
 
     # CERTPATH to be taken in consideration later
     def WebSocketConnection(self, host, verify_cert=True, CERTPATH="/etc/liota/cert"):
@@ -90,7 +89,6 @@ class WebSocket():
         except Exception:
             log.exception("Exception on receiving the response from Server, please check the connection and try again.")
             self.close()
-            # os._exit(0) # need to revisit this
 
     def send(self, msg):
         log.debug("Sending data to DCC")
@@ -113,15 +111,12 @@ class WebSocket():
                     log.info("{0} attempt".format(attempts))
                     attempts += 1
                     if attempts == 4:
-                        # os._exit used as websocket connection is not created even after the fourth retry
                         log.exception("Exception while sending data, please check the connection and try again.")
                         self.close()
-                        # os._exit used as websocket connection is not created even after the fourth retry
-                        # os._exit(0) # need to revisit this
+
                     else:
                         log.exception("Exception while sending data, please check the connection and try again.")
                         self.close()
-                        # sys.exit(0)
 
     def close(self):
         if self.ws is not None:

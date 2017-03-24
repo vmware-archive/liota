@@ -81,7 +81,7 @@ def read_mem_free():
     
 #---------------------------------------------------------------------------
 # In this example, we demonstrate how System health and some simulated data
-# can be directed to two data center components IoTCC using Liota.
+# can be directed to data center component IoTCC using Liota.
 # The program illustrates the ease of use Liota brings to IoT application developers.
 
 if __name__ == '__main__':

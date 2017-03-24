@@ -84,7 +84,7 @@ class MqttDccComms(DCCComms):
                 log.info("generated local uuid will be the client ID")
             else:
                 log.info("Client ID is provided by user")
-            #  Storing edge_system name and generated local_uuid which will be used in auto-generation of pub-sub topic
+            # Storing edge_system name and generated local_uuid which will be used in auto-generation of pub-sub topic
             store_edge_system_uuid(entity_name=edge_system_name,
                                    entity_id=self.client_id,
                                    reg_entity_id=None)
@@ -125,7 +125,7 @@ class MqttDccComms(DCCComms):
         """
         self.client.disconnect()
 
-    def receive(self,msg_attr=None):
+    def receive(self, msg_attr=None):
         """
         Subscribes to a topic with specified QoS and callback.
         Set call back to receive_message method if no callback method is passed by user.
@@ -133,12 +133,16 @@ class MqttDccComms(DCCComms):
         :param msg_attr: MqttMessagingAttributes Object
         :return:
         """
-        if msg_attr:
-            self.client.subscribe(msg_attr.sub_topic, msg_attr.sub_qos, msg_attr.sub_callback)
+        if msg_attr is not None and hasattr(msg_attr.sub_callback):
+            callback = msg_attr.sub_callback
         else:
-            self.client.subscribe(self.msg_attr.sub_topic, self.msg_attr.sub_qos, self.receive_message)
+            callback = self.receive_message
+        if msg_attr:
+            self.client.subscribe(msg_attr.sub_topic, msg_attr.sub_qos, callback)
+        else:
+            self.client.subscribe(self.msg_attr.sub_topic, self.msg_attr.sub_qos, callback)
 
-    def receive_message(self, client,userdata,msg):
+    def receive_message(self, client, userdata, msg):
         """
            Receives message during MQTT subscription and put it in the queue.
            This queue can be used to get message in DCC
@@ -147,7 +151,6 @@ class MqttDccComms(DCCComms):
            :return:
            """
         userdata.put(str(msg.payload))
-
 
     def send(self, message, msg_attr=None):
         """
