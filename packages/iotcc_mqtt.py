@@ -75,11 +75,11 @@ class PackageClass(LiotaPackage):
             Use iotcc & iotcc_edge_system as common identifiers
             in the registry to easily refer the objects in other packages
             """
-            registry.register("iotcc", self.iotcc)
+            registry.register("iotcc_mqtt", self.iotcc)
             registry.register("iotcc_edge_system", iotcc_edge_system)
         except RegistrationFailure:
             print "EdgeSystem registration to IOTCC failed"
         self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
 
     def clean_up(self):
-        self.iotcc.comms.client.close()
+        self.iotcc.comms.client.disconnect()

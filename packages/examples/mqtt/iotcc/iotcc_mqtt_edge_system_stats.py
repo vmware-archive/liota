@@ -64,7 +64,7 @@ class PackageClass(LiotaPackage):
 
         # Acquire resources from registry
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
-        iotcc = registry.get("iotcc")
+        iotcc = registry.get("iotcc_mqtt")
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
