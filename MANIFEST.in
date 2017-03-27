@@ -54,6 +54,8 @@ include packages/examples/graphite_thermistor_simulated.py
 include packages/examples/iotcc_thermistor_simulated.py
 include packages/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py
 include packages/examples/mqtt/aws_iot/simulated_home_topic_per_metric.py
+include packages/examples/mqtt/iotcc/iotcc_mqtt_edge_system_stats.py
+include packages/examples/mqtt/iotcc/iotcc_mqtt_ram.py
 include packages/edge_systems/dell5k/edge_system.py
 include packages/dev_disc/liota_disc_pipe.sh
 include packages/dev_disc/dev_disc.py
