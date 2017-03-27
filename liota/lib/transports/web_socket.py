@@ -96,7 +96,7 @@ class WebSocket():
         try:
             self.ws.send(msg)
         except:
-            # TO DO: Retry logic required to be re-designed
+            # TODO: Retry logic required to be re-designed
             attempts = 1
             while attempts < 4:
                 try:

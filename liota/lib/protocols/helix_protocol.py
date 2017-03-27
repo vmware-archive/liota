@@ -69,7 +69,7 @@ class HelixProtocol:
     handshake_verified
     ===================================================
     --> connection_request
-    <-- create_response
+    <-- connection_response
 
     """
 

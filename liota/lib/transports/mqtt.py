@@ -302,6 +302,7 @@ class Mqtt():
         :param retain: Message to be retained or not
         :return:
         """
+        # TODO: Retry logic to be designed
         try:
             mess_info = self._paho_client.publish(topic, message, qos, retain)
             log.info("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
@@ -414,13 +415,6 @@ class MqttMessagingAttributes:
             #  When edge_system_name is None, pub_topic or sub_topic must be provided
             self.pub_topic = pub_topic
             self.sub_topic = sub_topic
-
-        #  This validation is when MqttMessagingAttributes is initialized for registered_metric
-        #  Client can assign topics for each metrics at metric level
-        #  It will be used either for publishing or subscribing but not both.
-        if self.pub_topic is None and (self.sub_topic is None or sub_callback is None):
-            log.error("Either (pub_topic can be None) or (sub_topic and sub_callback) can be None. But not both")
-            raise ValueError("Either (pub_topic can be None) or (sub_topic and sub_callback) can be None. But not both")
 
         #  General validation
         if pub_qos not in range(0, 3) or sub_qos not in range(0, 3):

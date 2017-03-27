@@ -133,10 +133,7 @@ class MqttDccComms(DCCComms):
         :param msg_attr: MqttMessagingAttributes Object
         :return:
         """
-        if msg_attr is not None and hasattr(msg_attr.sub_callback):
-            callback = msg_attr.sub_callback
-        else:
-            callback = self.receive_message
+        callback = msg_attr.sub_callback if msg_attr and msg_attr.sub_callback else self.receive_message
         if msg_attr:
             self.client.subscribe(msg_attr.sub_topic, msg_attr.sub_qos, callback)
         else:
@@ -145,7 +142,7 @@ class MqttDccComms(DCCComms):
     def receive_message(self, client, userdata, msg):
         """
            Receives message during MQTT subscription and put it in the queue.
-           This queue can be used to get message in DCC
+           This queue can be used to get message in DCC but remember to dequeue
 
            :param msg_attr: MqttMessagingAttributes Object, userdata as queue
            :return:
