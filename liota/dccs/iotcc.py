@@ -223,7 +223,7 @@ class IotControlCenter(DataCenterComponent):
                 _values.append(m[1])
         if _timestamps == []:
             return
-        return {
+        return json.dumps({
             "type": "add_stats",
             "uuid": reg_metric.reg_entity_id,
             "metric_data": [{
@@ -231,7 +231,7 @@ class IotControlCenter(DataCenterComponent):
                 "timestamps": _timestamps,
                 "data": _values
             }],
-        }
+        })
 
     def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, properties):
         log.info("Organization Group Properties defined for resource {0}".format(reg_entity_name))
