@@ -230,7 +230,7 @@ class IotControlCenter(DataCenterComponent):
                 "statKey": reg_metric.ref_entity.name,
                 "timestamps": _timestamps,
                 "data": _values
-            }],
+            }]
         })
 
     def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, properties):
