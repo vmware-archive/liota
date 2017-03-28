@@ -63,7 +63,7 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system_mqtt"))
         iotcc = registry.get("iotcc_mqtt")
 
         # Get values from configuration file

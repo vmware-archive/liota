@@ -52,7 +52,7 @@ class PackageClass(LiotaPackage):
         # Acquire resources from registry
         iotcc = registry.get("iotcc_mqtt")
         # Creating a copy of edge_system object to keep original object "clean"
-        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system_mqtt"))
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -81,7 +81,7 @@ class PackageClass(LiotaPackage):
         self.metrics.append(reg_mem_free_metric)
 
         # Use the iotcc_device_name as identifier in the registry to easily refer the device in other packages
-        registry.register("reg_ram_device", reg_ram_device)
+        registry.register("reg_ram_device_mqtt", reg_ram_device)
 
     def clean_up(self):
         for metric in self.metrics:
