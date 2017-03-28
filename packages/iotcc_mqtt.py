@@ -29,42 +29,57 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-import logging
-import socket
 
-from liota.dcc_comms.dcc_comms import DCCComms
+from liota.core.package_manager import LiotaPackage
 
-
-log = logging.getLogger(__name__)
+dependencies = ["edge_systems/dell5k/edge_system"]
 
 
-class SocketDccComms(DCCComms):
+class PackageClass(LiotaPackage):
+    """
+    This package creates a IoTControlCenter DCC object and registers edge system on
+    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
+    """
 
-    def __init__(self, ip, port):
-        self.ip = ip
-        self.port = port
-        self._connect()
+    def run(self, registry):
+        import copy
+        from liota.lib.utilities.identity import Identity
+        from liota.dccs.iotcc import IotControlCenter
+        from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
+        from liota.dccs.dcc import RegistrationFailure
 
-    def _connect(self):
-        self.client = socket.socket()
-        log.info("Establishing Socket Connection")
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
+        # Acquire resources from registry
+        # Creating a copy of edge_system object to keep original object "clean"
+        edge_system = copy.copy(registry.get("edge_system"))
+
+        #  Encapsulates Identity
+        identity = Identity(root_ca_cert=None, username=config['broker_username'], password=config['broker_password'],
+                            cert_file=None, key_file=None)
+
+        # Initialize DCC object with MQTT transport
+        self.iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
+                                      MqttDccComms(edge_system_name=edge_system.name,
+                                                   url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
+                                                   enable_authentication=True,
+                                                   clean_session=True))
+
         try:
-            self.client.connect((self.ip, self.port))
-            log.info("Socket Created")
-        except Exception as ex:
-            log.exception(
-                "Unable to establish socket connection. Please check the firewall rules and try again.")
-            self.client.close()
-            self.client = None
-            raise ex
+            # Register edge system (gateway)
+            iotcc_edge_system = self.iotcc.register(edge_system)
+            """
+            Use iotcc & iotcc_edge_system as common identifiers
+            in the registry to easily refer the objects in other packages
+            """
+            registry.register("iotcc_mqtt", self.iotcc)
+            registry.register("iotcc_edge_system_mqtt", iotcc_edge_system)
+        except RegistrationFailure:
+            print "EdgeSystem registration to IOTCC failed"
+        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
 
-    def _disconnect(self):
-        raise NotImplementedError
-
-    def send(self, message, msg_attr=None):
-        log.debug("Publishing message:" + str(message))
-        if self.client is not None:
-            self.client.sendall(message)
-
-    def receive(self):
-        raise NotImplementedError
+    def clean_up(self):
+        self.iotcc.comms.client.disconnect()

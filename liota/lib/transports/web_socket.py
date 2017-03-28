@@ -36,6 +36,8 @@ import os
 import ssl
 import sys
 from websocket import create_connection
+import Queue
+import traceback
 
 log = logging.getLogger(__name__)
 
@@ -52,14 +54,11 @@ class WebSocket():
     def connect_soc(self):
         try:
             self.WebSocketConnection(self.url, False)
-            log.info("Connection Successful")
         except Exception:
             log.exception("WebSocket exception, please check the WebSocket address and try again.")
-            sys.exit(0)
 
     # CERTPATH to be taken in consideration later
     def WebSocketConnection(self, host, verify_cert=True, CERTPATH="/etc/liota/cert"):
-        self.counter = 0
         if not verify_cert:
             self.ws = None
             self.ws = create_connection(host, enable_multithread=True,
@@ -76,7 +75,7 @@ class WebSocket():
             if self.ws is None:
                 raise (IOError("Couldn't verify host certificate"))
 
-    def run(self):
+    def receive(self, queue):
         try:
             log.info("Stream Opened")
             while True:
@@ -84,52 +83,40 @@ class WebSocket():
                 log.debug("Message received while running {0}".format(msg))
                 if msg is "":
                     log.error("Stream Closed")
-                    raise Exception("No message received from the server, please check the connection and the DCC credentials.")
+                    raise Exception("No message received from the server, please check the connection.")
                 log.debug("RX {0}".format(msg))
-                if self.on_receive is not None:
-                    self.on_receive(msg)
+                queue.put(msg)
         except Exception:
             log.exception("Exception on receiving the response from Server, please check the connection and try again.")
             self.close()
-            os._exit(0) # need to revisit this
 
     def send(self, msg):
-        request_calls = ['request', 'response']
-        complete_message = json.dumps(msg)
         log.debug("Sending data to DCC")
-        log.debug("TX Sending message {0}".format(complete_message))
+        log.debug("TX Sending message {0}".format(msg))
         try:
-            self.ws.send(complete_message)
+            self.ws.send(msg)
         except:
-            # Retry logic only for publishing stats, not for request or response calls
-            if all(request not in complete_message for request in request_calls):
-                attempts = 1
-                while attempts < 4:
-                    try:
-                        log.debug("Exception while sending data, applying retry logic.")
-                        self.connect_soc()
-                        log.info("Created New Websocket")
-                        log.debug("TX Sending message {0}".format(complete_message))
-                        self.ws.send(complete_message)
-                        break
-                    except:
-                        # Three times retry websocket connection for publishing data
-                        log.info("{0} attempt".format(attempts))
-                        attempts += 1
-                        if attempts == 4:
-                            # os._exit used as websocket connection is not created even after the fourth retry
-                            log.exception("Exception while sending data, please check the connection and try again.")
-                            self.close()
-                            os._exit(0)
-            else:
-                log.exception("Exception while sending data, please check the connection and try again.")
-                self.close()
-                sys.exit(0)
+            # TODO: Retry logic required to be re-designed
+            attempts = 1
+            while attempts < 4:
+                try:
+                    log.debug("Exception while sending data, applying retry logic.")
+                    self.connect_soc()
+                    log.info("Created New Websocket")
+                    log.debug("TX Sending message {0}".format(msg))
+                    self.ws.send(msg)
+                    break
+                except:
+                    # Three times retry websocket connection for publishing data
+                    log.info("{0} attempt".format(attempts))
+                    attempts += 1
+                    if attempts == 4:
+                        log.exception("Exception while sending data, please check the connection and try again.")
+                        self.close()
 
-    def next_id(self):
-        self.counter = (self.counter + 1) & 0xffffff
-        # Enforce even IDs
-        return self.counter * 2
+                    else:
+                        log.exception("Exception while sending data, please check the connection and try again.")
+                        self.close()
 
     def close(self):
         if self.ws is not None:

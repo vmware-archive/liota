@@ -76,4 +76,4 @@ class PackageClass(LiotaPackage):
         self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
 
     def clean_up(self):
-        self.iotcc.comms.wss.close()
+        self.iotcc.comms.client.close()
