@@ -120,7 +120,7 @@ class IotControlCenter(DataCenterComponent):
                         log.info("Waiting for resource creation")
                         on_response(self.recv_msg_queue.get(True,10))
                 except:
-                    raise
+                    raise Exception("Exception while registering resource")
 
             if entity_obj.entity_type == "EdgeSystem":
                 entity_obj.entity_type = "HelixGateway"
