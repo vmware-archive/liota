@@ -88,10 +88,7 @@ class WebSocket():
                 log.debug("RX {0}".format(msg))
                 queue.put(msg)
         except Exception:
-            log.exception("Exception on receiving the response from Server, please check the connection and try again.")
             self.close()
-            raise Exception(
-                "Exception on receiving the response from Server, please check the connection and try again.")
 
     def send(self, msg):
         log.debug("Sending data to DCC")
