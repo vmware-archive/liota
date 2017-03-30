@@ -83,7 +83,7 @@ class IotControlCenter(DataCenterComponent):
                     return True
                 else:
                     log.debug("Processed msg: {0}".format(json_msg["type"]))
-                    on_response(self.recv_msg_queue.get())
+                    on_response(self.recv_msg_queue.get(True,10))
             except Exception as error:
                 log.error("HelixProtocolException: " + repr(error))
 
@@ -91,7 +91,8 @@ class IotControlCenter(DataCenterComponent):
         thread.daemon = True
         # This thread will continuously run in background to receive response or actions from DCC
         thread.start()
-        on_response(self.recv_msg_queue.get())
+        # Block on Queue for not more then 10 seconds else it will raise an exception
+        on_response(self.recv_msg_queue.get(True,10))
         log.info("Logged in to DCC successfully")
 
     def register(self, entity_obj):
@@ -109,20 +110,19 @@ class IotControlCenter(DataCenterComponent):
             def on_response(msg):
                 try:
                     log.debug("Received msg: {0}".format(msg))
-                    if msg != "":
-                        json_msg = json.loads(msg)
-                        log.debug("Processed msg: {0}".format(json_msg["type"]))
-                        if json_msg["type"] == "create_or_find_resource_response":
-                            if json_msg["body"]["uuid"] != "null" and json_msg["body"]["id"] == entity_obj.entity_id:
-                                log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
-                                self.reg_entity_id = json_msg["body"]["uuid"]
-                            else:
-                                # TODO : Remove this code if required
-                                log.info("Waiting for resource creation")
-                                self.comms.send(json.dumps(
-                                    self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name,
-                                                       entity_obj.entity_type)))
-                                on_response(self.recv_msg_queue.get())
+                    json_msg = json.loads(msg)
+                    log.debug("Processed msg: {0}".format(json_msg["type"]))
+                    if json_msg["type"] == "create_or_find_resource_response" and json_msg["body"]["uuid"] != "null" and \
+                                    json_msg["body"]["id"] == entity_obj.entity_id:
+                        log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
+                        self.reg_entity_id = json_msg["body"]["uuid"]
+                    else:
+                        # TODO : Remove this code if required
+                        log.info("Waiting for resource creation")
+                        if json_msg["type"] == "create_or_find_resource_response" and json_msg["body"][
+                            "uuid"] != "null" and json_msg["body"]["id"] != entity_obj.entity_id:
+                            self.recv_msg_queue.put(msg)
+                        on_response(self.recv_msg_queue.get(True,10))
                 except:
                     raise
 
@@ -130,8 +130,8 @@ class IotControlCenter(DataCenterComponent):
                 entity_obj.entity_type = "HelixGateway"
             self.comms.send(json.dumps(
                 self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
-            on_response(self.recv_msg_queue.get())
-            if not hasattr(self, 'reg_entity_id'):
+            on_response(self.recv_msg_queue.get(True,10))
+            if not self.reg_entity_id:
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
