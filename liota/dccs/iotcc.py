@@ -117,11 +117,7 @@ class IotControlCenter(DataCenterComponent):
                         log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
                         self.reg_entity_id = json_msg["body"]["uuid"]
                     else:
-                        # TODO : Remove this code if required
                         log.info("Waiting for resource creation")
-                        if json_msg["type"] == "create_or_find_resource_response" and json_msg["body"][
-                            "uuid"] != "null" and json_msg["body"]["id"] != entity_obj.entity_id:
-                            self.recv_msg_queue.put(msg)
                         on_response(self.recv_msg_queue.get(True,10))
                 except:
                     raise
