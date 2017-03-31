@@ -35,15 +35,21 @@ from linux_metrics import mem_stat
 
 dependencies = ["iotcc_mqtt"]
 
+
+# ---------------------------------------------------------------------------
+# This is a sample application package to publish device stats to IoTCC using
+#  MQTT protocol as DCC Comms
+# User defined methods
+
+
 def read_mem_free():
-    total_mem = round(mem_stat.mem_stats()[1],4)
-    free_mem = round(mem_stat.mem_stats()[3],4)
-    mem_free_percent = ((total_mem-free_mem)/total_mem)*100
+    total_mem = round(mem_stat.mem_stats()[1], 4)
+    free_mem = round(mem_stat.mem_stats()[3], 4)
+    mem_free_percent = ((total_mem - free_mem) / total_mem) * 100
     return round(mem_free_percent, 2)
-    
+
 
 class PackageClass(LiotaPackage):
-
     def run(self, registry):
         from liota.entities.devices.simulated_device import SimulatedDevice
         from liota.entities.metrics.metric import Metric

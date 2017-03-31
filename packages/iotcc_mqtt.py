@@ -37,8 +37,8 @@ dependencies = ["edge_systems/dell5k/edge_system"]
 
 class PackageClass(LiotaPackage):
     """
-    This package creates a IoTControlCenter DCC object and registers edge system on
-    IoTCC to acquire "registered edge system", i.e. iotcc_edge_system.
+    This is a sample package which creates a IoTControlCenter DCC object and registers edge system on
+    IoTCC over MQTT Protocol to acquire "registered edge system", i.e. iotcc_edge_system.
     """
 
     def run(self, registry):

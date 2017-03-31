@@ -55,7 +55,6 @@ class WebSocket():
         try:
             self.WebSocketConnection(self.url, False)
         except Exception:
-            log.exception("WebSocket exception, please check the WebSocket address and try again.")
             raise Exception("WebSocket exception, please check the WebSocket address and try again.")
 
     # CERTPATH to be taken in consideration later
@@ -111,7 +110,6 @@ class WebSocket():
                     log.info("{0} attempt".format(attempts))
                     attempts += 1
                     if attempts == 4:
-                        log.exception("Exception while sending data, please check the connection and try again.")
                         self.close()
                         raise Exception("Exception while sending data, please check the connection and try again.")
                     else:
