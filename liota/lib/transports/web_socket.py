@@ -55,7 +55,8 @@ class WebSocket():
         try:
             self.WebSocketConnection(self.url, False)
         except Exception:
-            log.exception("WebSocket exception, please check the WebSocket address and try again.")
+            log.error(traceback.format_exc())
+            raise Exception("WebSocket exception, please check the WebSocket address and try again.")
 
     # CERTPATH to be taken in consideration later
     def WebSocketConnection(self, host, verify_cert=True, CERTPATH="/etc/liota/cert"):
@@ -82,12 +83,12 @@ class WebSocket():
                 msg = self.ws.recv()
                 log.debug("Message received while running {0}".format(msg))
                 if msg is "":
+                    log.error(traceback.format_exc())
                     log.error("Stream Closed")
                     raise Exception("No message received from the server, please check the connection.")
                 log.debug("RX {0}".format(msg))
                 queue.put(msg)
         except Exception:
-            log.exception("Exception on receiving the response from Server, please check the connection and try again.")
             self.close()
 
     def send(self, msg):
@@ -111,9 +112,9 @@ class WebSocket():
                     log.info("{0} attempt".format(attempts))
                     attempts += 1
                     if attempts == 4:
-                        log.exception("Exception while sending data, please check the connection and try again.")
                         self.close()
-
+                        log.error(traceback.format_exc())
+                        raise Exception("Exception while sending data, please check the connection and try again.")
                     else:
                         log.exception("Exception while sending data, please check the connection and try again.")
                         self.close()
