@@ -150,56 +150,56 @@ class SensorTagCollector(Thread):
         Blocks until value is available in queue
         :return: (ambient_temp, target_temp) tuple in degC
         """
-        return self._temp_queue.get(block=True)
+        return self._temp_queue.get(True, self._sampling_interval_sec+1)
 
     def get_humidity(self):
         """
-        Blocks until value is available in queue
+        Blocks until (sampling_interval_sec + 1 sec)
         :return: (ambient_temp, rel_humidity) tuple
         """
-        return self._humi_queue.get(block=True)
+        return self._humi_queue.get(True, self._sampling_interval_sec+1)
 
     def get_barometer(self):
         """
-        Blocks until value is available in queue
+        Blocks until (sampling_interval_sec + 1 sec)
         :return: (ambient_temp in degC, pressure in millibars) tuple
         """
-        return self._baro_queue.get(block=True)
+        return self._baro_queue.get(True, self._sampling_interval_sec+1)
 
     def get_accelerometer(self):
         """
-        Blocks until value is available in queue
+        Blocks until (sampling_interval_sec + 1 sec)
         :return: (x_accel, y_accel, z_accel) tuple in units of g
         """
-        return self._acce_queue.get(block=True)
+        return self._acce_queue.get(True, self._sampling_interval_sec+1)
 
     def get_magnetometer(self):
         """
-        Blocks until value is available in queue
+        Blocks until (sampling_interval_sec + 1 sec)
         :return: (x_mag, y_mag, z_mag) in units of uT
         """
-        return self._magn_queue.get(block=True)
+        return self._magn_queue.get(True, self._sampling_interval_sec+1)
 
     def get_gyroscope(self):
         """
-        Blocks until value is available in queue
+        Blocks until (sampling_interval_sec + 1 sec)
         :return: (x_gyro, y_gyro, z_gyro) tple in units of degrees/sec
         """
-        return self._gyro_queue.get(block=True)
+        return self._gyro_queue.get(True, self._sampling_interval_sec+1)
 
     def get_battery_level(self):
         """
-        Blocks until value is available in queue
+        Blocks until (sampling_interval_sec + 1 sec)
         :return: battery level in percent
         """
-        return self._bat_level_queue.get(block=True)
+        return self._bat_level_queue.get(True, self._sampling_interval_sec+1)
 
     def get_light_level(self):
         """
-        Blocks until value is available in queue
+        Blocks until (sampling_interval_sec + 1 sec)
         :return: value in lux
         """
-        return self._light_queue.get(block=True)
+        return self._light_queue.get(True, self._sampling_interval_sec+1)
 
     def _connect(self):
         """

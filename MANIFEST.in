@@ -11,6 +11,7 @@ include examples/simulated_graphite_temp.py
 include examples/dell5k_edge_system_graphite.py
 include examples/dell5k_edge_system_iotcc.py
 include examples/dell5k_edge_system_with_filter_iotcc.py
+include examples/dell5k_sensor_tag_iotcc.py
 include examples/multi_metric_simulated_edge_system_graphite.py
 include examples/dk300_edge_system_iotcc_graphite.py
 include examples/sampleProp.conf
@@ -32,6 +33,7 @@ include packages/liotapkg.sh
 include packages/packages_auto.txt
 include packages/examples/bike_simulator.py
 include packages/examples/iotcc_ram.py
+include packages/examples/iotcc_sensor_tag.py
 include packages/examples/graphite_bike_simulated.py
 include packages/examples/iotcc_bike_simulated.py
 include packages/examples/graphite_edge_system_stats.py
