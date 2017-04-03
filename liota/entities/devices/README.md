@@ -1,6 +1,6 @@
 # Devices (Things)
 
-Similar to Edge Systems, Devices are also an Entity in LIOTA.  This python package consists of modules so that LIOTA agent in an Edge System
+Similar to Edge Systems, Devices are also an Entity in LIOTA.  This python package consists of device modules so that LIOTA agent in an Edge System
 can connect with devices and collect metrics at ease.
 
 Currently, following devices are supported.
