@@ -147,6 +147,5 @@ class HandshakeAwaitingState(State):
         if msg["type"] == "connection_response":
             require_field(msg["body"], "result")
             return True
-
         else:
             return False
