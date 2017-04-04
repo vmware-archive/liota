@@ -31,9 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import logging
-import inspect
 import os
-import sys
 import fcntl
 import errno
 import ConfigParser
@@ -46,16 +44,6 @@ from liota.lib.utilities.utility import DiscUtilities
 from liota.dev_sims.named_pipe import NamedPipeSimulator
 from liota.dev_sims.socket_clnt import SocketSimulator
 from liota.dev_sims.mqtt import MqttSimulator
-from liota.dev_sims.coap import CoapSimulator
-
-def __LINE__():
-    try:
-        raise Exception
-    except:
-        return sys.exc_info()[2].tb_frame.f_back.f_lineno
-
-def __FILE__():
-    return inspect.currentframe().f_code.co_filename
 
 log = logging.getLogger(__name__)
 
@@ -343,6 +331,8 @@ class SimulatorThread(Thread):
     # respect to commands received.
 
     def run(self):
+        from liota.dev_sims.coap import CoapSimulator
+
         endpoint_list = self._config['endpoint_list']
 
         # spin listening threads according to endpoint_list extracted config

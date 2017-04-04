@@ -30,10 +30,14 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+import logging
 from abc import ABCMeta, abstractmethod
+
 from liota.entities.entity import Entity
 from liota.dcc_comms.dcc_comms import DCCComms
 from liota.entities.metrics.registered_metric import RegisteredMetric
+
+log = logging.getLogger(__name__)
 
 
 class DataCenterComponent:
@@ -46,7 +50,8 @@ class DataCenterComponent:
     @abstractmethod
     def __init__(self, comms):
         if not isinstance(comms, DCCComms):
-            raise TypeError
+            log.error("DCCComms object is expected.")
+            raise TypeError("DCCComms object is expected.")
         self.comms = comms
 
     # -----------------------------------------------------------------------
@@ -60,7 +65,8 @@ class DataCenterComponent:
     @abstractmethod
     def register(self, entity_obj):
         if not isinstance(entity_obj, Entity):
-            raise TypeError
+            log.error("Entity object is expected.")
+            raise TypeError("Entity object is expected.")
 
     @abstractmethod
     def create_relationship(self, reg_entity_parent, reg_entity_child):
@@ -72,7 +78,8 @@ class DataCenterComponent:
 
     def publish(self, reg_metric):
         if not isinstance(reg_metric, RegisteredMetric):
-            raise TypeError
+            log.error("RegisteredMetric object is expected.")
+            raise TypeError("RegisteredMetric object is expected.")
         message = self._format_data(reg_metric)
         if hasattr(reg_metric, 'msg_attr'):
             self.comms.send(message, reg_metric.msg_attr)
@@ -82,5 +89,6 @@ class DataCenterComponent:
     @abstractmethod
     def set_properties(self, reg_entity, properties):
         pass
+
 
 class RegistrationFailure(Exception): pass

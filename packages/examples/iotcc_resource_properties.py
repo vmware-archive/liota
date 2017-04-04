@@ -30,24 +30,41 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import logging
+from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_liota_config
+import json
 
-log = logging.getLogger(__name__)
+dependencies = ["iotcc"]
 
 
-class TLSConf:
+class PackageClass(LiotaPackage):
+    def run(self, registry):
+        # Acquire resources from registry
+        iotcc = registry.get("iotcc")
 
-    """
-    This class encapsulates TLS options.
-    """
+        # Get values from configuration file
+        iotcc_json_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
+        if iotcc_json_path == '':
+            return
+        try:
+            with open(iotcc_json_path, 'r') as f:
+                iotcc_details_json_obj = json.load(f)["iotcc"]
+            f.close()
+        except IOError, err:
+            return
 
-    def __init__(self, cert_required, tls_version, cipher):
-        """
-        :param cert_required: Defines the certificate requirements
-        :param tls_version: Version of SSL/TLS protocol to be used
-        :param cipher: Ciphers is a string specifying which encryption ciphers are allowable
-                        for a connection, or None to use the defaults.
-        """
-        self.cert_required = cert_required
-        self.tls_version = tls_version
-        self.cipher = cipher
+        organization_group_properties = iotcc_details_json_obj["OGProperties"]
+
+        edge_system = iotcc_details_json_obj["EdgeSystem"]
+
+        # Set organization group property for edge_system
+        iotcc.set_organization_group_properties(edge_system["SystemName"], edge_system["uuid"], edge_system["EntityType"],
+                                                organization_group_properties)
+
+        for device in iotcc_details_json_obj['Devices']:
+            # Set Organization group property for devices
+            iotcc.set_organization_group_properties(device["DeviceName"], device["uuid"], device["EntityType"],
+                                                    organization_group_properties)
+
+    def clean_up(self):
+        pass

@@ -68,4 +68,4 @@ class PackageClass(LiotaPackage):
         registry.register("graphite_edge_system", graphite_edge_system)
 
     def clean_up(self):
-        self.graphite.comms.sock.close()
+        self.graphite.comms.client.close()
