@@ -114,6 +114,9 @@ def get_linux_version():
 def get_default_network_interface():
     """
     Works with Linux.
+    There are situations where route may not actually return a default route in the
+    main routing table, as the default route might be kept in another table.
+    Such cases should be handled manually.
     :return: Default Network Interface of the Edge_System
     """
     cmd = "route | grep '^default' | grep -o '[^ ]*$'"
@@ -125,6 +128,9 @@ def get_default_network_interface():
 def get_disk_name():
     """
     Works with Linux.
+    If edge_system has multiple disks, only first disk will be returned.
+    Such cases should be handled manually.
+
     :return: Disk type of the Edge_System
     """
     cmd = "lsblk -io KNAME,TYPE | grep 'disk' | sed -n '1p' | grep -o '^\S*'"

@@ -50,7 +50,14 @@ config = {}
 execfile('sampleProp.conf', config)
 
 # Getting edge_system's network interface and disk name
+
+# There are situations where route may not actually return a default route in the
+# main routing table, as the default route might be kept in another table.
+# Such cases should be handled manually.
 network_interface = get_default_network_interface()
+# There are situations where route may not actually return a default route in the
+# main routing table, as the default route might be kept in another table.
+# Such cases should be handled manually.
 disk_name = get_disk_name()
 
 
