@@ -4,3 +4,4 @@ pint==0.7.2
 paho-mqtt==1.2
 aenum==1.4.5
 CoAPthon==4.0.2
+uptime==3.0.1
