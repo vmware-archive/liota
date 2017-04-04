@@ -37,7 +37,9 @@ import threading
 import ConfigParser
 import os
 import Queue
+import datetime
 from time import gmtime, strftime
+from uptime import boottime
 from threading import Lock
 import xml.etree.cElementTree as ET
 from xml.dom import minidom
@@ -67,6 +69,7 @@ class IotControlCenter(DataCenterComponent):
         self._iotcc_json = self._create_iotcc_json()
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
+        self.boottime = boottime()
 
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
@@ -205,6 +208,13 @@ class IotControlCenter(DataCenterComponent):
         for key, value in properties.items():
             msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
         return msg
+
+    def _get_properties(self, msg_id, res_uuid):
+        return {
+            "transactionID": msg_id,
+            "type": "get_properties",
+            "uuid": res_uuid
+        }
 
     def _format_data(self, reg_metric):
         met_cnt = reg_metric.values.qsize()
@@ -358,7 +368,7 @@ class IotControlCenter(DataCenterComponent):
         if prop_dict is not None:
             for key in prop_dict.iterkeys():
                 value = prop_dict[key]
-                if key == 'entity type' or key == 'name' or key == 'device type':
+                if key == 'entity type' or key == 'name' or key == 'device type' or key == 'Entity_Timestamp':
                     continue
                 ET.SubElement(root, "attribute", name=key, value=value)
         # add time stamp
@@ -398,7 +408,7 @@ class IotControlCenter(DataCenterComponent):
         if prop_dict is not None:
             for key in prop_dict.iterkeys():
                 value = prop_dict[key]
-                if key == 'entity type' or key == 'name' or key == 'device type':
+                if key == 'entity type' or key == 'name' or key == 'device type' or key == 'Entity_Timestamp':
                     continue
                 attribute_list.append({key: value})
         attribute_list.append({"LastSeenTimestamp": strftime("%Y-%m-%dT%H:%M:%S", gmtime())})
@@ -422,6 +432,7 @@ class IotControlCenter(DataCenterComponent):
 
     def write_entity_file(self, prop_dict, res_uuid):
         file_path = self.entity_file_path + '/' + res_uuid + '.json'
+        prop_dict.update({"Entity_Timestamp": datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")})
         try:
             with open(file_path, "w") as json_file:
                 if (prop_dict is not None):
@@ -438,6 +449,18 @@ class IotControlCenter(DataCenterComponent):
                 prop_dict = json.loads(json_file.read())
         except:
             log.error('Read file error')
+        return prop_dict
+
+    def merge_prop_dict_list(self, prop_dict, prop_list):
+        # prop_dict: new property dictionary
+        # prop_list: list of dictionary items
+        if (prop_list is None):
+            return prop_dict
+        if (prop_dict is None):
+            prop_dict = {}
+        for item in prop_list:
+            prop_dict.update(item)
+        # get updated dict
         return prop_dict
 
     def store_reg_entity_attributes(self, entity_type, entity_name, reg_entity_id,
@@ -465,8 +488,15 @@ class IotControlCenter(DataCenterComponent):
                 new_prop_dict = tmp_dict
         else:
             tmp_dict = self.read_entity_file(reg_entity_id)
-            if ((tmp_dict["entity type"] == entity_type) and (tmp_dict["name"] == entity_name)
-                and (tmp_dict["device type"] == dev_type)):
+            # check Entity_Timestamp of entity_file: if < boottime, get properties from cloud
+            if 'Entity_Timestamp' in tmp_dict:
+                last_dtime = datetime.datetime.strptime(tmp_dict["Entity_Timestamp"], "%Y-%m-%dT%H:%M:%S")
+                if (last_dtime <= self.boottime):
+                    list_prop = self.get_properties(reg_entity_id)
+                    tmp_dict = self.merge_prop_dict_list(tmp_dict, list_prop)
+            if ((('entity type' in tmp_dict) and (tmp_dict["entity type"] == entity_type)) and
+                (('name' in tmp_dict) and (tmp_dict["name"] == entity_name)) and
+                (('device type' in tmp_dict) and (tmp_dict["device type"] == dev_type))):
                 # the same entity
                 if (tmp_dict is not None) and (prop_dict is not None):
                     new_prop_dict = dict(tmp_dict.items() + prop_dict.items())
@@ -533,3 +563,28 @@ class IotControlCenter(DataCenterComponent):
         self.counter = (self.counter + 1) & 0xffffff
         # Enforce even IDs
         return int(self.counter * 2)
+
+    def get_properties(self, resource_uuid):
+        """ get list of properties with resource uuid """
+        log.info("Get properties defined with IoTCC for resource {0}".format(resource_uuid))
+        self.prop_list = None
+
+        def on_response(msg):
+            try:
+                log.debug("Received msg: {0}".format(msg))
+                json_msg = json.loads(msg)
+                log.debug("Processed msg: {0}".format(json_msg["type"]))
+                if json_msg["type"] == "get_properties_response" and json_msg["body"]["uuid"] != "null" and \
+                                json_msg["body"]["uuid"] == resource_uuid:
+                    log.info("FOUND PROPERTIE LIST: {0}".format(json_msg["body"]["propertyList"]))
+                    self.prop_list = json_msg["body"]["propertyList"]
+                    log.info("prop_list:{0}".format(self.prop_list))
+                else:
+                    log.info("Waiting for getting properties")
+                    on_response(self.recv_msg_queue.get(True,10))
+            except:
+                raise Exception("Exception while getting properties")
+
+        self.comms.send(json.dumps(self._get_properties(self.next_id(), resource_uuid)))
+        on_response(self.recv_msg_queue.get(True,10))
+        return self.prop_list
