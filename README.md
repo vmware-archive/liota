@@ -24,13 +24,13 @@ The Metric subclass of Entity is the local object representing a stream of (numb
 The abstract class DeviceComms represent mechanisms through which devices send and receive data to/from edge systems. Some examples are CAN bus, Modbus, ProfiNet, Zibgee, GPIO pins, Industrial Serial Protocols as well as sockets, websockets, MQTT, CoAP. The DeviceComms abstract class is a placeholder for these various communication mechanisms. 
 
 ## DCCComms
-The abstract class DCCComms represents communication protocols between edge systems and DCCs. Currently, liota supports MQTT, WebSocket and plain old BSD sockets. In near future it will support CoAP. MQTT, WebSocket and CoAP are ‘Application’ or layer-7 protocols. MQTT is a pub-sub system using TCP and CoAP implements reliable UDP datagrams and a data format specification. These protocols are capable of satisfying most of the use cases for transferring data from IoT gateways to data-center components. With the current implementation the gateway acts as MQTT, WebSocket or a traditional Socket client.
+The abstract class DCCComms represents communication protocols between edge systems and DCCs. Currently, liota supports AMQP, MQTT, WebSocket and plain old BSD sockets. In near future it will support CoAP. AMQP, MQTT, WebSocket and CoAP are ‘Application’ or layer-7 protocols. MQTT is a pub-sub system using TCP and CoAP implements reliable UDP datagrams and a data format specification. These protocols are capable of satisfying most of the use cases for transferring data from IoT gateways to data-center components. With the current implementation the gateway acts as MQTT, WebSocket or a traditional Socket client.
 
 ## DCC (Data Center Component)
 The abstract class DCC represents an application in a data-center. It is potentially the most important and complex abstraction of liota. It provides flexibility to developers for choosing the data-center components they need and using API’s provided by liota. With help of this abstraction developers may build custom solutions. The abstract class states basic methods and encapsulates them into unified common API’s required to send data to various DCC’s. Graphite and Project Ice are currently the data-center components supported with AWS, BlueMix and ThingWorx to come soon. New DCC’s can easily be integrated in the abstraction.
 
 ## Transports
-Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols.  Refer ![MQTT](/examples/mqtt/README.md) to know more on different MQTT configuration options available.
+Liota supports plain old BSD sockets, WebSocket, MQTT and AMQP communication protocols.  Refer ![MQTT](/examples/mqtt/README.md), ![AMQP](/examples/amqp/README.md) to know more on different configuration options available.
 
 ## Identity and TLS Configurations
 * Identity class encapsulates certificates or credentials related to a connection used at both DCC and Device side.
