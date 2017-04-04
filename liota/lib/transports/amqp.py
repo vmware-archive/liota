@@ -682,3 +682,4 @@ class ConsumerWorkerThread(Thread):
             log.info("Stopped AmqpConsumerWorker..")
         else:
             log.info("AmqpConsumerWorker is already stopped..")
+

@@ -55,5 +55,5 @@ class WebSocketDccComms(DCCComms):
     def send(self, message, msg_attr=None):
         self.client.send(message)
 
-    def receive(self, msg_attr=None):
+    def receive(self):
         self.client.receive(self.userdata)

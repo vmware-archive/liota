@@ -4,7 +4,7 @@ LIOTA offers AMQP protocol as transport to communicate with DCC via ![AmqpDccCom
 
 ## Protocol Version
 
-Currently, LIOTA supports AMQP version 0.9.1.
+Currently, LIOTA supports AMQP version **0.9.1**
 
 ## Connection and Channels
 
@@ -75,9 +75,9 @@ So, **AmqpConsumeMessagingAttributes must be passed as list** and AMQP transport
 
 ![RabbitMQ DCC](/liota/dccs/rabbitmq.py) is used to showcase publishing and consuming using Amqp transports and DccComms.
 
-* ![auto_gen](/liota/examples/amqp/rabbitmq/simulated_home_auto_gen.py) publishes to RabbitMQ using **Mode 1** and consume from auto-generated exchange using auto-generated routing key and queue.
-* ![single_exchange_and_routing_key_per_metric](/liota/examples/amqp/rabbitmq/simulated_home_single_exchange_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 2** and consumes from single exchange using different routing keys and queues.
-* ![exchange_and_routing_key_per_metric](/liota/examples/amqp/rabbitmq/simulated_home_exchange_and_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 3** and consumes from multiple exchanges using different queues.
+* ![auto_gen](/examples/amqp/rabbitmq/simulated_home_auto_gen.py) publishes to RabbitMQ using **Mode 1** and consume from auto-generated exchange using auto-generated routing key and queue.
+* ![single_exchange_and_routing_key_per_metric](/examples/amqp/rabbitmq/simulated_home_single_exchange_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 2** and consumes from single exchange using different routing keys and queues.
+* ![exchange_and_routing_key_per_metric](/examples/amqp/rabbitmq/simulated_home_exchange_and_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 3** and consumes from multiple exchanges using different queues.
 
 Refer respective class's docstring for more information on parameters.
 
