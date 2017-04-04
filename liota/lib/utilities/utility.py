@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
 #  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
@@ -45,6 +44,7 @@ import uuid
 import errno
 import ConfigParser
 import stat
+import json
 import subprocess
 
 log = logging.getLogger(__name__)
@@ -142,7 +142,8 @@ def get_disk_name():
 def getUTCmillis():
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
-def mkdir_log(path):
+
+def mkdir(path):
     if not os.path.exists(path):
         try:
             os.makedirs(path)
@@ -151,6 +152,32 @@ def mkdir_log(path):
                 pass
             else:
                 raise
+
+
+def store_edge_system_uuid(entity_name, entity_id, reg_entity_id):
+    """
+    Utility function to store EdgeSystem's Name, local-uuid and registered-uuid in the
+    specified file.
+    :param entity_name: EdgeSystem's Name
+    :param entity_id: Local uuid of the EdgeSystem
+    :param reg_entity_id: Registered uuid of the EdgeSystem
+    :return: None
+    """
+    try:
+        uuid_path = read_liota_config('UUID_PATH', 'uuid_path')
+        uuid_config = ConfigParser.RawConfigParser()
+        uuid_config.optionxform = str
+        uuid_config.add_section('GATEWAY')
+        uuid_config.set('GATEWAY', 'name', entity_name)
+        if entity_id:
+            uuid_config.set('GATEWAY', 'local-uuid', entity_id)
+        if reg_entity_id:
+            uuid_config.set('GATEWAY', 'registered-uuid', reg_entity_id)
+        with open(uuid_path, 'w') as configfile:
+            uuid_config.write(configfile)
+    except ConfigParser.ParsingError, err:
+        log.error('Could not open config file ' + str(err))
+
 
 class LiotaConfigPath:
     path_liota_config = ''
@@ -185,36 +212,76 @@ class LiotaConfigPath:
     def get_liota_fullpath(self):
         return LiotaConfigPath.path_liota_config
 
+    def setup_logging(self, default_level=logging.WARNING):
+        """
+        Setup logging configuration
+        """
+        log = logging.getLogger(__name__)
+        config = ConfigParser.RawConfigParser()
+        fullPath = self.get_liota_fullpath()
+        if fullPath != '':
+            try:
+                if config.read(fullPath) != []:
+                    # now use json file for logging settings
+                    try:
+                        log_path = config.get('LOG_PATH', 'log_path')
+                        log_cfg = config.get('LOG_CFG', 'json_path')
+                    except ConfigParser.ParsingError as err:
+                        log.error('Could not parse log config file')
+                else:
+                    raise IOError('Cannot open configuration file ' + fullPath)
+            except IOError as err:
+                log.error('Could not open log config file')
+            mkdir(log_path)
+            if os.path.exists(log_cfg):
+                with open(log_cfg, 'rt') as f:
+                    config = json.load(f)
+                logging.config.dictConfig(config)
+                log.info('created logger with ' + log_cfg)
+            else:
+                # missing logging.json file
+                logging.basicConfig(level=default_level)
+                log.warn(
+                    'logging.json file missing,created default logger with level = ' +
+                    str(default_level))
+        else:
+            # missing config file
+            log.warn('liota.conf file missing')
+
+
 def read_liota_config(section, name):
-     """Returns the value of name within the specified section.
- """
-     config = ConfigParser.RawConfigParser()
-     fullPath = LiotaConfigPath().get_liota_fullpath()
-     if fullPath != '':
-         try:
-             if config.read(fullPath) != []:
-                 try:
-                     value = config.get(section, name)			
-                 except ConfigParser.ParsingError as err:
-                     log.error('Could not parse log config file')
-             else:
-                 raise IOError('Cannot open configuration file ' + fullPath)
-         except IOError as err:
-             log.error('Could not open log config file')
-     else:
-         # missing config file
-         log.warn('liota.conf file missing')
-     return value
- 
+    """
+    Returns the value of name within the specified section.
+    """
+    config = ConfigParser.RawConfigParser()
+    fullPath = LiotaConfigPath().get_liota_fullpath()
+    if fullPath != '':
+        try:
+            if config.read(fullPath) != []:
+                try:
+                    value = config.get(section, name)
+                except ConfigParser.ParsingError as err:
+                    log.error('Could not parse log config file' + str(err))
+            else:
+                raise IOError('Cannot open configuration file ' + fullPath)
+        except IOError as err:
+            log.error('Could not open log config file')
+    else:
+        # missing config file
+        log.warn('liota.conf file missing')
+    return value
+
+
 class DiscUtilities:
     """
     DiscUtilities is a wrapper of utility functions
     """
+
     def __init__(self):
         pass
 
     def validate_named_pipe(self, pipe_file):
-        assert(isinstance(pipe_file, basestring))
+        assert (isinstance(pipe_file, basestring))
         if os.path.exists(pipe_file):
             if stat.S_ISFIFO(os.stat(pipe_file).st_mode):
                 pass
@@ -236,5 +303,5 @@ class DiscUtilities:
             except OSError:
                 log.error("Could not create messenger pipe")
                 return False
-        assert(stat.S_ISFIFO(os.stat(pipe_file).st_mode))
+        assert (stat.S_ISFIFO(os.stat(pipe_file).st_mode))
         return True
