@@ -29,42 +29,25 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
+
 import logging
-import socket
-
-from liota.dcc_comms.dcc_comms import DCCComms
-
 
 log = logging.getLogger(__name__)
 
 
-class SocketDccComms(DCCComms):
+class TLSConf:
+    """
+    This class encapsulates TLS config related parameters.
+    """
 
-    def __init__(self, ip, port):
-        self.ip = ip
-        self.port = port
-        self._connect()
-
-    def _connect(self):
-        self.client = socket.socket()
-        log.info("Establishing Socket Connection")
-        try:
-            self.client.connect((self.ip, self.port))
-            log.info("Socket Created")
-        except Exception as ex:
-            log.exception(
-                "Unable to establish socket connection. Please check the firewall rules and try again.")
-            self.client.close()
-            self.client = None
-            raise ex
-
-    def _disconnect(self):
-        raise NotImplementedError
-
-    def send(self, message, msg_attr=None):
-        log.debug("Publishing message:" + str(message))
-        if self.client is not None:
-            self.client.sendall(message)
-
-    def receive(self):
-        raise NotImplementedError
+    def __init__(self, cert_required, tls_version, cipher):
+        """
+        :param cert_required: Defines the certificate requirements
+        :param tls_version: Version of SSL/TLS protocol to be used
+        :param cipher: Ciphers is a string specifying which encryption ciphers are allowable
+                        for a connection, or None to use the defaults.
+        """
+        self.cert_required = cert_required
+        self.tls_version = tls_version
+        self.cipher = cipher
+        log.debug("Created TLSConf.")

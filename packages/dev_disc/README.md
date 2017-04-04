@@ -23,13 +23,6 @@ Device Simulator will get configuration from liota.conf and initialize the data 
 
 Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc inside packages_auto.txt)
 
-But you must do configuration first before start device discovery. 
-Also, in order to use COAP-Enabled device discovery install this additional library:
-
-```bash
-  $ sudo pip install txthings
-```
-
 In details, after installation with (sudo python setup.py install), you can do the following:
 # Configuration A (under /etc/liota/conf, inside liota.conf, default/example settings are available)
 [IOTCC_PATH]
