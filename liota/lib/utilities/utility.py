@@ -47,6 +47,7 @@ import stat
 import json
 import subprocess
 
+
 log = logging.getLogger(__name__)
 
 
@@ -142,7 +143,7 @@ def get_disk_name():
 def getUTCmillis():
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
-
+  
 def mkdir(path):
     if not os.path.exists(path):
         try:
@@ -248,7 +249,7 @@ class LiotaConfigPath:
             # missing config file
             log.warn('liota.conf file missing')
 
-
+            
 def read_liota_config(section, name):
     """
     Returns the value of name within the specified section.

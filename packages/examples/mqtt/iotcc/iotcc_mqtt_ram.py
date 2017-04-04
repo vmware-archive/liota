@@ -29,42 +29,66 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-import logging
-import socket
 
-from liota.dcc_comms.dcc_comms import DCCComms
+from liota.core.package_manager import LiotaPackage
+from linux_metrics import mem_stat
 
-
-log = logging.getLogger(__name__)
+dependencies = ["iotcc_mqtt"]
 
 
-class SocketDccComms(DCCComms):
+# ---------------------------------------------------------------------------
+# This is a sample application package to publish device stats to IoTCC using
+#  MQTT protocol as DCC Comms
+# User defined methods
 
-    def __init__(self, ip, port):
-        self.ip = ip
-        self.port = port
-        self._connect()
 
-    def _connect(self):
-        self.client = socket.socket()
-        log.info("Establishing Socket Connection")
-        try:
-            self.client.connect((self.ip, self.port))
-            log.info("Socket Created")
-        except Exception as ex:
-            log.exception(
-                "Unable to establish socket connection. Please check the firewall rules and try again.")
-            self.client.close()
-            self.client = None
-            raise ex
+def read_mem_free():
+    total_mem = round(mem_stat.mem_stats()[1], 4)
+    free_mem = round(mem_stat.mem_stats()[3], 4)
+    mem_free_percent = ((total_mem - free_mem) / total_mem) * 100
+    return round(mem_free_percent, 2)
 
-    def _disconnect(self):
-        raise NotImplementedError
 
-    def send(self, message, msg_attr=None):
-        log.debug("Publishing message:" + str(message))
-        if self.client is not None:
-            self.client.sendall(message)
+class PackageClass(LiotaPackage):
+    def run(self, registry):
+        from liota.entities.devices.simulated_device import SimulatedDevice
+        from liota.entities.metrics.metric import Metric
+        import copy
 
-    def receive(self):
-        raise NotImplementedError
+        # Acquire resources from registry
+        iotcc = registry.get("iotcc_mqtt")
+        # Creating a copy of edge_system object to keep original object "clean"
+        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system_mqtt"))
+
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
+        # Register device
+        ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
+        reg_ram_device = iotcc.register(ram_device)
+        iotcc.set_properties(reg_ram_device, config['DevicePropList'])
+
+        iotcc.create_relationship(iotcc_edge_system, reg_ram_device)
+
+        # Create metrics
+        self.metrics = []
+
+        mem_free_metric = Metric(
+            name="Memory Free",
+            unit=None,
+            interval=10,
+            sampling_function=read_mem_free
+        )
+        reg_mem_free_metric = iotcc.register(mem_free_metric)
+        iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
+        reg_mem_free_metric.start_collecting()
+        self.metrics.append(reg_mem_free_metric)
+
+        # Use the iotcc_device_name as identifier in the registry to easily refer the device in other packages
+        registry.register("reg_ram_device_mqtt", reg_ram_device)
+
+    def clean_up(self):
+        for metric in self.metrics:
+            metric.stop_collecting()

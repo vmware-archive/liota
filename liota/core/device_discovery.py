@@ -31,9 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import logging
-import inspect
 import os
-import sys
 import fcntl
 import errno
 import ConfigParser
@@ -45,16 +43,6 @@ from liota.lib.utilities.utility import DiscUtilities
 from liota.disc_listeners.named_pipe import NamedPipeListener
 from liota.disc_listeners.socket_svr import SocketListener
 from liota.disc_listeners.mqtt import MqttListener
-from liota.disc_listeners.coap import CoapListener
-
-def __LINE__():
-    try:
-        raise Exception
-    except:
-        return sys.exc_info()[2].tb_frame.f_back.f_lineno
-
-def __FILE__():
-    return inspect.currentframe().f_code.co_filename
 
 log = logging.getLogger(__name__)
 
@@ -112,6 +100,8 @@ class DiscoveryThread(Thread):
                     try:
                         # retrieve device info file storage directory
                         self.dev_file_path = config.get('IOTCC_PATH', 'dev_file_path')
+                        # retrieve organization info file storage directory
+                        self.org_file_path = config.get('IOTCC_PATH', 'iotcc_path')
                     except ConfigParser.ParsingError as err:
                         log.error('Could not parse log config file' + err)
                         exit(-4)
@@ -124,6 +114,8 @@ class DiscoveryThread(Thread):
                             else:
                                 log.error('Could not create device file storage directory')
                                 exit(-4)
+                    if not os.path.exists(self.org_file_path):
+                        log.error('No organization info file (iotcc.json)')
                     try:
                         # retrieve discovery cmd pip
                         self.cmd_messenger_pipe = os.path.abspath(
@@ -229,6 +221,8 @@ class DiscoveryThread(Thread):
         self._config['package_path'] = self.package_path
         # device info storage path
         self._config['dev_file_path']= self.dev_file_path
+        # organization (edgesystem+devices) info storage path
+        self._config['org_file_path']= self.org_file_path
 
     #-----------------------------------------------------------------------
     # This method is used to handle listing commands
@@ -337,6 +331,8 @@ class DiscoveryThread(Thread):
     # respect to commands received.
 
     def run(self):
+        from liota.disc_listeners.coap import CoapListener
+
         endpoint_list = self._config['endpoint_list']
 
         # spin listening threads according to endpoint_list extracted config
@@ -456,10 +452,29 @@ class DiscoveryThread(Thread):
         try:
             with self.discovery_lock:
                 reg_dev = graphite.register(dev)
-                #graphite.set_properties(reg_dev, prop_dict)
+                graphite.set_properties(reg_dev, prop_dict)
         except:
             return None, None
         return dev, reg_dev
+
+    def add_organization_properties(self, iotcc, prop_dict):
+        import json
+
+        # Get organization info file path
+        iotcc_json_path = self._config['org_file_path']
+        if iotcc_json_path == '':
+            return prop_dict
+        try:
+            with open(iotcc_json_path, 'r') as f:
+                iotcc_details_json_obj = json.load(f)["iotcc"]
+            f.close()
+        except IOError, err:
+            return prop_dict
+
+        org_group_properties = iotcc_details_json_obj["OGProperties"]
+        # merge org properties into prop_dict
+        new_prop_dict = dict(prop_dict.items() + org_group_properties.items())
+        return new_prop_dict
 
     def reg_device_iotcc(self, name, dev_type, prop_dict):
         from liota.entities.devices.device import Device
@@ -477,6 +492,7 @@ class DiscoveryThread(Thread):
         iotcc = self.pkg_registry.get("iotcc")
 
         dev = Device(name, systemUUID().get_uuid(name), dev_type)
+        prop_dict = self.add_organization_properties(iotcc, prop_dict)
         # Register device
         try:
             with self.discovery_lock:
@@ -484,6 +500,13 @@ class DiscoveryThread(Thread):
                 iotcc.set_properties(reg_dev, prop_dict)
         except:
             return None, None
+
+        # TBM: temporarily assume devices will be attached to the only edge system
+        if self.pkg_registry.has("iotcc_edge_system"):
+            iotcc_edge_system = self.pkg_registry.get("iotcc_edge_system")
+            iotcc.create_relationship(iotcc_edge_system, reg_dev)
+        else:
+            log.warning("iotcc_edge_system package is not loaded, please load it!")
         return dev, reg_dev
 
     def device_msg_process(self, data):
