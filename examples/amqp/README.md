@@ -62,7 +62,7 @@ Similarly, **AmqpConsumeMessagingAttributes class** in ![amqp.py](/liota/lib/tra
 
 LIOTA also supports auto-generation of AmqpConsumeMessagingAttributes by simply providing a **auto_gen_callback** in AmqpDccComms.   Default values in this case are:
 * Publish exchange_name will be **liota.exchange.generated_local_uuid_of_edge_system**
-* routing_key will be **liota.generated_local_uuid_of_edge_system.request**
+* routing_key will be **liota.generated_local_uuid_of_edge_system.response**
 * queue_name will be **liota.queue.generated_local_uuid_of_edge_system**
 
 A single AMQP Transports instance allows **only one** active publisher and consumer connection.  **consume()** can be called only once and will throw error if called without cancelling existing consumer.
