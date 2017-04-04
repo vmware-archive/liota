@@ -73,7 +73,7 @@ So, **AmqpConsumeMessagingAttributes must be passed as list** and AMQP transport
 
 **Examples:**
 
-![RabbitMQ DCC](/liota/dccs/rabbitmq.py) is used to showcase publishing and consuming using Amqp transports and DccComms.
+![RabbitMQ DCC](liota/dccs/rabbitmq.py) is used to showcase publishing and consuming using Amqp transports and DccComms.
 
 * ![auto_gen](/examples/amqp/rabbitmq/simulated_home_auto_gen.py) publishes to RabbitMQ using **Mode 1** and consume from auto-generated exchange using auto-generated routing key and queue.
 * ![single_exchange_and_routing_key_per_metric](/examples/amqp/rabbitmq/simulated_home_single_exchange_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 2** and consumes from single exchange using different routing keys and queues.
