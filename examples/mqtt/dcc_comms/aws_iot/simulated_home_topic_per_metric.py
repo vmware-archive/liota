@@ -139,7 +139,6 @@ if __name__ == '__main__':
                               tls_conf=tls_conf,
                               qos_details=qos_details,
                               clean_session=True,
-                              userdata=config['userdata'],
                               protocol=config['protocol'], transport=['transport'],
                               conn_disconn_timeout=config['ConnectDisconnectTimeout'],
                               mqtt_msg_attr=mqtt_msg_attr),

@@ -72,7 +72,7 @@ class PackageClass(LiotaPackage):
                                            url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
                                            tls_conf=tls_conf,
                                            qos_details=qos_details,
-                                           clean_session=True, userdata=config['userdata'],
+                                           clean_session=True,
                                            protocol=config['protocol'], transport=['transport'],
                                            conn_disconn_timeout=config['ConnectDisconnectTimeout']),
                               enclose_metadata=True)
