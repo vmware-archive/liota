@@ -9,7 +9,7 @@ include examples/simulated_edge_system_graphite.py
 include examples/simulated_graphite_event_based.py
 include examples/simulated_graphite_temp.py
 include examples/dell5k_edge_system_graphite.py
-include examples/dell5k_edge_system_iotcc.py
+include examples/dell5k_edge_system_iotcc_websocket.py
 include examples/dell5k_edge_system_with_filter_iotcc.py
 include examples/multi_metric_simulated_edge_system_graphite.py
 include examples/dk300_edge_system_iotcc_graphite.py
@@ -23,6 +23,8 @@ include examples/mqtt/dcc_comms/README.md
 include examples/mqtt/dcc_comms/aws_iot/sampleProp.conf
 include examples/mqtt/dcc_comms/aws_iot/simulated_home_auto_gen_topic.py
 include examples/mqtt/dcc_comms/aws_iot/simulated_home_topic_per_metric.py
+include examples/mqtt/dcc_comms/iotcc/sampleProp.conf
+include examples/mqtt/dcc_comms/iotcc/dell5k_edge_system_iotcc_mqtt.py
 include examples/mqtt/device_comms/README.md
 include examples/mqtt/device_comms/iotcc/samplePropMqtt.conf
 include examples/mqtt/device_comms/iotcc/iotcc_simulated_mqtt.py
@@ -32,6 +34,7 @@ include packages/dev_disc/liota_devsim_pipe.sh
 include packages/dev_disc/liota_devsim_load.py
 include packages/graphite.py
 include packages/iotcc.py
+include packages/iotcc_mqtt.py
 include packages/aws_iot.py
 include packages/sampleProp.conf
 include packages/liotad.py
@@ -51,6 +54,8 @@ include packages/examples/graphite_thermistor_simulated.py
 include packages/examples/iotcc_thermistor_simulated.py
 include packages/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py
 include packages/examples/mqtt/aws_iot/simulated_home_topic_per_metric.py
+include packages/examples/mqtt/iotcc/iotcc_mqtt_edge_system_stats.py
+include packages/examples/mqtt/iotcc/iotcc_mqtt_ram.py
 include packages/edge_systems/dell5k/edge_system.py
 include packages/dev_disc/liota_disc_pipe.sh
 include packages/dev_disc/dev_disc.py

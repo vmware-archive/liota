@@ -80,15 +80,15 @@ def read_mem_free():
 
     
 #---------------------------------------------------------------------------
-# In this example, we demonstrate how System health and some simluated data
-# can be directed to two data center components (IoTCC and graphite) using Liota.
+# In this example, we demonstrate how System health and some simulated data
+# can be directed to data center component IoTCC using Liota.
 # The program illustrates the ease of use Liota brings to IoT application developers.
 
 if __name__ == '__main__':
 
 
     # create a data center object, IoTCC in this case, using websocket as a transport layer
-    # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
+    # this object encapsulates the formats and protocols necessary for the agent to interact with the dcc
     # UID/PASS login for now.
     iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
                              WebSocketDccComms(url=config['WebSocketUrl']))
