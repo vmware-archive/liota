@@ -40,6 +40,8 @@ class PackageClass(LiotaPackage):
     This is a sample package which creates a IoTControlCenter DCC object and registers edge system on
     IoTCC over MQTT Protocol to acquire "registered edge system", i.e. iotcc_edge_system.
     """
+    global config_path
+    global iotcc_edge_system
 
     def run(self, registry):
         import copy
@@ -47,6 +49,9 @@ class PackageClass(LiotaPackage):
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
         from liota.dccs.dcc import RegistrationFailure
+
+        global config_path
+        global iotcc_edge_system
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
@@ -82,4 +87,15 @@ class PackageClass(LiotaPackage):
         self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
 
     def clean_up(self):
+
+        global config_path
+        global iotcc_edge_system
+
+        # Get values from configuration file
+        config = {}
+        execfile(config_path + '/sampleProp.conf', config)
+
+        #Unregister edge system
+        if config['ShouldUnregisterOnUnload'] == "True":
+            self.iotcc.unregister(iotcc_edge_system)
         self.iotcc.comms.client.disconnect()
