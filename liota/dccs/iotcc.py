@@ -156,11 +156,10 @@ class IotControlCenter(DataCenterComponent):
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
                 log.debug("Processed msg: {0}".format(json_msg["type"]))
-                if json_msg["type"] == "remove_resource_response":
-                        if json_msg["body"]["result"] == "succeeded":
-                            log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
-                        else:
-                            log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
+                if json_msg["type"] == "remove_resource_response" and json_msg["body"]["result"] == "succeeded":
+                        log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
+                else:
+                        log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
             except:
                 raise Exception("Exception while unregistering resource")
 

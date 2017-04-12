@@ -156,4 +156,3 @@ class PackageClass(LiotaPackage):
 	#Unregister iotcc device
         if config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(self.iotcc_thermistor)
-
