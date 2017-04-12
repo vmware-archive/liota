@@ -179,3 +179,6 @@ class AWSIoT(DataCenterComponent):
 
     def set_properties(self, reg_entity, properties):
         raise NotImplementedError
+
+    def unregister(self, entity_obj):
+        raise NotImplementedError

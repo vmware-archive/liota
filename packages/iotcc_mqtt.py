@@ -49,9 +49,9 @@ class PackageClass(LiotaPackage):
         from liota.dccs.dcc import RegistrationFailure
 
         # Get values from configuration file
-        config_path = registry.get("package_conf")
+        self.config_path = registry.get("package_conf")
         config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        execfile(self.config_path + '/sampleProp.conf', config)
 
         # Acquire resources from registry
         # Creating a copy of edge_system object to keep original object "clean"
@@ -70,16 +70,23 @@ class PackageClass(LiotaPackage):
 
         try:
             # Register edge system (gateway)
-            iotcc_edge_system = self.iotcc.register(edge_system)
+            self.iotcc_edge_system = self.iotcc.register(edge_system)
             """
             Use iotcc & iotcc_edge_system as common identifiers
             in the registry to easily refer the objects in other packages
             """
             registry.register("iotcc_mqtt", self.iotcc)
-            registry.register("iotcc_edge_system_mqtt", iotcc_edge_system)
+            registry.register("iotcc_edge_system_mqtt", self.iotcc_edge_system)
         except RegistrationFailure:
             print "EdgeSystem registration to IOTCC failed"
-        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
+        self.iotcc.set_properties(self.iotcc_edge_system, config['SystemPropList'])
 
     def clean_up(self):
+        # Get values from configuration file
+        config = {}
+        execfile(self.config_path + '/sampleProp.conf', config)
+
+        #Unregister edge system
+        if config['ShouldUnregisterOnUnload'] == "True":
+            self.iotcc.unregister(self.iotcc_edge_system)
         self.iotcc.comms.client.disconnect()
