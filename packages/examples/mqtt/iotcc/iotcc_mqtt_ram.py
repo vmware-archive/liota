@@ -96,4 +96,3 @@ class PackageClass(LiotaPackage):
         #Unregister iotcc device
         if self.config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(self.reg_ram_device)
-

@@ -192,8 +192,7 @@ class PackageClass(LiotaPackage):
 
         for metric in self.metrics:
             metric.stop_collecting()
-	
+
 	#Unregister iotcc device
         if config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(self.iotcc_bike)
-     

@@ -392,7 +392,6 @@ class IotControlCenter(DataCenterComponent):
             json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
         f.close()
 
-
     def store_edge_system_info(self, uuid, name, prop_dict):
         """
         create (can overwrite) edge system info file of UUID.xml, with format of

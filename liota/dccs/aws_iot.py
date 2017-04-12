@@ -182,4 +182,3 @@ class AWSIoT(DataCenterComponent):
 
     def unregister(self, entity_obj):
         raise NotImplementedError
-
