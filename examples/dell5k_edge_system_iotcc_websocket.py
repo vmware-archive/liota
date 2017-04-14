@@ -51,8 +51,7 @@ execfile('sampleProp.conf', config)
 # main routing table, as the default route might be kept in another table.
 # Such cases should be handled manually.
 network_interface = get_default_network_interface()
-# There are situations where route may not actually return a default route in the
-# main routing table, as the default route might be kept in another table.
+# If edge_system has multiple disks, only first disk will be returned.
 # Such cases should be handled manually.
 disk_name = get_disk_name()
 
