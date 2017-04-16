@@ -1,6 +1,6 @@
 # Using AMQP as Transport in LIOTA
 
-LIOTA offers AMQP protocol as transport to communicate with DCC via ![AmqpDccComms](/liota/dcc_comms/amqp_dcc_comms.py).
+LIOTA offers AMQP protocol as transport to communicate with DCC via [AmqpDccComms](https://github.com/vmware/liota/blob/master/liota/dcc_comms/amqp_dcc_comms.py).
 
 ## Protocol Version
 
@@ -20,7 +20,7 @@ Each AMQP connection has its own channel in LIOTA.  So, one channel for publishe
 
 ## Using AmqpDccComms
 
-AmqpDccComms provides the flexibility of operating in three different modes for publishing. **AmqpPublishMessagingAttributes class** in ![amqp.py](/liota/lib/transports/amqp.py)
+AmqpDccComms provides the flexibility of operating in three different modes for publishing. **AmqpPublishMessagingAttributes class** in [amqp.py](https://github.com/vmware/liota/blob/master/liota/lib/transports/amqp.py)
 provides this flexibility.
 
 ### AmqpPublishMessagingAttributes
@@ -48,7 +48,7 @@ provides this flexibility.
 **NOTE:** AmqpPublishMessagingAttributes for a RegisteredMetric object MUST always be passed via **msg_attr** attribute of that RegisteredMetric Object.
 
 
-Similarly, **AmqpConsumeMessagingAttributes class** in ![amqp.py](/liota/lib/transports/amqp.py) facilitates binding queues with exchanges, and consume messages from those queues.
+Similarly, **AmqpConsumeMessagingAttributes class** in [amqp.py](https://github.com/vmware/liota/blob/master/liota/lib/transports/amqp.py) facilitates binding queues with exchanges, and consume messages from those queues.
 
 ### AmqpConsumeMessagingAttributes
 
@@ -73,13 +73,13 @@ So, **AmqpConsumeMessagingAttributes must be passed as list** and AMQP transport
 
 **Examples:**
 
-![RabbitMQ DCC](/liota/dccs/rabbitmq.py) is used to showcase publishing and consuming using Amqp transports and DccComms.
+[RabbitMQ DCC](https://github.com/vmware/liota/blob/master/liota/dccs/rabbitmq.py) is used to showcase publishing and consuming using Amqp transports and DccComms.
 
-* ![auto_gen](/examples/amqp/rabbitmq/simulated_home_auto_gen.py) publishes to RabbitMQ using **Mode 1** and consume from auto-generated exchange using auto-generated routing key and queue.
-* ![single_exchange_and_routing_key_per_metric](/examples/amqp/rabbitmq/simulated_home_single_exchange_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 2** and consumes from single exchange using different routing keys and queues.
-* ![exchange_and_routing_key_per_metric](/examples/amqp/rabbitmq/simulated_home_exchange_and_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 3** and consumes from multiple exchanges using different queues.
+* [auto_gen](https://github.com/vmware/liota/blob/master/examples/amqp/rabbitmq/simulated_home_auto_gen.py) publishes to RabbitMQ using **Mode 1** and consume from auto-generated exchange using auto-generated routing key and queue.
+* [single_exchange_and_routing_key_per_metric](https://github.com/vmware/liota/blob/master/examples/amqp/rabbitmq/simulated_home_single_exchange_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 2** and consumes from single exchange using different routing keys and queues.
+* [exchange_and_routing_key_per_metric](https://github.com/vmware/liota/blob/master/examples/amqp/rabbitmq/simulated_home_exchange_and_routing_key_per_metric.py) publishes to RabbitMQ using **Mode 3** and consumes from multiple exchanges using different queues.
 
 Refer respective class's docstring for more information on parameters.
 
 **NOTE:**
-If **Mode 1** is used, `generated_local_uuid_of_edge_system` will be written to a file available at path **uuid_path** as specified in ![liota.conf](/config/liota.conf) file.  Users can refer this file to get the uuid.
+If **Mode 1** is used, `generated_local_uuid_of_edge_system` will be written to a file available at path **uuid_path** as specified in [liota.conf](https://github.com/vmware/liota/blob/master/config/liota.conf) file.  Users can refer this file to get the uuid.
