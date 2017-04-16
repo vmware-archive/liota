@@ -46,7 +46,7 @@ class MqttDccComms(DCCComms):
     """
 
     def __init__(self, edge_system_name, url, port, identity=None, tls_conf=None, qos_details=None,
-                 client_id="", clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
+                 client_id="", clean_session=False, protocol="MQTTv311", transport="tcp", keep_alive=60,
                  mqtt_msg_attr=None, enable_authentication=False, conn_disconn_timeout=10):
 
         """

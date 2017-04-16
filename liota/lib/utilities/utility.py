@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
 #  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
@@ -46,6 +45,8 @@ import errno
 import ConfigParser
 import stat
 import json
+import subprocess
+
 
 log = logging.getLogger(__name__)
 
@@ -111,9 +112,38 @@ def get_linux_version():
     return platform.platform()
 
 
+def get_default_network_interface():
+    """
+    Works with Linux.
+    There are situations where route may not actually return a default route in the
+    main routing table, as the default route might be kept in another table.
+    Such cases should be handled manually.
+    :return: Default Network Interface of the Edge_System
+    """
+    cmd = "route | grep '^default' | grep -o '[^ ]*$'"
+    nw_iface = str(subprocess.check_output(cmd, shell=True)).rstrip()
+    log.info("Default network interface is : {0}".format(nw_iface))
+    return nw_iface
+
+
+def get_disk_name():
+    """
+    Works with Linux.
+    If edge_system has multiple disks, only first disk will be returned.
+    Such cases should be handled manually.
+
+    :return: Disk type of the Edge_System
+    """
+    cmd = "lsblk -io KNAME,TYPE | grep 'disk' | sed -n '1p' | grep -o '^\S*'"
+    disk_name = str(subprocess.check_output(cmd, shell=True)).rstrip()
+    log.info("Disk name is : {0}".format(disk_name))
+    return disk_name
+
+
 def getUTCmillis():
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
+  
 def mkdir(path):
     if not os.path.exists(path):
         try:
@@ -219,6 +249,7 @@ class LiotaConfigPath:
             # missing config file
             log.warn('liota.conf file missing')
 
+            
 def read_liota_config(section, name):
     """
     Returns the value of name within the specified section.
@@ -241,16 +272,17 @@ def read_liota_config(section, name):
         log.warn('liota.conf file missing')
     return value
 
-  
+
 class DiscUtilities:
     """
     DiscUtilities is a wrapper of utility functions
     """
+
     def __init__(self):
         pass
 
     def validate_named_pipe(self, pipe_file):
-        assert(isinstance(pipe_file, basestring))
+        assert (isinstance(pipe_file, basestring))
         if os.path.exists(pipe_file):
             if stat.S_ISFIFO(os.stat(pipe_file).st_mode):
                 pass
@@ -272,5 +304,5 @@ class DiscUtilities:
             except OSError:
                 log.error("Could not create messenger pipe")
                 return False
-        assert(stat.S_ISFIFO(os.stat(pipe_file).st_mode))
+        assert (stat.S_ISFIFO(os.stat(pipe_file).st_mode))
         return True

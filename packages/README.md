@@ -19,7 +19,12 @@ If dependency lists of specified packages and their dependencies contain loops, 
 
 * **unload** package_name [package_name] ...
 
-Unload a package with the specified name. If the specified package has dependents loaded, recursively unload all its dependents. If more than one package names are specified, unload them (as well as their dependents) in a batch.\
+Unload a package with the specified name. If the specified package has dependents loaded, recursively unload all its dependents. If more than one package names are specified, unload them (as well as their dependents) in a batch.
+
+To `unregister` an entity while unloading set the following flag in `packages/sampleProp.conf` to `True`:
+```bash
+ShouldUnregisterOnUnload = "True"
+```
 
 * **reload** package_name
 

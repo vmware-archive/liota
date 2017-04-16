@@ -90,5 +90,9 @@ class DataCenterComponent:
     def set_properties(self, reg_entity, properties):
         pass
 
+    @abstractmethod
+    def unregister(self, entity_obj):
+        if not isinstance(entity_obj, Entity):
+            raise TypeError
 
 class RegistrationFailure(Exception): pass

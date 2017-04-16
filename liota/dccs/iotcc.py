@@ -146,6 +146,28 @@ class IotControlCenter(DataCenterComponent):
 
             return RegisteredEntity(entity_obj, self, self.reg_entity_id)
 
+    def unregister(self, entity_obj):
+        """ Unregister the objects
+        """
+        log.info("Unregistering resource with IoTCC {0}".format(entity_obj.ref_entity.name))
+
+        def on_response(msg):
+            try:
+                log.debug("Received msg: {0}".format(msg))
+                json_msg = json.loads(msg)
+                log.debug("Processed msg: {0}".format(json_msg["type"]))
+                if json_msg["type"] == "remove_resource_response" and json_msg["body"]["result"] == "succeeded":
+                        log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
+                else:
+                        log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
+            except:
+                raise Exception("Exception while unregistering resource")
+
+        self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.reg_entity_id)))
+        on_response(self.recv_msg_queue.get(True,20))
+        self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
+        log.info("Unregistration of resource {0} with IoTCC complete".format(entity_obj.ref_entity.name))
+
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """ This function initializes all relations between Registered Entities.
 
@@ -338,6 +360,37 @@ class IotControlCenter(DataCenterComponent):
             with open(self._iotcc_json, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
             f.close()
+
+    def remove_reg_entity_details(self, entity_name, reg_entity_id):
+        if self._iotcc_json == '':
+            log.warn('iotcc.json file missing')
+            return
+        try:
+            with open(self._iotcc_json, 'r') as f:
+                msg = json.load(f)
+            f.close()
+        except IOError, err:
+            log.error('Could not open {0} file '.format(self._iotcc_json) + str(err))
+        log.debug('Remove {0}:{1} from iotcc.json'.format(entity_name, reg_entity_id))
+        if msg["iotcc"]["EdgeSystem"]["SystemName"]==entity_name and msg["iotcc"]["EdgeSystem"]["uuid"]==reg_entity_id:
+            del msg["iotcc"]["EdgeSystem"]
+            log.info("Removed {0} edge-system from iotcc.json".format(entity_name))
+        else:
+            entity_exist = False
+            for device in msg["iotcc"]["Devices"]:
+                if device["uuid"] == reg_entity_id and device["uuid"] == reg_entity_id :
+                    entity_exist = True
+                    try:
+                        msg["iotcc"]["Devices"].remove(device)
+                        log.info("Device {0} removed from iotcc.json".format(entity_name))
+                        break
+                    except ValueError:
+                        pass
+            if not entity_exist:
+                log.error("No such device {0} exists".format(entity_name))
+        with open(self._iotcc_json, 'w') as f:
+            json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
+        f.close()
 
     def store_edge_system_info(self, uuid, name, prop_dict):
         """
@@ -533,3 +586,12 @@ class IotControlCenter(DataCenterComponent):
         self.counter = (self.counter + 1) & 0xffffff
         # Enforce even IDs
         return int(self.counter * 2)
+
+    def _unregistration(self, msg_id, uuid):
+        return {
+            "transactionID": msg_id,
+            "type": "remove_resource_request",
+            "body": {
+                "uuid": uuid
+            }
+        }
