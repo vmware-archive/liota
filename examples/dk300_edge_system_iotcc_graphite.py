@@ -31,7 +31,9 @@
 # ----------------------------------------------------------------------------#
 
 import random
-from linux_metrics import cpu_stat,disk_stat,net_stat,mem_stat
+
+from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
+
 from liota.dccs.iotcc import IotControlCenter
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.metrics.metric import Metric
@@ -40,10 +42,22 @@ from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
 from liota.dcc_comms.socket_comms import SocketDccComms
 from liota.dccs.graphite import Graphite
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name
+
 
 # getting values from conf file
 config = {}
 execfile('sampleProp.conf', config)
+
+# Getting edge_system's network interface and disk name
+
+# There are situations where route may not actually return a default route in the
+# main routing table, as the default route might be kept in another table.
+# Such cases should be handled manually.
+network_interface = get_default_network_interface()
+# If edge_system has multiple disks, only first disk will be returned.
+# Such cases should be handled manually.
+disk_name = get_disk_name()
 
 
 # some standard metrics for Linux systems
@@ -68,25 +82,26 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 
 def read_swap_mem_free():
-    total_swap = round(mem_stat.mem_stats()[4],4)
-    swap_mem_free = round(mem_stat.mem_stats()[5],4)
+    total_swap = round(mem_stat.mem_stats()[4], 4)
+    swap_mem_free = round(mem_stat.mem_stats()[5], 4)
     swap_free_percent = (swap_mem_free/total_swap)*100
     return round(swap_free_percent, 2)
 
 
 def read_disk_usage_stats():
-    return round(disk_stat.disk_reads_writes('sda')[0], 2)
+    return round(disk_stat.disk_reads_writes(disk_name)[0], 2)
 
 
 def read_mem_free():
-    total_mem = round(mem_stat.mem_stats()[1],4)
-    free_mem = round(mem_stat.mem_stats()[3],4)
+    total_mem = round(mem_stat.mem_stats()[1], 4)
+    free_mem = round(mem_stat.mem_stats()[3], 4)
     mem_free_percent = ((total_mem-free_mem)/total_mem)*100
     return round(mem_free_percent, 2)
     
 
 def read_network_packets_sent():
-    packets_sent = net_stat.rx_tx_dump('ens33')[1][1] + net_stat.rx_tx_dump('lo')[1][1]
+    # default network interface + loop_back
+    packets_sent = net_stat.rx_tx_dump(network_interface)[1][1] + net_stat.rx_tx_dump('lo')[1][1]
     return packets_sent
 
 
