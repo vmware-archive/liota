@@ -166,6 +166,8 @@ class IotControlCenter(DataCenterComponent):
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.reg_entity_id)))
         on_response(self.recv_msg_queue.get(True,20))
         self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
+        if entity_obj.ref_entity.entity_type != "HelixGateway":
+            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, entity_obj.ref_entity.entity_type, None, True)
         log.info("Unregistration of resource {0} with IoTCC complete".format(entity_obj.ref_entity.name))
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
@@ -424,7 +426,7 @@ class IotControlCenter(DataCenterComponent):
             fp.write(self.prettify(root))
         return
 
-    def store_device_info(self, uuid, name, dev_type, prop_dict):
+    def store_device_info(self, uuid, name, dev_type, prop_dict, remove_device):
         """
         create (can overwrite) device info file of device_UUID.json, with format of
         {
@@ -458,7 +460,7 @@ class IotControlCenter(DataCenterComponent):
         log.debug('attribute_list: {0}'.format(attribute_list))
         msg = {
             "discovery": {
-                "remove": False,
+                "remove": remove_device,
                 "attributes": attribute_list
             }
         }
@@ -542,7 +544,7 @@ class IotControlCenter(DataCenterComponent):
         if entity_type == "EdgeSystem":
             self.store_edge_system_info(reg_entity_id, entity_name, new_prop_dict)
         elif entity_type == "Devices":
-            self.store_device_info(reg_entity_id, entity_name, dev_type, new_prop_dict)
+            self.store_device_info(reg_entity_id, entity_name, dev_type, new_prop_dict, False)
         else:
             return
 
