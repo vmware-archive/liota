@@ -65,8 +65,7 @@ class PackageClass(LiotaPackage):
         self.iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
                                       MqttDccComms(edge_system_name=edge_system.name,
                                                    url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
-                                                   enable_authentication=True,
-                                                   clean_session=True))
+                                                   enable_authentication=True))
 
         try:
             # Register edge system (gateway)
