@@ -63,11 +63,14 @@ class IotControlCenter(DataCenterComponent):
         self.comms = con
         self.username = username
         self.password = password
+        thread = threading.Thread(target=self.comms.receive)
+        thread.daemon = True
+        # This thread will continuously run in background to receive response or actions from DCC
+        thread.start()
         self.proto = HelixProtocol(self.comms, username, password)
         self._iotcc_json = self._create_iotcc_json()
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
-
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
         self.entity_file_path = self._get_file_storage_path("entity_file_path")
@@ -87,10 +90,6 @@ class IotControlCenter(DataCenterComponent):
             except Exception as error:
                 log.error("HelixProtocolException: " + repr(error))
 
-        thread = threading.Thread(target=self.comms.receive)
-        thread.daemon = True
-        # This thread will continuously run in background to receive response or actions from DCC
-        thread.start()
         # Block on Queue for not more then 10 seconds else it will raise an exception
         on_response(self.recv_msg_queue.get(True,10))
         log.info("Logged in to DCC successfully")
