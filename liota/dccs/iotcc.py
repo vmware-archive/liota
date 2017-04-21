@@ -83,7 +83,7 @@ class IotControlCenter(DataCenterComponent):
                     return True
                 else:
                     log.debug("Processed msg: {0}".format(json_msg["type"]))
-                    on_response(self.recv_msg_queue.get(True,10))
+                    on_response(self.recv_msg_queue.get(True,300))
             except Exception as error:
                 log.error("HelixProtocolException: " + repr(error))
 
@@ -91,8 +91,8 @@ class IotControlCenter(DataCenterComponent):
         thread.daemon = True
         # This thread will continuously run in background to receive response or actions from DCC
         thread.start()
-        # Block on Queue for not more then 10 seconds else it will raise an exception
-        on_response(self.recv_msg_queue.get(True,10))
+        # Block on Queue for not more then 300 seconds else it will raise an exception
+        on_response(self.recv_msg_queue.get(True,300))
         log.info("Logged in to DCC successfully")
 
     def register(self, entity_obj):
@@ -118,7 +118,7 @@ class IotControlCenter(DataCenterComponent):
                         self.reg_entity_id = json_msg["body"]["uuid"]
                     else:
                         log.info("Waiting for resource creation")
-                        on_response(self.recv_msg_queue.get(True,10))
+                        on_response(self.recv_msg_queue.get(True,300))
                 except:
                     raise Exception("Exception while registering resource")
 
@@ -126,7 +126,7 @@ class IotControlCenter(DataCenterComponent):
                 entity_obj.entity_type = "HelixGateway"
             self.comms.send(json.dumps(
                 self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
-            on_response(self.recv_msg_queue.get(True,10))
+            on_response(self.recv_msg_queue.get(True,300))
             if not self.reg_entity_id:
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
