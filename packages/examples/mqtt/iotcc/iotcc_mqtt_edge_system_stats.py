@@ -40,7 +40,13 @@ from liota.lib.utilities.utility import get_default_network_interface, get_disk_
 dependencies = ["iotcc_mqtt"]
 
 # Getting edge_system's network interface and disk name
+
+# There are situations where route may not actually return a default route in the
+# main routing table, as the default route might be kept in another table.
+# Such cases should be handled manually.
 network_interface = get_default_network_interface()
+# If edge_system has multiple disks, only first disk will be returned.
+# Such cases should be handled manually.
 disk_name = get_disk_name()
 
 # ---------------------------------------------------------------------------
