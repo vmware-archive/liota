@@ -147,6 +147,7 @@ setup(
                   'packages/examples/mqtt/aws_iot/simulated_home_topic_per_metric.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/examples/mqtt/iotcc',
                  ['packages/examples/mqtt/iotcc/iotcc_mqtt_edge_system_stats.py',
+                  'packages/examples/mqtt/iotcc/iotcc_resource_properties_mqtt.py',
                   'packages/examples/mqtt/iotcc/iotcc_mqtt_ram.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/edge_systems/dell5k',
                  ['packages/edge_systems/dell5k/edge_system.py']),
