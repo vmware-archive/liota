@@ -45,7 +45,7 @@ if not sys.version_info[0] == 2:
     sys.exit('Python 3 is not supported')
 
 # Python 2.7.9 sub-version check
-if not sys.version_info[1] >= 7 and not sys.version_info[2] >= 9:
+if sys.version_info[1] <= 7 and sys.version_info[2] <= 9:
     print sys.version_info
     sys.exit('Above Python version is not supported, Python 2.7.9+ versions are only supported')
 
