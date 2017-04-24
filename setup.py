@@ -32,12 +32,22 @@
 
 import os
 import pip
+import sys
 from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
 
 requirements = [str(requirement.req) for requirement in parse_requirements(
     'requirements.txt', session=pip.download.PipSession())]
+
+# Python Version check
+if not sys.version_info[0] == 2:
+    sys.exit('Python 3 is not supported')
+
+# Python 2.7.9 sub-version check
+if not sys.version_info[1] >= 7 and not sys.version_info[2] >= 9:
+    print sys.version_info
+    sys.exit('Above Python version is not supported, Python 2.7.9+ versions are only supported')
 
 # Get the long description from the README file
 with open('README.md') as f:
