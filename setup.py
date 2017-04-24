@@ -46,8 +46,7 @@ if not sys.version_info[0] == 2:
 
 # Python 2.7.9 sub-version check
 if sys.version_info[1] <= 7 and sys.version_info[2] <= 9:
-    print sys.version_info
-    sys.exit('Above Python version is not supported, Python 2.7.9+ versions are only supported')
+    sys.exit('Python 2.7.9+ versions are only supported')
 
 # Get the long description from the README file
 with open('README.md') as f:
@@ -55,7 +54,7 @@ with open('README.md') as f:
 
 setup(
     name='liota',
-    version='0.2.4',
+    version='0.2.5',
     packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
