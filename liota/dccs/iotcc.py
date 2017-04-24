@@ -257,15 +257,6 @@ class IotControlCenter(DataCenterComponent):
         self.comms.send(json.dumps(
             self._properties(self.next_id(), reg_entity_id, reg_entity_type,
                              getUTCmillis(), properties)))
-        if reg_entity_type == "HelixGateway":
-            with self.file_ops_lock:
-                self.store_reg_entity_attributes("EdgeSystem", reg_entity_name,
-                                                 reg_entity_id, None, properties)
-        else:
-            # get dev_type, and prop_dict if possible
-            with self.file_ops_lock:
-                self.store_reg_entity_attributes("Devices", reg_entity_name, reg_entity_id,
-                                                 reg_entity_type, properties)
 
     def set_properties(self, reg_entity_obj, properties):
         # RegisteredMetric get parent's resid; RegisteredEntity gets own resid

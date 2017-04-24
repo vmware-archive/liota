@@ -127,6 +127,7 @@ setup(
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/dev_disc',
                  ['packages/dev_disc/liota_disc_pipe.sh',
                   'packages/dev_disc/dev_disc.py',
+                  'packages/dev_disc/dev_disc_mqtt.py',
                   'packages/dev_disc/liota_devsim_pipe.sh',
                   'packages/dev_disc/liota_devsim_load.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/examples',
