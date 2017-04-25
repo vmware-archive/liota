@@ -48,7 +48,7 @@ class PackageClass(LiotaPackage):
             return
         try:
             with open(iotcc_json_path, 'r') as f:
-                iotcc_details_json_obj = json.load(f)["iotcc_mqtt"]
+                iotcc_details_json_obj = json.load(f)["iotcc"]
             f.close()
         except IOError, err:
             return
