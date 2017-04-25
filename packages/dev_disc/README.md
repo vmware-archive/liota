@@ -21,9 +21,10 @@ Device Simulator will get configuration from liota.conf and initialize the data 
 
 ### How to Start Device Discovery
 
-Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc inside packages_auto.txt)
+Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc inside packages_auto.txt.
+To be reminded, to let discovered devices registered to user specified DCCs, at least one DCC package should be loaded.
 
-In details, after installation with (sudo python setup.py install), you can do the following:
+In details, after installation with (sudo python setup.py install or pip install liota), you can do the following:
 # Configuration A (under /etc/liota/conf, inside liota.conf, default/example settings are available)
 [IOTCC_PATH]
 
@@ -45,15 +46,15 @@ Apple56 = SN
 
 Banana23 = serial
 
-[DEVICE_TYPE_TO_DCC_MAPPING]  # for each device type, corresponding package file name should be written and must start with DCC
+[DEVICE_TYPE_TO_DCC_MAPPING]  # for each device type, list each DCC's package name where discovered devices would like to be registered to
 
-LM35 = Graphite-pkg.py, IOTCC-pkg.py		# name, currently only support Graphite or IOTCC, later when device is successfully
+LM35 = graphite, iotcc_mqtt, iotcc		# DCC's package might be more than one, since may use different DCCComms, e.g., iotcc_mqtt and iotcc
 
-Press64 = IOTCC-pkg1.py						# registered in IOTCC, and enrolled in Airwatch, corresponding package will be
+Press64 = iotcc_mqtt, iotcc		# DCC could be ANY one that liota supports
 
-Apple56 = IOTCC-pkg2.py						# downloaded from Airwatch Console/Server to start collecting data (defined in
+Apple56 = iotcc_mqtt 	# If a DCC's package is not loaded, no registration will be carried out, while other tasks keep on going
 
-Banana23 = IOTCC-pkg3.py					# package file)
+Banana23 = iotcc	# Later user could create Liota Package for discovered devices to start collecting metrics
 
 [DEVSIM_CFG]
 

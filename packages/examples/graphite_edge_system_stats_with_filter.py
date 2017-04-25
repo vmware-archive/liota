@@ -82,7 +82,7 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        edge_system = copy.copy(registry.get("edge_system"))
+        edge_system = copy.copy(registry.get("graphite_edge_system"))
         graphite = registry.get("graphite")
         reg_edge_system = graphite.register(edge_system)
 

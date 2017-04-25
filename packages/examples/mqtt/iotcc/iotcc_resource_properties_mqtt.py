@@ -31,68 +31,40 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
-from linux_metrics import mem_stat
+from liota.lib.utilities.utility import read_liota_config
+import json
 
 dependencies = ["iotcc_mqtt"]
 
 
-# ---------------------------------------------------------------------------
-# This is a sample application package to publish device stats to IoTCC using
-#  MQTT protocol as DCC Comms
-# User defined methods
-
-
-def read_mem_free():
-    total_mem = round(mem_stat.mem_stats()[1], 4)
-    free_mem = round(mem_stat.mem_stats()[3], 4)
-    mem_free_percent = ((total_mem - free_mem) / total_mem) * 100
-    return round(mem_free_percent, 2)
-
-
 class PackageClass(LiotaPackage):
     def run(self, registry):
-        from liota.entities.devices.simulated_device import SimulatedDevice
-        from liota.entities.metrics.metric import Metric
-        import copy
-
         # Acquire resources from registry
-        self.iotcc = registry.get("iotcc_mqtt")
-        # Creating a copy of edge_system object to keep original object "clean"
-        self.iotcc_edge_system = copy.copy(registry.get("iotcc_mqtt_edge_system"))
+        iotcc = registry.get("iotcc_mqtt")
 
         # Get values from configuration file
-        config_path = registry.get("package_conf")
-        self.config = {}
-        execfile(config_path + '/sampleProp.conf', self.config)
+        iotcc_json_path = read_liota_config('IOTCC_PATH', 'iotcc_path')
+        if iotcc_json_path == '':
+            return
+        try:
+            with open(iotcc_json_path, 'r') as f:
+                iotcc_details_json_obj = json.load(f)["iotcc"]
+            f.close()
+        except IOError, err:
+            return
 
-        # Register device
-        ram_device = SimulatedDevice(self.config['DeviceName'], "Device-RAM")
-        self.reg_ram_device = self.iotcc.register(ram_device)
-        self.iotcc.set_properties(self.reg_ram_device, self.config['DevicePropList'])
+        organization_group_properties = iotcc_details_json_obj["OGProperties"]
 
-        self.iotcc.create_relationship(self.iotcc_edge_system, self.reg_ram_device)
+        edge_system = iotcc_details_json_obj["EdgeSystem"]
 
-        # Create metrics
-        self.metrics = []
+        # Set organization group property for edge_system
+        iotcc.set_organization_group_properties(edge_system["SystemName"], edge_system["uuid"], edge_system["EntityType"],
+                                                organization_group_properties)
 
-        mem_free_metric = Metric(
-            name="Memory Free",
-            unit=None,
-            interval=10,
-            sampling_function=read_mem_free
-        )
-        reg_mem_free_metric = self.iotcc.register(mem_free_metric)
-        self.iotcc.create_relationship(self.reg_ram_device, reg_mem_free_metric)
-        reg_mem_free_metric.start_collecting()
-        self.metrics.append(reg_mem_free_metric)
-
-        # Use the iotcc_device_name as identifier in the registry to easily refer the device in other packages
-        registry.register("reg_ram_device_mqtt", self.reg_ram_device)
+        for device in iotcc_details_json_obj['Devices']:
+            # Set Organization group property for devices
+            iotcc.set_organization_group_properties(device["DeviceName"], device["uuid"], device["EntityType"],
+                                                    organization_group_properties)
 
     def clean_up(self):
-        for metric in self.metrics:
-            metric.stop_collecting()
-
-        #Unregister iotcc device
-        if self.config['ShouldUnregisterOnUnload'] == "True":
-            self.iotcc.unregister(self.reg_ram_device)
+        pass
