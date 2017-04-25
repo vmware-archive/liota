@@ -81,7 +81,7 @@ class PackageClass(LiotaPackage):
             in the registry to easily refer the objects in other packages
             """
             registry.register("iotcc_mqtt", self.iotcc)
-            registry.register("iotcc_edge_system_mqtt", self.iotcc_edge_system)
+            registry.register("iotcc_mqtt_edge_system", self.iotcc_edge_system)
         except RegistrationFailure:
             print "EdgeSystem registration to IOTCC failed"
         self.iotcc.set_properties(self.iotcc_edge_system, config['SystemPropList'])

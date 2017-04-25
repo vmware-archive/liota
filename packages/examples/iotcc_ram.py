@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
-#  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
+#  Copyright ¬© 2015-2016 VMware, Inc. All Rights Reserved.                    #
 #                                                                             #
-#  Licensed under the BSD 2-Clause License (the ìLicenseî); you may not use   #
+#  Licensed under the BSD 2-Clause License (the ‚ÄúLicense‚Äù); you may not use   #
 #  this file except in compliance with the License.                           #
 #                                                                             #
 #  The BSD 2-Clause License                                                   #
@@ -87,6 +87,6 @@ class PackageClass(LiotaPackage):
         for metric in self.metrics:
             metric.stop_collecting()
 
-	#Unregister iotcc device
+        #Unregister iotcc device
         if self.config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(self.reg_ram_device)
