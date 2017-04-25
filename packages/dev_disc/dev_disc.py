@@ -32,17 +32,12 @@
 
 from liota.core.package_manager import LiotaPackage
 
-dependencies = ["iotcc"]
+dependencies = []
 
 class PackageClass(LiotaPackage):
 
     def run(self, registry):
         from liota.core.device_discovery import DiscoveryThread
-
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
 
 #---------------------------------------------------------------------------
 # Initialization should occur when this module is imported for first time.

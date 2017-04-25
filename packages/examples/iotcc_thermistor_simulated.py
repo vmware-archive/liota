@@ -116,12 +116,12 @@ class PackageClass(LiotaPackage):
         import copy
 
         # Acquire resources from registry
-	self.config_path = registry.get("package_conf")
+        self.config_path = registry.get("package_conf")
         self.iotcc = registry.get("iotcc")
         self.iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
-	thermistor_simulator = registry.get("thermistor_simulator")
+        thermistor_simulator = registry.get("thermistor_simulator")
         
-	self.iotcc_thermistor = self.iotcc.register(thermistor_simulator)
+        self.iotcc_thermistor = self.iotcc.register(thermistor_simulator)
         self.iotcc.create_relationship(self.iotcc_edge_system, self.iotcc_thermistor)
 
         ureg = thermistor_simulator.ureg
@@ -146,13 +146,13 @@ class PackageClass(LiotaPackage):
 
     def clean_up(self):
 
-	# Get values from configuration file
+        # Get values from configuration file
         config = {}
         execfile(self.config_path + '/sampleProp.conf', config)
 
         for metric in self.metrics:
             metric.stop_collecting()
-	
-	#Unregister iotcc device
+
+        #Unregister iotcc device
         if config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(self.iotcc_thermistor)

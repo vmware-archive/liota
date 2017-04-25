@@ -93,10 +93,9 @@ class SimulatorThread(Thread):
 
         # simulator related configuration
         self.endpoint_list = {} # simulator list: (comm type, ip:port or folder)
-        self.type_dcc_map = {} # Device Type to DCC mapping: (device type, dcc list)
-        self.type_dcc_pkg_map = {} # Device Type to DCC-Package-Name mapping: (device type, dcc-pkg-name list)
+        self.type_dcc_map = {} # Device Type to DCC mapping: (device type, dcc package name list (e.g., iotcc, iotcc_mqtt))
         self.type_key_map = {} # Device Type to Unique Key mapping: (device type, unique key)
-        self.type_tuple_key_dcc_pkg = {} # Device Type to Tuple of (unique key, dcc, dcc_pkg)
+        self.type_tuple_key_dcc_pkg = {} # Device Type to Tuple of (unique key, dcc_pkg)
 
         self._config = {} #key: cfg type, value: cfg list/info
         self._get_config_from_file() # extract configuration from liota.conf first
@@ -189,19 +188,12 @@ class SimulatorThread(Thread):
                                 continue
                             tmp_list2 = []
                             tmp_list2 = [x.strip() for x in value.split(',')]
-                            self.type_dcc_pkg_map[key] = tmp_list2
-                            tmp_list3 = []
-                            for value in tmp_list2[:]:
-                                dcc = value.split('-')[0]
-                                tmp_list3.append(dcc) # assume one packet per dcc
-                            self.type_dcc_map[key] = tmp_list3
-                            self.type_tuple_key_dcc_pkg[key] = (self.type_key_map[key], tmp_list3, tmp_list2)
-                        for key in self.type_dcc_pkg_map.iterkeys():
-                            log.debug("type_dcc_pkg_map:(%s : %s)\n" % (key, self.type_dcc_pkg_map[key]))
+                            self.type_dcc_map[key] = tmp_list2
+                            self.type_tuple_key_dcc_pkg[key] = (self.type_key_map[key], tmp_list2)
                         for key in self.type_dcc_map.iterkeys():
                             log.debug("type_dcc_map:(%s : %s)\n" % (key, self.type_dcc_map[key]))
                         for key in self.type_tuple_key_dcc_pkg.iterkeys():
-                            log.debug("type_dcc_map:(%s : %s)\n" % (key, self.type_tuple_key_dcc_pkg[key]))
+                            log.debug("type_tuple_key_dcc_pkg:(%s : %s)\n" % (key, self.type_tuple_key_dcc_pkg[key]))
                     except ConfigParser.ParsingError:
                         log.error('Could not parse log config file')
                         exit(-4)
@@ -229,10 +221,8 @@ class SimulatorThread(Thread):
         # simulator related
         # simulator list: (comm type, ip:port or folder)
         self._config['endpoint_list'] = self.endpoint_list
-        # Device Type to DCC mapping: (device type, dcc list)
+        # Device Type to DCC mapping: (device type, dcc package name list (e.g., iotcc, iotcc_mqtt))
         self._config['type_dcc_map'] = self.type_dcc_map
-        # Device Type to DCC-Package-Name mapping: (device type, dcc-pkg-name list)
-        self._config['type_dcc_pkg_map'] = self.type_dcc_pkg_map
         # Device Type to Unique Key mapping: (device type, unique key)
         self._config['type_key_map'] = self.type_key_map
         # Device Type to Tuple of (unique key, dcc, dcc_pkg)
@@ -248,7 +238,7 @@ class SimulatorThread(Thread):
     def _cmd_handler_list(self, parameter):
         # configurations
         if parameter == "configurations" or parameter == "cfg":
-            stats = ["n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]
+            stats = ["n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]
             stats[0] = str(self._config['cmd_msg_pipe']) + '\n\t'
             tmp = ''
             endpoint_list = self._config['endpoint_list']
@@ -263,30 +253,23 @@ class SimulatorThread(Thread):
             stats[2] = tmp
 
             tmp = ''
-            type_dcc_pkg_map = self._config['type_dcc_pkg_map']
-            for key in type_dcc_pkg_map.iterkeys():
-                tmp += str(key) + ': ' + str(type_dcc_pkg_map[key]) + '\n\t\t'
-            stats[3] = tmp
-
-            tmp = ''
             type_key_map = self._config['type_key_map']
             for key in type_key_map.iterkeys():
                 tmp += str(key) + ': ' + str(type_key_map[key]) + '\n\t\t'
-            stats[4] = tmp
+            stats[3] = tmp
 
             tmp = ''
             type_tuple_key_dcc_pkg = self._config['type_tuple_key_dcc_pkg']
             for key in type_tuple_key_dcc_pkg.iterkeys():
                 tmp += str(key) + ': ' + str(type_tuple_key_dcc_pkg[key]) + '\n\t\t'
-            stats[5] = tmp
+            stats[4] = tmp
 
-            stats[6] = str(self._config['package_path']) + '\n\t'
-            stats[7] = str(self._config['dev_file_path']) + '\n\t'
+            stats[5] = str(self._config['package_path']) + '\n\t'
+            stats[6] = str(self._config['dev_file_path']) + '\n\t'
             log.warning(("List of configurations - \n\t"
                         + "cmd_msg_pipe: %s\n\t"
                         + "endpoint_list: %s\n\t"
                         + "type_dcc_map: %s\n\t"
-                        + "type_dcc_pkg_map: %s\n\t"
                         + "type_key_map: %s\n\t"
                         + "type_tuple_key_dcc_pkg: %s\n\t"
                         + "dev_file_path: %s\n\t"
