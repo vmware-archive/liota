@@ -130,14 +130,14 @@ class IotControlCenter(DataCenterComponent):
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
-                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id)
+                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id, entity_obj.entity_id)
                 store_edge_system_uuid(entity_name=entity_obj.name, entity_id=entity_obj.entity_id,
                                        reg_entity_id=self.reg_entity_id)
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
                                                      self.reg_entity_id, None, None)
             else:
-                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id)
+                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id, entity_obj.entity_id)
                 # get dev_type, and prop_dict if possible
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("Devices", entity_obj.name, self.reg_entity_id,
@@ -162,7 +162,7 @@ class IotControlCenter(DataCenterComponent):
             except:
                 raise Exception("Exception while unregistering resource")
 
-        self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.reg_entity_id)))
+        self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.reg_entity)))
         on_response(self.recv_msg_queue.get(True,20))
         self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
         if entity_obj.ref_entity.entity_type != "HelixGateway":
@@ -214,13 +214,14 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 
-    def _properties(self, msg_id, res_uuid, res_kind, timestamp, properties):
+    def _properties(self, msg_id, entity_type, entity_id, entity_name, timestamp, properties):
         msg = {
             "transationID": msg_id,
             "type": "add_properties",
-            "uuid": res_uuid,
             "body": {
-                "kind": res_kind,
+                "kind": entity_type,
+                "id": entity_id,
+                "name": entity_name,
                 "timestamp": timestamp,
                 "property_data": []
             }
@@ -244,7 +245,11 @@ class IotControlCenter(DataCenterComponent):
             return
         return json.dumps({
             "type": "add_stats",
-            "uuid": reg_metric.reg_entity_id,
+            "body": {
+                "kind": reg_metric.parent.ref_entity.entity_type,
+                "id": reg_metric.parent.ref_entity.entity_id,
+                "name": reg_metric.parent.ref_entity.name
+            },
             "metric_data": [{
                 "statKey": reg_metric.ref_entity.name,
                 "timestamps": _timestamps,
@@ -252,10 +257,10 @@ class IotControlCenter(DataCenterComponent):
             }]
         })
 
-    def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, properties):
+    def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, entity_local_uuid, properties):
         log.info("Organization Group Properties defined for resource {0}".format(reg_entity_name))
         self.comms.send(json.dumps(
-            self._properties(self.next_id(), reg_entity_id, reg_entity_type,
+            self._properties(self.next_id(), reg_entity_type, entity_local_uuid, reg_entity_name,
                              getUTCmillis(), properties)))
 
     def set_properties(self, reg_entity_obj, properties):
@@ -269,7 +274,7 @@ class IotControlCenter(DataCenterComponent):
 
         log.info("Properties defined for resource {0}".format(entity.name))
         self.comms.send(json.dumps(
-            self._properties(self.next_id(), reg_entity_id, entity.entity_type,
+            self._properties(self.next_id(), entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), properties)))
         if entity.entity_type == "HelixGateway":
             with self.file_ops_lock:
@@ -304,7 +309,7 @@ class IotControlCenter(DataCenterComponent):
     def _create_iotcc_json(self):
         msg = {
             "iotcc": {
-                "EdgeSystem": {"SystemName": "", "EntityType": "", "uuid": ""},
+                "EdgeSystem": {"SystemName": "", "EntityType": "", "uuid": "", "LocalUuid": ""},
                 "OGProperties": {"OrganizationGroup": ""},
                 "Devices": []
             }
@@ -322,7 +327,7 @@ class IotControlCenter(DataCenterComponent):
             log.error('Could not open {0} file '.format(iotcc_path) + err)
         return iotcc_path
 
-    def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id):
+    def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id, entity_local_uuid):
         msg = ''
         if self._iotcc_json == '':
             log.warn('iotcc.json file missing')
@@ -338,6 +343,7 @@ class IotControlCenter(DataCenterComponent):
             msg["iotcc"]["EdgeSystem"]["SystemName"] = entity_name
             msg["iotcc"]["EdgeSystem"]["uuid"] = reg_entity_id
             msg["iotcc"]["EdgeSystem"]["EntityType"] = entity_type
+            msg["iotcc"]["EdgeSystem"]["LocalUuid"] = entity_local_uuid
         else:
             entity_exist = False
             for device in msg["iotcc"]["Devices"]:
@@ -347,7 +353,7 @@ class IotControlCenter(DataCenterComponent):
                     break
             if not entity_exist:
                 msg["iotcc"]["Devices"].append(
-                    {"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
+                    {"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type, "LocalUuid": entity_local_uuid})
         if msg != '':
             with open(self._iotcc_json, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
@@ -579,11 +585,13 @@ class IotControlCenter(DataCenterComponent):
         # Enforce even IDs
         return int(self.counter * 2)
 
-    def _unregistration(self, msg_id, uuid):
+    def _unregistration(self, msg_id, ref_entity):
         return {
             "transactionID": msg_id,
             "type": "remove_resource_request",
             "body": {
-                "uuid": uuid
+                "kind": ref_entity.entity_type,
+                "id": ref_entity.entity_id,
+                "name": ref_entity.name
             }
         }
