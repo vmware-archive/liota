@@ -35,6 +35,7 @@ import random
 from linux_metrics import cpu_stat
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["aws_iot"]
 
@@ -125,8 +126,7 @@ class PackageClass(LiotaPackage):
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        config = read_user_config(config_path + '/sampleProp.conf')
 
         # Create metrics
         self.metrics = []

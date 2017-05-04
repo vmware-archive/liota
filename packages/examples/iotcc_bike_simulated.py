@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["iotcc", "examples/bike_simulator"]
 
@@ -187,8 +188,7 @@ class PackageClass(LiotaPackage):
     def clean_up(self):
 
         # Get values from configuration file
-        config = {}
-        execfile(self.config_path + '/sampleProp.conf', config)
+        config = read_user_config(self.config_path + '/sampleProp.conf')
 
         for metric in self.metrics:
             metric.stop_collecting()

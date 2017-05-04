@@ -38,13 +38,12 @@ from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
-from liota.lib.utilities.utility import get_default_network_interface, get_disk_name
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name, read_user_config
 from liota.lib.utilities.filters.range_filter import RangeFilter, Type
 from liota.lib.utilities.filters.windowing_scheme.windowing_scheme import WindowingScheme
 
 # getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
 
 # Getting edge_system's network interface and disk name
 network_interface = get_default_network_interface()

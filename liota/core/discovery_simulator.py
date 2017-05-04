@@ -41,6 +41,7 @@ from time import sleep
 
 from liota.lib.utilities.utility import LiotaConfigPath
 from liota.lib.utilities.utility import DiscUtilities
+from liota.lib.utilities.utility import read_user_config
 from liota.dev_sims.named_pipe import NamedPipeSimulator
 from liota.dev_sims.socket_clnt import SocketSimulator
 from liota.dev_sims.mqtt import MqttSimulator
@@ -103,8 +104,7 @@ class SimulatorThread(Thread):
         self._save_config()
         # create an edge system instance
         config_path = self._config['package_path']
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        config = read_user_config(config_path + '/sampleProp.conf')
         self.edge_system_object = Dell5KEdgeSystem(config['EdgeSystemName'])
 
         # Initialization of simulator messenger queue and lock

@@ -36,11 +36,11 @@ from liota.entities.metrics.metric import Metric
 from liota.entities.devices.bike_simulated import BikeSimulated
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
+from liota.lib.utilities.utility import read_user_config
 
 
 # getting values from conf file
-config = {}
-execfile('../sampleProp.conf', config)
+config = read_user_config('../sampleProp.conf')
 
 import time
 import math

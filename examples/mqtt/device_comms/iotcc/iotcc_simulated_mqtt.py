@@ -43,10 +43,10 @@ from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.entities.metrics.metric import Metric
 from liota.lib.utilities.identity import Identity
 from liota.lib.utilities.tls_conf import TLSConf
+from liota.lib.utilities.utility import read_user_config
 
 # getting values from conf file
-config = {}
-execfile('samplePropMqtt.conf', config)
+config = read_user_config('samplePropMqtt.conf')
 
 # Create unit registry
 ureg = pint.UnitRegistry()

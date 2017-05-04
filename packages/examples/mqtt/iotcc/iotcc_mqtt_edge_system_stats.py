@@ -34,7 +34,7 @@ from linux_metrics import cpu_stat, disk_stat, net_stat
 
 
 from liota.core.package_manager import LiotaPackage
-from liota.lib.utilities.utility import get_default_network_interface, get_disk_name
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name, read_user_config
 
 
 dependencies = ["iotcc_mqtt"]
@@ -83,8 +83,7 @@ class PackageClass(LiotaPackage):
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        config = read_user_config(config_path + '/sampleProp.conf')
 
         # Create metrics
         self.metrics = []

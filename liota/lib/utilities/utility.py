@@ -35,6 +35,7 @@
 """
 
 from datetime import datetime
+import ast
 import hashlib
 import logging
 import os
@@ -272,6 +273,16 @@ def read_liota_config(section, name):
         log.warn('liota.conf file missing')
     return value
 
+def read_user_config(config_file_path):
+
+    config = ConfigParser.RawConfigParser()
+    config.optionxform = str
+    config.read(config_file_path)
+
+    user_config = dict(config.items('DEFAULT'))
+    for key, value in dict(config.items('DEFAULT')).iteritems():
+        user_config[key] = ast.literal_eval(value)
+    return user_config
 
 class DiscUtilities:
     """
