@@ -59,12 +59,12 @@ class PackageClass(LiotaPackage):
 
         # Set organization group property for edge_system
         iotcc.set_organization_group_properties(edge_system["SystemName"], edge_system["uuid"], edge_system["EntityType"],
-                                                organization_group_properties)
+                                                edge_system["LocalUuid"], organization_group_properties)
 
         for device in iotcc_details_json_obj['Devices']:
             # Set Organization group property for devices
             iotcc.set_organization_group_properties(device["DeviceName"], device["uuid"], device["EntityType"],
-                                                    organization_group_properties)
+                                                    device["LocalUuid"], organization_group_properties)
 
     def clean_up(self):
         pass
