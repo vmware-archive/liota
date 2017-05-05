@@ -274,6 +274,9 @@ def read_liota_config(section, name):
     return value
 
 def read_user_config(config_file_path):
+    """
+    Returns the user defined configuration as a dictionary from DEFAULT section.
+    """
 
     config = ConfigParser.RawConfigParser()
     config.optionxform = str
