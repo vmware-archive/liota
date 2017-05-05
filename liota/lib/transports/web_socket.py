@@ -54,7 +54,7 @@ class WebSocket():
 
     def connect_soc(self):
         try:
-            self.WebSocketConnection(self.url, self.verify_cert, self.identity)
+            self.WebSocketConnection()
         except Exception:
             log.exception("WebSocket exception, please check the WebSocket address and try again.")
             raise Exception("WebSocket exception, please check the WebSocket address and try again.")
