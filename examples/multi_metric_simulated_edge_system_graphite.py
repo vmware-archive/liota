@@ -37,11 +37,10 @@ from liota.dcc_comms.socket_comms import SocketDccComms
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.simulated_edge_system import SimulatedEdgeSystem
-from liota.lib.utilities.utility import getUTCmillis
+from liota.lib.utilities.utility import getUTCmillis, read_user_config
 
 # getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
 
 # Simple sampling function for metric returning the current sample value
 def simulated_value_sampling_function():

@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["edge_systems/dell5k/edge_system"]
 
@@ -53,8 +54,7 @@ class PackageClass(LiotaPackage):
 
         # Get values from configuration file
         self.config_path = registry.get("package_conf")
-        config = {}
-        execfile(self.config_path + '/sampleProp.conf', config)
+        config = read_user_config(self.config_path + '/sampleProp.conf')
 
         # Initialize DCC object with transport
         self.iotcc = IotControlCenter(
@@ -77,8 +77,7 @@ class PackageClass(LiotaPackage):
 
     def clean_up(self):
         # Get values from configuration file
-        config = {}
-        execfile(self.config_path + '/sampleProp.conf', config)
+        config = read_user_config(self.config_path + '/sampleProp.conf')
 
         #Unregister edge system
         if config['ShouldUnregisterOnUnload'] == "True":
