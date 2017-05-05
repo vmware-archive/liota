@@ -44,6 +44,7 @@ class PackageClass(LiotaPackage):
 
     def run(self, registry):
         import copy
+        from liota.lib.utilities.identity import Identity
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
         from liota.dccs.dcc import RegistrationFailure
@@ -56,11 +57,14 @@ class PackageClass(LiotaPackage):
         self.config_path = registry.get("package_conf")
         config = read_user_config(self.config_path + '/sampleProp.conf')
 
+        identity = Identity(root_ca_cert=config['WebsocketCaCert'], username=config['IotCCUID'],
+                            password=config['IotCCPassword'],
+                            cert_file=config['GatewayCert'], key_file=config['GatewayKey'])
+
         # Initialize DCC object with transport
         self.iotcc = IotControlCenter(
-            config['IotCCUID'], config['IotCCPassword'],
-            WebSocketDccComms(url=config['WebSocketUrl'])
-        )
+            WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyCert'], identity=identity)
+            )
 
         try:
             # Register edge system (gateway)
@@ -79,7 +83,7 @@ class PackageClass(LiotaPackage):
         # Get values from configuration file
         config = read_user_config(self.config_path + '/sampleProp.conf')
 
-        #Unregister edge system
+        # Unregister edge system
         if config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(self.iotcc_edge_system)
         self.iotcc.comms.client.close()

@@ -46,30 +46,39 @@ class WebSocket():
 
     """
 
-    def __init__(self, url):
+    def __init__(self, url,identity, verify_cert):
         self.url = url
+        self.identity = identity
+        self.verify_cert = verify_cert
         self.connect_soc()
 
     def connect_soc(self):
         try:
-            self.WebSocketConnection(self.url, False)
+            self.WebSocketConnection(self.url, self.verify_cert, self.identity)
         except Exception:
             log.exception("WebSocket exception, please check the WebSocket address and try again.")
             raise Exception("WebSocket exception, please check the WebSocket address and try again.")
 
     # CERTPATH to be taken in consideration later
-    def WebSocketConnection(self, host, verify_cert=True, CERTPATH="/etc/liota/cert"):
-        if not verify_cert:
+    def WebSocketConnection(self):
+        if not self.verify_cert:
             self.ws = None
-            self.ws = create_connection(host, enable_multithread=True,
+            self.ws = create_connection(self.host, enable_multithread=True,
                                         sslopt={"cert_reqs": ssl.CERT_NONE})
         else:
             self.ws = None
-            if os.path.isfile(CERTPATH):
+            if self.identity.root_ca_cert:
+                if not(os.path.exists(self.identity.root_ca_cert)):
+                    log.error("Error : Wrong CA certificate path.")
+                    raise ValueError("Error : Wrong CA certificate path.")
+            else:
+                log.error("Error : CA certificate path is missing")
+                raise ValueError("Error : CA certificate path is missing")
+            if os.path.isfile(self.identity.root_ca_cert):
                 try:
-                    self.ws = create_connection(host, enable_multithread=True,
+                    self.ws = create_connection(self.host, enable_multithread=True,
                                                 sslopt={"cert_reqs": ssl.CERT_REQUIRED,
-                                                        "ca_certs": CERTPATH})
+                                                        "ca_certs": self.identity.root_ca_cert})
                 except ssl.SSLError:
                     pass
             if self.ws is None:

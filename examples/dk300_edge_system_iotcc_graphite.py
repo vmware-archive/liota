@@ -35,6 +35,7 @@ import random
 from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
 
 from liota.dccs.iotcc import IotControlCenter
+from liota.lib.utilities.identity import Identity
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
@@ -118,8 +119,14 @@ if __name__ == '__main__':
     # create a data center object, IoTCC in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
     # UID/PASS login for now.
-    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-                             WebSocketDccComms(url=config['WebSocketUrl']))
+    identity = Identity(root_ca_cert=config['WebsocketCaCert'], username=config['IotCCUID'],
+                        password=config['IotCCPassword'],
+                        cert_file=config['GatewayCert'], key_file=config['GatewayKey'])
+
+    # Initialize DCC object with transport
+    iotcc = IotControlCenter(
+        WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyCert'], identity=identity)
+    )
 
     # create a System object encapsulating the particulars of a IoT System
     # argument is the name of this IoT System
