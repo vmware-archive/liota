@@ -46,7 +46,7 @@ class WebSocket():
 
     """
 
-    def __init__(self, url,verify_cert, identity):
+    def __init__(self, url, verify_cert, identity):
         self.url = url
         self.verify_cert = verify_cert
         self.identity = identity
