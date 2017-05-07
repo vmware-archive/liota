@@ -46,10 +46,10 @@ class WebSocket():
 
     """
 
-    def __init__(self, url,identity, verify_cert):
+    def __init__(self, url,verify_cert, identity):
         self.url = url
-        self.identity = identity
         self.verify_cert = verify_cert
+        self.identity = identity
         self.connect_soc()
 
     def connect_soc(self):
@@ -63,7 +63,7 @@ class WebSocket():
     def WebSocketConnection(self):
         if not self.verify_cert:
             self.ws = None
-            self.ws = create_connection(self.host, enable_multithread=True,
+            self.ws = create_connection(self.url, enable_multithread=True,
                                         sslopt={"cert_reqs": ssl.CERT_NONE})
         else:
             self.ws = None
@@ -76,7 +76,7 @@ class WebSocket():
                 raise ValueError("Error : CA certificate path is missing")
             if os.path.isfile(self.identity.root_ca_cert):
                 try:
-                    self.ws = create_connection(self.host, enable_multithread=True,
+                    self.ws = create_connection(self.url, enable_multithread=True,
                                                 sslopt={"cert_reqs": ssl.CERT_REQUIRED,
                                                         "ca_certs": self.identity.root_ca_cert})
                 except ssl.SSLError:
