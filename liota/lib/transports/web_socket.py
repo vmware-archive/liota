@@ -37,7 +37,6 @@ import ssl
 import sys
 from websocket import create_connection
 import Queue
-import traceback
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +54,7 @@ class WebSocket():
         try:
             self.WebSocketConnection(self.url, False)
         except Exception:
-            log.error(traceback.format_exc())
+            log.exception("WebSocket exception, please check the WebSocket address and try again.")
             raise Exception("WebSocket exception, please check the WebSocket address and try again.")
 
     # CERTPATH to be taken in consideration later
@@ -83,7 +82,6 @@ class WebSocket():
                 msg = self.ws.recv()
                 log.debug("Message received while running {0}".format(msg))
                 if msg is "":
-                    log.error(traceback.format_exc())
                     log.error("Stream Closed")
                     raise Exception("No message received from the server, please check the connection.")
                 log.debug("RX {0}".format(msg))
@@ -113,7 +111,7 @@ class WebSocket():
                     attempts += 1
                     if attempts == 4:
                         self.close()
-                        log.error(traceback.format_exc())
+                        log.exception("Exception while sending data, please check the connection and try again.")
                         raise Exception("Exception while sending data, please check the connection and try again.")
                     else:
                         log.exception("Exception while sending data, please check the connection and try again.")
