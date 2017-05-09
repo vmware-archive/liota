@@ -331,7 +331,7 @@ class DiscUtilities:
                     log.error("Could not create directory for messenger pipe")
                     return False
             try:
-                os.mkfifo(pipe_file, 6)
+                os.mkfifo(pipe_file, 0600)
                 log.info("Created pipe: " + pipe_file)
             except OSError:
                 log.error("Could not create messenger pipe")

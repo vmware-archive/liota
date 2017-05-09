@@ -34,7 +34,7 @@ entity_file_path = /etc/liota/conf/entity # the folder where store discovered de
 
 [DISC_CFG]
 
-disc_cmd_msg_pipe = /var/tmp/liota/disc_cmd_messenger.fifo # the named pipe path for discovery CmdMessengerThread
+disc_cmd_msg_pipe = /etc/liota/packages/dev_disc/disc_cmd_messenger.fifo # the named pipe path for discovery CmdMessengerThread
 
 [DEVICE_TYPE_TO_UNIQUEKEY_MAPPING] # device discovery can only process device types which are listed here, among its attributes,
 
@@ -58,19 +58,19 @@ Banana23 = iotcc	# Later user could create Liota Package for discovered devices 
 
 [DEVSIM_CFG]
 
-devsim_cmd_msg_pipe = /var/tmp/liota/devsim_cmd_messenger.fifo	# the named pipe path for Device Simulator CmdMessengerThread
+devsim_cmd_msg_pipe = /etc/liota/packages/dev_disc/devsim_cmd_messenger.fifo # named pipe for Device Simulator CmdMessengerThread
 
 [DISC_ENDPOINT_LIST]		# Endpoing list where you want discovery listens on and simulator send messages to
 
 							# if no item in this list, Device Discovery will not be started
 
-disc_msg_pipe = /var/tmp/liota/discovery_messenger.fifo		# currently, support these 4 types (currently,
+disc_msg_pipe = /etc/liota/packages/dev_disc/discovery_messenger.fifo	# currently, support these 4 types (currently,
 
 socket = 127.0.0.1:5000						# coap and socket are not allowed for security consideration).
 
-mqtt = 127.0.0.1:1883:device_discovery				# IP address should be updated according to your system
+mqtt = 127.0.0.1:1023:device_discovery				# IP address should be updated according to your system
 
-coap = 10.1.170.173:5683					# Mqtt broker should be started first before publish/subscribe
+coap = 127.0.0.1:5683					# Mqtt broker should be started first before publish/subscribe
 
 								# reference: https://mosquitto.org/download/
 
@@ -107,7 +107,7 @@ retry = 5
 keep_alive = 60
 
 ConnectDisconnectTimeout = 10
-* When MQTT broker also sits on the edge system, MQTT subscriber can listen on 127.0.0.1/localhohst and use basic authentication
+* When MQTT broker also sits on the edge system, MQTT subscriber can listen on 127.0.0.1/localhost with port < 1024 and use basic authentication
 to guarantee secured communication with MQTT broker. It's MQTT broker and MQTT publisher's responsibility to guarantee MQTT broker and external world communicate securely.
 
 # Configuration B (under /etc/liota/packages, inside sampleProf.conf)
