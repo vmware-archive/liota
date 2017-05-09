@@ -36,9 +36,13 @@ dependencies = []
 
 class PackageClass(LiotaPackage):
 
-    def run(self, registry):
+    def run(self, registry, package_record):
         from liota.core.device_discovery import DiscoveryThread
+        from liota.lib.utilities.utility import check_integrity
 
+        # verify file integrity first
+        if (check_integrity(package_record, __file__) == False):
+            raise Exception("Package integrity check failed")
 #---------------------------------------------------------------------------
 # Initialization should occur when this module is imported for first time.
 # This method create queues and spawns DiscoveryThread, which will spins up

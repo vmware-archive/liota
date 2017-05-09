@@ -44,7 +44,7 @@ from Queue import Queue
 from time import sleep
 from abc import ABCMeta, abstractmethod
 
-from liota.lib.utilities.utility import LiotaConfigPath, read_liota_config
+from liota.lib.utilities.utility import LiotaConfigPath, read_liota_config, sha1sum
 
 log = logging.getLogger(__name__)
 
@@ -169,21 +169,6 @@ class LiotaPackage:
     @abstractmethod
     def clean_up(self):
         raise NotImplementedError
-
-#---------------------------------------------------------------------------
-# This method calculates SHA-1 checksum of file.
-# May raise IOError upon "open"
-
-
-def sha1sum(path_file):
-    sha1 = hashlib.sha1()
-    with open(path_file, "rb") as fp:
-        while True:
-            data = fp.read(65536)  # buffer size
-            if not data:
-                break
-            sha1.update(data)
-    return sha1
 
 
 class PackageRecord:
@@ -448,6 +433,10 @@ class PackageThread(Thread):
         if package_path.endswith(c_slash):
             c_slash = ""
         path_file = os.path.abspath(package_path + c_slash + file_name)
+        if not (path_file.startswith(os.path.abspath(package_path)+'/')):
+            log.error("Package %s is NOT under package path %s"
+                         % (file_name, package_path))
+            return None, None
 
         file_ext = None
         extensions = ["py", "pyc", "pyo"]
@@ -591,18 +580,18 @@ class PackageThread(Thread):
 
         klass = getattr(module_loaded, "PackageClass")
         package_record = PackageRecord(file_name)
+        package_record.set_sha1(sha1)
+        package_record.set_ext(file_ext)
         if not package_record.set_instance(klass()):
             log.error("Unexpected failure initializing package")
             return None
         try:  # Run created instance
             package_record.get_instance().run(
-                self._resource_registry.get_package_registry(file_name)
+                self._resource_registry.get_package_registry(file_name), package_record
             )
         except Exception as er:
             log.error("Exception in initialization: %s" % str(er))
             return None
-        package_record.set_sha1(sha1)
-        package_record.set_ext(file_ext)
         package_record.set_dependencies(dependencies)
         self._packages_loaded[file_name] = package_record
 
@@ -1090,8 +1079,8 @@ def initialize():
                 log.error("Could not create directory for messenger pipe")
                 return
         try:
-            os.mkfifo(package_messenger_pipe)
-            log.info("Created pipe: " + package_messenger_pipe)
+            os.mkfifo(package_messenger_pipe, 6)
+            print("Created pipe: " + package_messenger_pipe)
         except OSError:
             package_messenger_pipe = None
             log.error("Could not create messenger pipe")

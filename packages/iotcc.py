@@ -42,11 +42,16 @@ class PackageClass(LiotaPackage):
     IoTCC over WebSocket to acquire "registered edge system", i.e. iotcc_edge_system.
     """
 
-    def run(self, registry):
+    def run(self, registry, package_record):
         import copy
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
         from liota.dccs.dcc import RegistrationFailure
+        from liota.lib.utilities.utility import check_integrity
+
+        # verify file integrity first
+        if (check_integrity(package_record, __file__) == False):
+            raise Exception("Package integrity check failed")
 
         # Acquire resources from registry
         # Creating a copy of edge_system object to keep original object "clean"

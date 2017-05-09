@@ -138,9 +138,14 @@ class PackageClass(LiotaPackage):
         self.get_bike_speed = get_bike_speed
         self.get_bike_power = get_bike_power
 
-    def run(self, registry):
+    def run(self, registry, package_record):
         from liota.entities.metrics.metric import Metric
         import copy
+        from liota.lib.utilities.utility import check_integrity
+
+        # verify file integrity first
+        if (check_integrity(package_record, __file__) == False):
+            raise Exception("Package integrity check failed")
 
         # Acquire resources from registry
         self.config_path = registry.get("package_conf")

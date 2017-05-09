@@ -324,26 +324,36 @@ class SimulatorThread(Thread):
             log.debug("Endpoint:{0}:{1}".format(key, value))
             if value is None or value == "None":
                 continue
+            ### TBR: because security consideration, currently only mqtt is allowed
+            mqtt_only = True
             if key.find('disc_msg_pipe') != -1:
                 pipe_thread = NamedPipeSimulator(pipe_file=value,
                         name=key+"_Thread", simulator=self)
                 if pipe_thread is not None:
                     self._simulators[key] = pipe_thread
             if key.find('socket') != -1:
-                socket_thread = SocketSimulator(ip_port=value,
-                        name=key+"_Thread", simulator=self)
-                if socket_thread is not None:
-                    self._simulators[key] = socket_thread
+                if mqtt_only == False:
+                    socket_thread = SocketSimulator(ip_port=value,
+                            name=key+"_Thread", simulator=self)
+                    if socket_thread is not None:
+                        self._simulators[key] = socket_thread
+                else:
+                    log.warning("because security consideration, Socket Endpoint is not allowed!")
+                    print "because security consideration, Socket Endpoint is not allowed!"
             if key.find('mqtt') != -1:
                 mqtt_thread = MqttSimulator(mqtt_cfg=value,
                         name=key+"_Thread", simulator=self)
                 if mqtt_thread is not None:
                     self._simulators[key] = mqtt_thread
             if key.find('coap') != -1:
-                coap_thread = CoapSimulator(ip_port=value,
-                        name=key+"_Thread", simulator=self)
-                if coap_thread is not None:
-                    self._simulators[key] = coap_thread
+                if mqtt_only == False:
+                    coap_thread = CoapSimulator(ip_port=value,
+                            name=key+"_Thread", simulator=self)
+                    if coap_thread is not None:
+                        self._simulators[key] = coap_thread
+                else:
+                    log.warning("because security consideration, Coap Endpoint is not allowed!")
+                    print "because security consideration, Coap Endpoint is not allowed!"
 
         # Listen on message queue for management or statistic commands
         global cmd_message_queue

@@ -41,7 +41,7 @@ Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols
 Liota applications can be broken into small pieces that can be loaded and unloaded into a running liota process. We recommend putting the EdgeSystems, Devices, Metrics and DCC(s) in separate packages. Then each construct can be loaded and unloaded at will. See the README in the package directory for complete details.
 
 ## Device Discovery
-Liota SDK provides users a way to discover new devices at run-time through a dedicated discovery thread. The discovery thread could listen on a list of end points by spinning up a listening thread for each of them. Currently, Liota supports 4 kinds of end points: MQTT, COAP, Socket, and Named Pipe.
+Liota SDK provides users a way to discover new devices at run-time through a dedicated discovery thread. The discovery thread could listen on a list of end points by spinning up a listening thread for each of them. Currently, Liota supports 4 kinds of end points: MQTT, COAP, Socket, and Named Pipe. However, because of security consideration on edge system, currently only MQTT and Named Pipe are allowed, especially Named Pipe is only accessible to its owner user.
 
 Assume there is a list of DeviceType-to-DCC Mappings, such as {TypeA:[DCC1-Package-Name, DCC2-Package-Name], TypeB:[DCC3-Package-Name]}. Listening thread waits for a json message from devices, registers new devices with each DCC in the mapping list, sets any properties, fills out device file for AW agent. AW agent enrolls discovered device and pushes content to bring the device to compliance.
 

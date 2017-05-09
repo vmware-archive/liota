@@ -167,6 +167,9 @@ class IotControlCenter(DataCenterComponent):
         self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
         if entity_obj.ref_entity.entity_type != "HelixGateway":
             self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, entity_obj.ref_entity.entity_type, None, True)
+        else:
+            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
+
         log.info("Unregistration of resource {0} with IoTCC complete".format(entity_obj.ref_entity.name))
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
@@ -390,44 +393,59 @@ class IotControlCenter(DataCenterComponent):
             json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
         f.close()
 
-    def store_edge_system_info(self, uuid, name, prop_dict):
-        """
-        create (can overwrite) edge system info file of UUID.xml, with format of
-        <attributes>
-        <attribute name=attribute name value=attribute value/>
-        …
-        </attributes>
-        except the first attribute is edge system name, all other attributes may vary
-        """
-
-        log.debug("store_edge_system_info")
-        log.debug('{0}:{1}, prop_list: {2}'.format(uuid, name, prop_dict))
-        root = ET.Element("attributes")
-        # add edge system name as an attribute
-        ET.SubElement(root, "attribute", name="edge system name", value=name)
-        # add edge system properties as attributes
+    def write_entity_json_file(self, prop_dict, attribute_list, uuid, remove):
         if prop_dict is not None:
             for key in prop_dict.iterkeys():
                 value = prop_dict[key]
                 if key == 'entity type' or key == 'name' or key == 'device type':
                     continue
-                ET.SubElement(root, "attribute", name=key, value=value)
-        # add time stamp
-        ET.SubElement(root, "attribute", name="LastSeenTimestamp",
-                      value=strftime("%Y-%m-%dT%H:%M:%S", gmtime()))
+                attribute_list.append({key: value})
+        attribute_list.append({"LastSeenTimestamp": strftime("%Y-%m-%dT%H:%M:%S", gmtime())})
+        log.debug('attribute_list: {0}'.format(attribute_list))
+        msg = {
+            "discovery": {
+                "remove": remove,
+                "attributes": attribute_list
+            }
+        }
+        log.debug('msg: {0}'.format(msg))
+        log.debug("store_entity_json_file dev_file_path:{0}".format(self.dev_file_path))
+        file_path = self.dev_file_path + '/' + uuid + '.json'
+        try:
+            with open(file_path, 'w') as f:
+                json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
+                log.debug('Initialized ' + file_path)
+            f.close()
+        except IOError, err:
+            log.error('Could not open {0} file '.format(file_path) + err)
 
-        log.debug("store_edge_system_info dev_file_path:{0}".format(self.dev_file_path))
-        file_path = self.dev_file_path + '/' + uuid + '.xml'
-        with open(file_path, "w") as fp:
-            fp.write(self.prettify(root))
-        return
+    def store_edge_system_info(self, uuid, name, prop_dict, remove):
+        """
+        create (can overwrite) edge system info file of UUID.json, with format of
+        {
+            "discovery":  {
+                "remove": false,
+                "attributes": [
+                    {"edge system name" : "EdgeSystem-Name"},
+                    {"attribute name" : "attribute value"},
+                    …
+                ]
+            }
+        }
+        except the first attribute is edge system name, all other attributes may vary
+        """
+
+        log.debug("store_edge_system_info")
+        log.debug('{0}:{1}, prop_list: {2}'.format(uuid, name, prop_dict))
+        attribute_list = [{"edge system name": name}]
+        self.write_entity_json_file(prop_dict, attribute_list, uuid, remove)
 
     def store_device_info(self, uuid, name, dev_type, prop_dict, remove_device):
         """
         create (can overwrite) device info file of device_UUID.json, with format of
         {
             "discovery":  {
-                "remove" : false,
+                "remove": false,
                 "attributes": [
                     {"IoTDeviceType" : "LM35"},
                     {"IoTDeviceName" : "LM35-12345"},
@@ -445,31 +463,7 @@ class IotControlCenter(DataCenterComponent):
         log.debug('prop_dict: {0}'.format(prop_dict))
         attribute_list = [{"IoTDeviceType": dev_type},
                           {"IoTDeviceName": name}]
-        # attribute_list.append(prop_dict)
-        if prop_dict is not None:
-            for key in prop_dict.iterkeys():
-                value = prop_dict[key]
-                if key == 'entity type' or key == 'name' or key == 'device type':
-                    continue
-                attribute_list.append({key: value})
-        attribute_list.append({"LastSeenTimestamp": strftime("%Y-%m-%dT%H:%M:%S", gmtime())})
-        log.debug('attribute_list: {0}'.format(attribute_list))
-        msg = {
-            "discovery": {
-                "remove": remove_device,
-                "attributes": attribute_list
-            }
-        }
-        log.debug('msg: {0}'.format(msg))
-        log.debug("store_device_info dev_file_path:{0}".format(self.dev_file_path))
-        file_path = self.dev_file_path + '/' + uuid + '.json'
-        try:
-            with open(file_path, 'w') as f:
-                json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
-                log.debug('Initialized ' + file_path)
-            f.close()
-        except IOError, err:
-            log.error('Could not open {0} file '.format(file_path) + err)
+        self.write_entity_json_file(prop_dict, attribute_list, uuid, remove_device)
 
     def write_entity_file(self, prop_dict, res_uuid):
         file_path = self.entity_file_path + '/' + res_uuid + '.json'
@@ -538,14 +532,13 @@ class IotControlCenter(DataCenterComponent):
         self.write_entity_file(new_prop_dict, reg_entity_id)
         ### Write IOTCC device file for AW agents
         if entity_type == "EdgeSystem":
-            self.store_edge_system_info(reg_entity_id, entity_name, new_prop_dict)
+            self.store_edge_system_info(reg_entity_id, entity_name, new_prop_dict, False)
         elif entity_type == "Devices":
             self.store_device_info(reg_entity_id, entity_name, dev_type, new_prop_dict, False)
         else:
             return
 
     def _get_file_storage_path(self, name):
-        log.debug("_get_{0}".format(name))
         config = ConfigParser.RawConfigParser()
         fullPath = LiotaConfigPath().get_liota_fullpath()
         if fullPath != '':
@@ -567,7 +560,6 @@ class IotControlCenter(DataCenterComponent):
                             else:
                                 log.error('Could not create file storage directory')
                                 return None
-                    log.debug("_get_{0} file_path:{1}".format(name, file_path))
                     return file_path
                 else:
                     log.error('Could not open config file ' + fullPath)

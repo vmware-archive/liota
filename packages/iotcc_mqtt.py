@@ -42,13 +42,18 @@ class PackageClass(LiotaPackage):
     IoTCC over MQTT Protocol to acquire "registered edge system", i.e. iotcc_edge_system.
     """
 
-    def run(self, registry):
+    def run(self, registry, package_record):
         import copy
         from liota.lib.utilities.identity import Identity
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
         from liota.dccs.dcc import RegistrationFailure
         from liota.lib.utilities.tls_conf import TLSConf
+        from liota.lib.utilities.utility import check_integrity
+
+        # verify file integrity first
+        if (check_integrity(package_record, __file__) == False):
+            raise Exception("Package integrity check failed")
 
         # Get values from configuration file
         self.config_path = registry.get("package_conf")

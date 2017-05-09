@@ -40,8 +40,13 @@ class PackageClass(LiotaPackage):
     It registers "edge system" in package manager's resource registry.
     """
 
-    def run(self, registry):
+    def run(self, registry, package_record):
         from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
+        from liota.lib.utilities.utility import check_integrity
+
+        # verify file integrity first
+        if (check_integrity(package_record, __file__) == False):
+            raise Exception("Package integrity check failed")
 
         # getting values from conf file
         config_path = registry.get("package_conf")

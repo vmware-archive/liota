@@ -76,9 +76,14 @@ def read_network_bytes_received():
 
 
 class PackageClass(LiotaPackage):
-    def run(self, registry):
+    def run(self, registry, package_record):
         import copy
         from liota.entities.metrics.metric import Metric
+        from liota.lib.utilities.utility import check_integrity
+
+        # verify file integrity first
+        if (check_integrity(package_record, __file__) == False):
+            raise Exception("Package integrity check failed")
 
         # Acquire resources from registry
         iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))

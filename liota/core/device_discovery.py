@@ -38,8 +38,7 @@ import ConfigParser
 from threading import Thread, Lock
 from Queue import Queue
 
-from liota.lib.utilities.utility import LiotaConfigPath
-from liota.lib.utilities.utility import DiscUtilities
+from liota.lib.utilities.utility import LiotaConfigPath, DiscUtilities
 from liota.disc_listeners.named_pipe import NamedPipeListener
 from liota.disc_listeners.socket_svr import SocketListener
 from liota.disc_listeners.mqtt import MqttListener
@@ -324,22 +323,32 @@ class DiscoveryThread(Thread):
             log.debug("Endpoint:{0}:{1}".format(key, value))
             if value is None or value == "None":
                 continue
+            ### TBR: because security consideration, currently only mqtt is allowed
+            mqtt_only = True
             if key.find('disc_msg_pipe') != -1:
                 pipe_thread = NamedPipeListener(pipe_file=value, name=key+"_Thread", discovery=self)
                 if pipe_thread is not None:
                     self._listeners[key] = pipe_thread
             if key.find('socket') != -1:
-                socket_thread = SocketListener(ip_port=value, name=key+"_Thread", discovery=self)
-                if socket_thread is not None:
-                    self._listeners[key] = socket_thread
+                if mqtt_only == False:
+                    socket_thread = SocketListener(ip_port=value, name=key+"_Thread", discovery=self)
+                    if socket_thread is not None:
+                        self._listeners[key] = socket_thread
+                else:
+                    log.warning("because security consideration, Socket Endpoint is not allowed!")
+                    print "because security consideration, Socket Endpoint is not allowed!"
             if key.find('mqtt') != -1:
                 mqtt_thread = MqttListener(mqtt_cfg=value, name=key+"_Thread", discovery=self)
                 if mqtt_thread is not None:
                     self._listeners[key] = mqtt_thread
             if key.find('coap') != -1:
-                coap_thread = CoapListener(ip_port=value, name=key+"_Thread", discovery=self)
-                if coap_thread is not None:
-                    self._listeners[key] = coap_thread
+                if mqtt_only == False:
+                    coap_thread = CoapListener(ip_port=value, name=key+"_Thread", discovery=self)
+                    if coap_thread is not None:
+                        self._listeners[key] = coap_thread
+                else:
+                    log.warning("because security consideration, Coap Endpoint is not allowed!")
+                    print "because security consideration, Coap Endpoint is not allowed!"
 
         # Listen on message queue for management or statistic commands
         self.cmd_messenger_thread = \
