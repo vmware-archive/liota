@@ -68,11 +68,9 @@ disc_msg_pipe = /etc/liota/packages/dev_disc/discovery_messenger.fifo	# currentl
 
 socket = 127.0.0.1:5000						# coap and socket are not allowed for security consideration).
 
-mqtt = 127.0.0.1:1023:device_discovery				# IP address should be updated according to your system
+mqtt = 127.0.0.1:1023:device_discovery		# Mqtt broker should be started first before publish/subscribe
 
-coap = 127.0.0.1:5683					# Mqtt broker should be started first before publish/subscribe
-
-								# reference: https://mosquitto.org/download/
+coap = 127.0.0.1:5683					# reference: https://mosquitto.org/download/
 
 [DISC_MQTT_CFG]							# Mqtt with TLS authentication need more settings
 enable_authentication = True
