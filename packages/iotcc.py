@@ -57,13 +57,13 @@ class PackageClass(LiotaPackage):
         self.config_path = registry.get("package_conf")
         config = read_user_config(self.config_path + '/sampleProp.conf')
 
-        identity = Identity(root_ca_cert=config['WebsocketCaCert'], username=config['IotCCUID'],
+        identity = Identity(root_ca_cert=config['WebsocketCaCertFile'], username=config['IotCCUID'],
                             password=config['IotCCPassword'],
-                            cert_file=config['GatewayCert'], key_file=config['GatewayKey'])
+                            cert_file=config['ClientCertFile'], key_file=config['ClientKeyFile'])
 
         # Initialize DCC object with transport
         self.iotcc = IotControlCenter(
-            WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyCert'], identity=identity)
+            WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyServerCert'], identity=identity)
             )
 
         try:

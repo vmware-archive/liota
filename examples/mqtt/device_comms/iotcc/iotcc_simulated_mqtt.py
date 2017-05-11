@@ -143,13 +143,13 @@ if __name__ == "__main__":
 
     # Create DCC object IoTCC using websocket transport
     # with UID and PASS
-    ws_identity = Identity(root_ca_cert=config['WebsocketCaCert'], username=config['IotCCUID'],
+    ws_identity = Identity(root_ca_cert=config['WebsocketCaCertFile'], username=config['IotCCUID'],
                            password=config['IotCCPassword'],
-                           cert_file=config['GatewayCert'], key_file=config['GatewayKey'])
+                           cert_file=config['ClientCertFile'], key_file=config['ClientKeyFile'])
 
     # Initialize DCC object with transport
     iotcc = IotControlCenter(
-        WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyCert'], identity=ws_identity)
+        WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyServerCert'], identity=ws_identity)
     )
 
     try:

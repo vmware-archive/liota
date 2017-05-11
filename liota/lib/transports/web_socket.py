@@ -67,20 +67,24 @@ class WebSocket():
                                         sslopt={"cert_reqs": ssl.CERT_NONE})
         else:
             self.ws = None
-            if self.identity.root_ca_cert:
-                if not(os.path.exists(self.identity.root_ca_cert)):
-                    log.error("Error : Wrong CA certificate path.")
-                    raise ValueError("Error : Wrong CA certificate path.")
+            if self.identity is not None:
+                if self.identity.root_ca_cert:
+                    if not (os.path.exists(self.identity.root_ca_cert)):
+                        log.error("Error : Wrong CA certificate path.")
+                        raise ValueError("Error : Wrong CA certificate path.")
+                else:
+                    log.error("Error : CA certificate path is missing")
+                    raise ValueError("Error : CA certificate path is missing")
+                if os.path.isfile(self.identity.root_ca_cert):
+                    try:
+                        self.ws = create_connection(self.url, enable_multithread=True,
+                                                    sslopt={"cert_reqs": ssl.CERT_REQUIRED,
+                                                            "ca_certs": self.identity.root_ca_cert})
+                    except ssl.SSLError:
+                        pass
             else:
-                log.error("Error : CA certificate path is missing")
-                raise ValueError("Error : CA certificate path is missing")
-            if os.path.isfile(self.identity.root_ca_cert):
-                try:
-                    self.ws = create_connection(self.url, enable_multithread=True,
-                                                sslopt={"cert_reqs": ssl.CERT_REQUIRED,
-                                                        "ca_certs": self.identity.root_ca_cert})
-                except ssl.SSLError:
-                    pass
+                log.error("Identity object is missing")
+                raise ValueError("Identity object is missing")
             if self.ws is None:
                 raise (IOError("Couldn't verify host certificate"))
 
