@@ -301,11 +301,6 @@ def read_user_config(config_file_path):
         user_config[key] = ast.literal_eval(value)
     return user_config
 
-def check_integrity(package_record, filepath):
-
-    filename = os.path.splitext(filepath)[0] + "." + package_record.get_ext()
-    log.debug("get_checksum for {0}".format(filename))
-    return sha1sum(filename).hexdigest() == package_record.get_sha1().hexdigest()
 
 class DiscUtilities:
     """

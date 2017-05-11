@@ -77,7 +77,6 @@ def read_network_bytes_received():
 
 
 class PackageClass(LiotaPackage):
-
     def run(self, registry):
         import copy
         from liota.entities.metrics.metric import Metric
@@ -140,3 +139,4 @@ class PackageClass(LiotaPackage):
     def clean_up(self):
         for metric in self.metrics:
             metric.stop_collecting()
+

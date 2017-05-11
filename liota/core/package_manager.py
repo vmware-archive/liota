@@ -1097,7 +1097,7 @@ def initialize():
                 return
         try:
             os.mkfifo(package_messenger_pipe, 0600)
-            print("Created pipe: " + package_messenger_pipe)
+            log.info("Created pipe: " + package_messenger_pipe)
         except OSError:
             package_messenger_pipe = None
             log.error("Could not create messenger pipe")

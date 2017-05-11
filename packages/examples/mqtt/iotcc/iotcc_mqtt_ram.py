@@ -51,7 +51,6 @@ def read_mem_free():
 
 
 class PackageClass(LiotaPackage):
-
     def run(self, registry):
         from liota.entities.devices.simulated_device import SimulatedDevice
         from liota.entities.metrics.metric import Metric

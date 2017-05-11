@@ -109,7 +109,6 @@ def get_living_room_luminance():
 # ----------------------------------------------------------------------------------------------------------------------
 
 class PackageClass(LiotaPackage):
-
     def run(self, registry):
         import copy
         import pint
