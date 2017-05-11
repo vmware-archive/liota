@@ -42,15 +42,10 @@ class PackageClass(LiotaPackage):
     Graphite to acquire "registered edge system", i.e. graphite_edge_system.
     """
 
-    def run(self, registry, package_record):
+    def run(self, registry):
         import copy
         from liota.dccs.graphite import Graphite
         from liota.dcc_comms.socket_comms import SocketDccComms
-        from liota.lib.utilities.utility import check_integrity
-
-        # verify file integrity first
-        if (check_integrity(package_record, __file__) == False):
-            raise Exception("Package integrity check failed")
 
         # Acquire resources from registry
         # Creating a copy of system object to keep original object "clean"

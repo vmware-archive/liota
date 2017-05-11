@@ -51,15 +51,11 @@ def read_mem_free():
 
 
 class PackageClass(LiotaPackage):
-    def run(self, registry, package_record):
+
+    def run(self, registry):
         from liota.entities.devices.simulated_device import SimulatedDevice
         from liota.entities.metrics.metric import Metric
         import copy
-        from liota.lib.utilities.utility import check_integrity
-
-        # verify file integrity first
-        if (check_integrity(package_record, __file__) == False):
-            raise Exception("Package integrity check failed")
 
         # Acquire resources from registry
         self.iotcc = registry.get("iotcc_mqtt")

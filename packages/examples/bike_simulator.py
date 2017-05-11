@@ -38,14 +38,9 @@ dependencies = ["edge_systems/dell5k/edge_system"]
 
 class PackageClass(LiotaPackage):
 
-    def run(self, registry, package_record):
+    def run(self, registry):
         from liota.entities.devices.bike_simulated import BikeSimulated
         import pint
-        from liota.lib.utilities.utility import check_integrity
-
-        # verify file integrity first
-        if (check_integrity(package_record, __file__) == False):
-            raise Exception("Package integrity check failed")
 
         # Get values from configuration file
         config_path = registry.get("package_conf")

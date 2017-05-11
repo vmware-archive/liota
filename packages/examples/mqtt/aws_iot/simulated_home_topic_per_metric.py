@@ -109,18 +109,14 @@ def get_living_room_luminance():
 # ----------------------------------------------------------------------------------------------------------------------
 
 class PackageClass(LiotaPackage):
-    def run(self, registry, package_record):
+
+    def run(self, registry):
         import copy
         import pint
 
         from liota.lib.transports.mqtt import MqttMessagingAttributes
         from liota.entities.metrics.metric import Metric
         from liota.entities.devices.simulated_device import SimulatedDevice
-        from liota.lib.utilities.utility import check_integrity
-
-        # verify file integrity first
-        if (check_integrity(package_record, __file__) == False):
-            raise Exception("Package integrity check failed")
 
         # create a pint unit registry
         ureg = pint.UnitRegistry()

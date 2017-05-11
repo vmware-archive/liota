@@ -184,6 +184,8 @@ def sha1sum(path_file):
     This method calculates SHA-1 checksum of file.
     :param path_file: absolute path of a file
     """
+    if not os.path.isfile(path_file):
+        return None
     sha1 = hashlib.sha1()
     with open(path_file, "rb") as fp:
         while True:

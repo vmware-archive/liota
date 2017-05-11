@@ -440,6 +440,14 @@ class PackageThread(Thread):
 
         file_ext = None
         extensions = ["py", "pyc", "pyo"]
+
+        # get checksum for all candidates: path_file + ".py/.pyc/.pyo"
+        checksum_list = []
+        for ext in extensions:
+            checksum = sha1sum(path_file + "." + ext)
+            if (checksum is not None):
+                checksum_list.append(checksum)
+
         prompt_ext_all = "py[co]?"
         if not ext_forced:
             for file_ext_ind in extensions:
@@ -459,7 +467,7 @@ class PackageThread(Thread):
             return None, None
         path_file_ext = path_file + "." + file_ext
         log.debug("Package file found: %s" % path_file_ext)
-        return path_file_ext, file_ext
+        return path_file_ext, file_ext, checksum_list
 
     #-------------------------------------------------------------------
     # Attempt to load package module from file.
@@ -507,7 +515,7 @@ class PackageThread(Thread):
             log.warning("Package already loaded: %s" % file_name)
             return None
 
-        path_file_ext, file_ext = self._package_chk_exists(
+        path_file_ext, file_ext, checksum_list = self._package_chk_exists(
             file_name, ext_forced)
         if path_file_ext is None:
             return None
@@ -515,6 +523,15 @@ class PackageThread(Thread):
         # Read file and calculate SHA-1
         try:
             sha1 = sha1sum(path_file_ext)
+            # verify file integrity
+            verify_flag = False
+            for checksum in checksum_list:
+                if (sha1.hexdigest() == checksum.hexdigest()):
+                    verify_flag = True
+                    break
+            if (verify_flag == False):
+                log.error("Package %s integrity verification failed" % path_file_ext)
+                return None
         except IOError:
             log.error("Could not open file: %s" % path_file_ext)
             return None
@@ -580,18 +597,18 @@ class PackageThread(Thread):
 
         klass = getattr(module_loaded, "PackageClass")
         package_record = PackageRecord(file_name)
-        package_record.set_sha1(sha1)
-        package_record.set_ext(file_ext)
         if not package_record.set_instance(klass()):
             log.error("Unexpected failure initializing package")
             return None
         try:  # Run created instance
             package_record.get_instance().run(
-                self._resource_registry.get_package_registry(file_name), package_record
+                self._resource_registry.get_package_registry(file_name)
             )
         except Exception as er:
             log.error("Exception in initialization: %s" % str(er))
             return None
+        package_record.set_sha1(sha1)
+        package_record.set_ext(file_ext)
         package_record.set_dependencies(dependencies)
         self._packages_loaded[file_name] = package_record
 

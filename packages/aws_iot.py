@@ -42,18 +42,13 @@ class PackageClass(LiotaPackage):
     AWSIoT to acquire "registered edge system", i.e. aws_iot_edge_system.
     """
 
-    def run(self, registry, package_record):
+    def run(self, registry):
         import copy
         from liota.dccs.aws_iot import AWSIoT
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
         from liota.lib.transports.mqtt import QoSDetails
         from liota.lib.utilities.identity import Identity
         from liota.lib.utilities.tls_conf import TLSConf
-        from liota.lib.utilities.utility import check_integrity
-
-        # verify file integrity first
-        if (check_integrity(package_record, __file__) == False):
-            raise Exception("Package integrity check failed")
 
         # Acquire resources from registry
         # Creating a copy of edge_system object to keep original object "clean"
