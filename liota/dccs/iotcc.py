@@ -162,7 +162,7 @@ class IotControlCenter(DataCenterComponent):
             except:
                 raise Exception("Exception while unregistering resource")
 
-        self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.reg_entity)))
+        self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
         on_response(self.recv_msg_queue.get(True,20))
         self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
         if entity_obj.ref_entity.entity_type != "HelixGateway":
