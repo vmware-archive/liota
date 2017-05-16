@@ -80,7 +80,7 @@ class MqttSimulator(DeviceSimulator):
             # Encapsulate TLS parameters
             self.tls_conf = TLSConf(mqtt_cfg['cert_required'], mqtt_cfg['tls_version'], mqtt_cfg['cipher'])
         # Encapsulate QoS related parameters
-        self.qos_details = QoSDetails(mqtt_cfg['in_flight'], mqtt_cfg['queue_size'], mqtt_cfg['retry'])
+        self.qos_details = QoSDetails(mqtt_cfg['in_flight'], int(mqtt_cfg['queue_size']), mqtt_cfg['retry'])
         # Create MQTT connection object with required params
         self.mqtt_conn = MqttDeviceComms(url=self.broker_ip, port=int(self.broker_port), identity=self.identity,
                                          tls_conf=self.tls_conf, qos_details=self.qos_details,  clean_session=True,

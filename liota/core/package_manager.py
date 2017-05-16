@@ -33,7 +33,6 @@
 import logging
 import imp
 import os
-import sys
 import fcntl
 import stat
 import re
@@ -464,7 +463,7 @@ class PackageThread(Thread):
         if not (path_file.startswith(os.path.abspath(package_path)+'/')):
             log.error("Package %s is NOT under package path %s"
                          % (file_name, package_path))
-            return None, None
+            return None, None, None
 
         file_ext = None
         extensions = ["py", "pyc", "pyo"]
@@ -492,7 +491,7 @@ class PackageThread(Thread):
             else:
                 log.error("Package file not found: %s"
                           % (path_file + "." + ext_forced))
-            return None, None
+            return None, None, None
         path_file_ext = path_file + "." + file_ext
         log.debug("Package file found: %s" % path_file_ext)
         return path_file_ext, file_ext, checksum_list
@@ -834,7 +833,7 @@ class PackageThread(Thread):
                     if not self._package_load(file_name, checksum):
                         list_failed.append(file_name)
             except:
-                log.exception("_package_load_list error:{0}".format(sys.exc_info()[0]))
+                log.exception("_package_load_list exception")
         if len(list_failed) > 0:
             log.warning("Some packages specified in list failed to load: %s"
                         % " ".join(list_failed))
@@ -878,7 +877,7 @@ class PackageThread(Thread):
                 for filename, checksum in file_string.items():
                     filename_list.append(filename)
             except:
-                log.exception("_package_update_list error:{0}".format(sys.exc_info()[0]))
+                log.exception("_package_update_list exception")
         flag_failed = False
 
         # Acquire a list of all dependents of these packages

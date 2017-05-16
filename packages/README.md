@@ -11,7 +11,10 @@ Currently, supported commands include package action commands and statistical co
 
 * **load** package_name sha1_checksum [package_name sha1_checksum] ...
 
-Load a package with the specified name and its sha1 checksum. If the specified package provides with a list of dependencies, recursively load all its dependencies. If more than one package names are specified, load them (as well as their dependencies) in a batch and no package will be loaded twice or reloaded.
+Load a package with the specified name and its sha1 checksum. For example, linux os user can first use "sha1sum filename" cmd to get checksum, and then load package by
+"./liotapkg.sh load filename sha1_checksum".
+
+If the specified package provides with a list of dependencies, recursively load all its dependencies. If more than one package names are specified, load them (as well as their dependencies) in a batch and no package will be loaded twice or reloaded.
 
 Liota packages must follow certain formats for package manager to process them correctly. It is up to the package developer to follow the format requirements. Details will be provided in later parts of this document. Please also refer to `packages` and `packages/example` for example packages we have provided.
 
