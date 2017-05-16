@@ -9,9 +9,9 @@ Currently, supported commands include package action commands and statistical co
 
 ###Package action commands
 
-* **load** package_name [package_name] ...
+* **load** package_name sha1_checksum [package_name sha1_checksum] ...
 
-Load a package with the specified name. If the specified package provides with a list of dependencies, recursively load all its dependencies. If more than one package names are specified, load them (as well as their dependencies) in a batch and no package will be loaded twice or reloaded.
+Load a package with the specified name and its sha1 checksum. If the specified package provides with a list of dependencies, recursively load all its dependencies. If more than one package names are specified, load them (as well as their dependencies) in a batch and no package will be loaded twice or reloaded.
 
 Liota packages must follow certain formats for package manager to process them correctly. It is up to the package developer to follow the format requirements. Details will be provided in later parts of this document. Please also refer to `packages` and `packages/example` for example packages we have provided.
 
@@ -26,17 +26,23 @@ To `unregister` an entity while unloading set the following flag in `packages/sa
 ShouldUnregisterOnUnload = "True"
 ```
 
-* **reload** package_name
+* **reload** package_name sha1_checksum
 
 Unload a package with the specified name and attempt to reload the same package **using the same file name**. Batch operation is not supported for reloading. If the specified package is not loaded when this command is invoked, the command will fail.
 
-* **update** package_name [package_name] ...
+* **update** package_name sha1_checksum [package_name sha1_checksum] ...
 
 Unload a package with the specified name and attempt to reload the same package. If the specified package has dependents loaded, attempt to recursively update all these dependents. If the specified package is not loaded when this command is invoked, skip unloading and load the specified package directly.
 
 * **delete** package_name
 
 Remove a package with the specified name. By default, the removed package will be stashed into a separate folder in the package path, so package manager will not find it. However, if package manager fails to create the folder, or fails to move the file, the package file will be deleted from the file system.
+
+###Package Load Automation
+
+Load Liota Packages automatically when Package Manager starts by listing package names and checksums in /etc/liota/packages/packages_auto.txt (Should NOT have " " around ":"):
+package_name:sha1_checksum
+[package_name:sha1_checksum]
 
 ###Statistical commands
 

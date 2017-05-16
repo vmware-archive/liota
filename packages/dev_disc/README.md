@@ -21,7 +21,7 @@ Device Simulator will get configuration from liota.conf and initialize the data 
 
 ### How to Start Device Discovery
 
-Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc inside packages_auto.txt.
+Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc and its sha1 checksum inside packages_auto.txt.
 To be reminded, to let discovered devices registered to user specified DCCs, at least one DCC package should be loaded.
 
 In details, after installation with (sudo python setup.py install or pip install liota), you can do the following:
@@ -137,7 +137,7 @@ b). when dev_disc is not inside packages_auto.txt:
 
 	start package manager with cmd line in 1., then load device discovery package by
 
-	sudo ./liotapkg.sh load dev_disc/dev_disc
+	sudo ./liotapkg.sh load dev_disc/dev_disc sha1_checksum
 
 (can check logs through "tail -f /var/log/liota/liota.log")
 

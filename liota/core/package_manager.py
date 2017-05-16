@@ -31,20 +31,18 @@
 # ----------------------------------------------------------------------------#
 
 import logging
-import inspect
 import imp
 import os
+import sys
 import fcntl
 import stat
 import re
-import hashlib
-import ConfigParser
 from threading import Thread, Lock
 from Queue import Queue
 from time import sleep
 from abc import ABCMeta, abstractmethod
 
-from liota.lib.utilities.utility import LiotaConfigPath, read_liota_config, sha1sum
+from liota.lib.utilities.utility import read_liota_config, sha1sum
 
 log = logging.getLogger(__name__)
 
@@ -361,7 +359,7 @@ class PackageThread(Thread):
 
             # Switch on message content (command), determine what to do
             command = msg[0]
-            if command in ["load", "unload", "delete", "reload", "update"]:
+            if command in ["load", "reload", "update"]:
                 #-----------------------------------------------------------
                 # Use these commands to handle package management tasks
 
@@ -369,12 +367,16 @@ class PackageThread(Thread):
                     if len(msg) < 2:
                         log.warning("No package is specified: %s" % command)
                         continue
-                    if len(msg) > 2:
-                        list_packages = msg[1:]
+                    if len(msg) > 3:
+                        list_arg = msg[1:]
+                        list_packages = []
+                        cnt = len(list_arg)
+                        i = 0
+                        while (i < cnt):
+                            list_packages.append({list_arg[i]: list_arg[i+1]})
+                            i += 2
                         if command == "load":
                             self._package_load_list(list_packages)
-                        elif command == "unload":
-                            self._package_unload_list(list_packages)
                         elif command == "update":
                             self._package_update_list(list_packages)
                         else:
@@ -382,16 +384,42 @@ class PackageThread(Thread):
                                         % command)
                         continue
                     file_name = msg[1]
+                    if len(msg) == 2:
+                        log.warning("No checksum of {0} is specified: {1}".
+                                    format(file_name, command))
+                        continue
+                    checksum = msg[2]
                     if command == "load":
-                        self._package_load(file_name)
-                    elif command == "unload":
+                        self._package_load(file_name, checksum)
+                    elif command == "reload":
+                        self._package_reload(file_name, checksum)
+                    elif command == "update":
+                        self._package_update(file_name, checksum)
+                    else:  # should not happen
+                        raise RuntimeError("Command category error")
+            elif command in ["unload", "delete"]:
+                #-----------------------------------------------------------
+                # Use these commands to handle package unload/delete management tasks
+
+                with package_lock:
+                    if len(msg) < 2:
+                        log.warning("No package is specified: %s" % command)
+                        continue
+                    if len(msg) > 2:
+                        list_packages = msg[1:]
+                        if command == "unload":
+                            self._package_unload_list(list_packages)
+                        elif command == "delete":
+                            self._package_delete_list(list_packages)
+                        else:
+                            log.warning("Batch operation not supported: %s"
+                                        % command)
+                        continue
+                    file_name = msg[1]
+                    if command == "unload":
                         self._package_unload(file_name)
                     elif command == "delete":
                         self._package_delete(file_name)
-                    elif command == "reload":
-                        self._package_reload(file_name)
-                    elif command == "update":
-                        self._package_update(file_name)
                     else:  # should not happen
                         raise RuntimeError("Command category error")
             elif command == "list":
@@ -506,9 +534,9 @@ class PackageThread(Thread):
     # This method is called to load package into current Liota process using
     # file_name (no_ext) as package identifier.
 
-    def _package_load(self, file_name, ext_forced=None, check_stack=None):
+    def _package_load(self, file_name, checksum=None, ext_forced=None, check_stack=None):
 
-        log.debug("Attempting to load package: %s" % file_name)
+        log.debug("Attempting to load package:{0}{1}".format(file_name, checksum))
 
         # Check if specified package is already loaded
         if file_name in self._packages_loaded:
@@ -520,18 +548,19 @@ class PackageThread(Thread):
         if path_file_ext is None:
             return None
 
-        # Read file and calculate SHA-1
         try:
-            sha1 = sha1sum(path_file_ext)
-            # verify file integrity
-            verify_flag = False
-            for checksum in checksum_list:
-                if (sha1.hexdigest() == checksum.hexdigest()):
-                    verify_flag = True
-                    break
-            if (verify_flag == False):
-                log.error("Package %s integrity verification failed" % path_file_ext)
-                return None
+            # verify file integrity first
+            if (checksum is not None):
+                verify_flag = False
+                for sha1 in checksum_list:
+                    if (sha1.hexdigest() == checksum):
+                        verify_flag = True
+                        break
+                if (verify_flag == False):
+                    log.error("Package %s integrity verification failed" % path_file_ext)
+                    return None
+            else:
+                sha1 = sha1sum(path_file_ext);
         except IOError:
             log.error("Could not open file: %s" % path_file_ext)
             return None
@@ -679,7 +708,7 @@ class PackageThread(Thread):
                       % (file_name, dependency))
 
         if isinstance(track_list, list):
-            track_list.append((file_name, package_record.get_ext()))
+            track_list.append((file_name, package_record.get_ext(), package_record.get_sha1().hexdigest()))
         del self._packages_loaded[file_name]
 
         log.info("Unloaded package: %s" % file_name)
@@ -696,8 +725,8 @@ class PackageThread(Thread):
     # will always load exactly that same file, even if a different higher-
     # priority source file is added before reload.
 
-    def _package_reload(self, file_name):
-        log.debug("Attempting to reload package: %s" % file_name)
+    def _package_reload(self, file_name, checksum):
+        log.debug("Attempting to reload package: {0}{1}".format(file_name, checksum))
 
         # Check if specified package is already loaded
         if file_name not in self._packages_loaded:
@@ -716,10 +745,11 @@ class PackageThread(Thread):
                      )
                      )
             for track_item in track_list:
+                log.debug("trace_item:{0}{1}".format(track_item[0], track_item[2]))
                 if track_item[0] in self._packages_loaded:
                     continue
                 temp_record = \
-                    self._package_load(track_item[0], ext_forced=track_item[1])
+                    self._package_load(track_item[0], track_item[2], ext_forced=track_item[1])
                 if temp_record is not None:
                     if track_item[0] == file_name:
                         package_record = temp_record
@@ -745,14 +775,14 @@ class PackageThread(Thread):
     #       preferred priority order, so updated source file can be used to
     #       update target package even if it was loaded using compiled file.
 
-    def _package_update(self, file_name):
+    def _package_update(self, file_name, checksum):
         log.debug("Attempting to update package: %s" % file_name)
 
         # Check if specified package is already loaded
         if file_name not in self._packages_loaded:
             log.info("Package is not loaded, will try to load: %s"
                      % file_name)
-            return self._package_load(file_name)
+            return self._package_load(file_name, checksum)
 
         # Logic of reload
         track_list = []
@@ -768,7 +798,7 @@ class PackageThread(Thread):
                 if track_item[0] in self._packages_loaded:
                     continue
                 temp_record = \
-                    self._package_load(track_item[0])
+                    self._package_load(track_item[0], track_item[2])
                 if temp_record is not None:
                     if track_item[0] == file_name:
                         package_record = temp_record
@@ -794,15 +824,17 @@ class PackageThread(Thread):
     # It returns True if all packages in list are successfully loaded.
 
     def _package_load_list(self, package_list):
-        log.debug("Attempting to load packages: %s"
-                  % " ".join(package_list))
         list_failed = []
-        for file_name in package_list:
-            if file_name in self._packages_loaded:
-                continue
-            if not self._package_load(file_name):
-                list_failed.append(file_name)
-
+        for file_string in package_list:
+            log.debug("Attempting to load packages:{0}".format(file_string))
+            try:
+                for file_name, checksum in file_string.items():
+                    if file_name in self._packages_loaded:
+                        continue
+                    if not self._package_load(file_name, checksum):
+                        list_failed.append(file_name)
+            except:
+                log.exception("_package_load_list error:{0}".format(sys.exc_info()[0]))
         if len(list_failed) > 0:
             log.warning("Some packages specified in list failed to load: %s"
                         % " ".join(list_failed))
@@ -839,13 +871,19 @@ class PackageThread(Thread):
     # It first unload packages in that list, and then load them back.
 
     def _package_update_list(self, package_list):
-        log.debug("Attempting to update packages: %s"
-                  % " ".join(package_list))
+        filename_list = []
+        for file_string in package_list:
+            log.debug("Attempting to update packages:{0}".format(file_string))
+            try:
+                for filename, checksum in file_string.items():
+                    filename_list.append(filename)
+            except:
+                log.exception("_package_update_list error:{0}".format(sys.exc_info()[0]))
         flag_failed = False
 
         # Acquire a list of all dependents of these packages
         track_list = []
-        if not self._package_unload_list(package_list, track_list=track_list):
+        if not self._package_unload_list(filename_list, track_list=track_list):
             flag_failed = True
         track_list.reverse()
 
@@ -855,7 +893,9 @@ class PackageThread(Thread):
 
         # Load all dependents
         if len(track_list) > 0:
-            if not self._package_load_list(map(lambda x: x[0], track_list)):
+            track_string_list = []
+            map(lambda x: track_string_list.append({x[0]: x[2]}), track_list)
+            if not self._package_load_list(track_string_list):
                 flag_failed = True
 
         if flag_failed:
@@ -872,13 +912,18 @@ class PackageThread(Thread):
         global package_startup_list_path
         global package_startup_list
 
+        output_list = []
         package_startup_list = []
 
         # Validate start-up list
         if isinstance(package_startup_list_path, basestring):
             try:
                 with open(package_startup_list_path, "r") as fp:
-                    package_startup_list = fp.read().split()
+                    output_list = fp.read().split()
+                for values in output_list:
+                    print values
+                    k, v = values.split(":")
+                    package_startup_list.append({k: v})
             except IOError:
                 log.warning("Could not load start-up list from: %s"
                             % package_startup_list_path)

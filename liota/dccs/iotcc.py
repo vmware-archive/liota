@@ -39,8 +39,6 @@ import os
 import Queue
 from time import gmtime, strftime
 from threading import Lock
-import xml.etree.cElementTree as ET
-from xml.dom import minidom
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.lib.protocols.helix_protocol import HelixProtocol
@@ -301,13 +299,6 @@ class IotControlCenter(DataCenterComponent):
         }
         self.set_properties(reg_entity_obj, properties_added)
         log.info("Published metric unit with prefix to IoTCC")
-
-    def prettify(self, elem):
-        """Return a pretty-printed XML string for the Element.
-        """
-        rough_string = ET.tostring(elem)
-        reparsed = minidom.parseString(rough_string)
-        return reparsed.toprettyxml(indent="    ")
 
     def _create_iotcc_json(self):
         msg = {
