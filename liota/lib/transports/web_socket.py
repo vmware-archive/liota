@@ -46,32 +46,46 @@ class WebSocket():
 
     """
 
-    def __init__(self, url):
+    def __init__(self, url, verify_cert, identity):
         self.url = url
+        self.verify_cert = verify_cert
+        self.identity = identity
         self.connect_soc()
 
     def connect_soc(self):
         try:
-            self.WebSocketConnection(self.url, False)
+            self.WebSocketConnection()
         except Exception:
             log.exception("WebSocket exception, please check the WebSocket address and try again.")
             raise Exception("WebSocket exception, please check the WebSocket address and try again.")
 
     # CERTPATH to be taken in consideration later
-    def WebSocketConnection(self, host, verify_cert=True, CERTPATH="/etc/liota/cert"):
-        if not verify_cert:
+    def WebSocketConnection(self):
+        if not self.verify_cert:
             self.ws = None
-            self.ws = create_connection(host, enable_multithread=True,
+            self.ws = create_connection(self.url, enable_multithread=True,
                                         sslopt={"cert_reqs": ssl.CERT_NONE})
         else:
             self.ws = None
-            if os.path.isfile(CERTPATH):
-                try:
-                    self.ws = create_connection(host, enable_multithread=True,
-                                                sslopt={"cert_reqs": ssl.CERT_REQUIRED,
-                                                        "ca_certs": CERTPATH})
-                except ssl.SSLError:
-                    pass
+            if self.identity is not None:
+                if self.identity.root_ca_cert:
+                    if not (os.path.exists(self.identity.root_ca_cert)):
+                        log.error("Error : Wrong CA certificate path.")
+                        raise ValueError("Error : Wrong CA certificate path.")
+                else:
+                    log.error("Error : CA certificate path is missing")
+                    raise ValueError("Error : CA certificate path is missing")
+                if os.path.isfile(self.identity.root_ca_cert):
+                    try:
+                        self.ws = create_connection(self.url, enable_multithread=True,
+                                                    sslopt={"cert_reqs": ssl.CERT_REQUIRED,
+                                                            "ca_certs": self.identity.root_ca_cert})
+                    except ssl.SSLError:
+                        log.exception("SSL Error during Websocket connection.")
+                        raise Exception("SSL Error during Websocket connection.")
+            else:
+                log.error("Identity object is missing")
+                raise ValueError("Identity object is missing")
             if self.ws is None:
                 raise (IOError("Couldn't verify host certificate"))
 

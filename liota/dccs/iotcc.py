@@ -56,16 +56,20 @@ class IotControlCenter(DataCenterComponent):
 
     """
 
-    def __init__(self, username, password, con):
+    def __init__(self, con):
         log.info("Logging into DCC")
         self.comms = con
-        self.username = username
-        self.password = password
+        if not self.comms.identity.username:
+            log.error("Username not found")
+            raise ValueError("Username not found")
+        elif not self.comms.identity.password:
+            log.error("Password not found")
+            raise ValueError("Password not found")
         thread = threading.Thread(target=self.comms.receive)
         thread.daemon = True
         # This thread will continuously run in background to receive response or actions from DCC
         thread.start()
-        self.proto = HelixProtocol(self.comms, username, password)
+        self.proto = HelixProtocol(self.comms, self.comms.identity.username, self.comms.identity.password)
         self._iotcc_json = self._create_iotcc_json()
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
