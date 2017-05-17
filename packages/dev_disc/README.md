@@ -68,7 +68,7 @@ disc_msg_pipe = /etc/liota/packages/dev_disc/discovery_messenger.fifo	# currentl
 
 socket = 127.0.0.1:5000						# coap and socket are not allowed for security consideration).
 
-mqtt = 127.0.0.1:1023:device_discovery		# Mqtt broker should be started first before publish/subscribe
+mqtt = 127.0.0.1:1882:device_discovery		# Mqtt broker should be started first before publish/subscribe
 
 coap = 127.0.0.1:5683					# reference: https://mosquitto.org/download/
 
@@ -105,7 +105,7 @@ retry = 5
 keep_alive = 60
 
 ConnectDisconnectTimeout = 10
-* When MQTT broker also sits on the edge system, MQTT subscriber can listen on 127.0.0.1/localhost with port < 1024 and use basic authentication
+* When MQTT broker also sits on the edge system, MQTT subscriber can listen on 127.0.0.1/localhost with a unique port (rather than well-known 1883) and use basic authentication
 to guarantee secured communication with MQTT broker. It's MQTT broker and MQTT publisher's responsibility to guarantee MQTT broker and external world communicate securely.
 
 # Configuration B (under /etc/liota/packages, inside sampleProf.conf)

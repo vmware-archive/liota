@@ -32,7 +32,6 @@
 
 import logging
 import os
-import sys
 import fcntl
 import errno
 import ConfigParser
@@ -512,7 +511,7 @@ class DiscoveryThread(Thread):
                         reg_rec[dcc] = (dev, reg_dev)
                         self._update_devinfo(name, reg_rec)
         except:
-            log.exception("device_msg_process error:{0}".format(sys.exc_info()[0]))
+            log.exception("device_msg_process exception")
 
 class CmdMessengerThread(Thread):
     """

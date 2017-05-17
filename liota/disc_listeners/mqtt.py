@@ -93,7 +93,11 @@ class MqttListener(DiscoveryListener):
         if self.flag_alive:
             # Acquire resources from registry
             if (self.discovery is not None):
-                self.edge_system_object = copy.copy(self.discovery.pkg_registry.get("edge_system"))
+                try:
+                    self.edge_system_object = copy.copy(self.discovery.pkg_registry.get("edge_system"))
+                except:
+                    log.exception("disc_listeners mqtt run exception")
+                    return
             else:
                 log.error("discovery.pkg_registry is None; could not start MqttListener!")
                 return
