@@ -81,7 +81,8 @@ class WebSocket():
                                                     sslopt={"cert_reqs": ssl.CERT_REQUIRED,
                                                             "ca_certs": self.identity.root_ca_cert})
                     except ssl.SSLError:
-                        pass
+                        log.exception("SSL Error during Websocket connection.")
+                        raise Exception("SSL Error during Websocket connection.")
             else:
                 log.error("Identity object is missing")
                 raise ValueError("Identity object is missing")
