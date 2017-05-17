@@ -155,7 +155,6 @@ def mkdir(path):
             else:
                 raise
 
-
 def store_edge_system_uuid(entity_name, entity_id, reg_entity_id):
     """
     Utility function to store EdgeSystem's Name, local-uuid and registered-uuid in the
@@ -180,6 +179,21 @@ def store_edge_system_uuid(entity_name, entity_id, reg_entity_id):
     except ConfigParser.ParsingError, err:
         log.error('Could not open config file ' + str(err))
 
+def sha1sum(path_file):
+    """
+    This method calculates SHA-1 checksum of file.
+    :param path_file: absolute path of a file
+    """
+    if not os.path.isfile(path_file):
+        return None
+    sha1 = hashlib.sha1()
+    with open(path_file, "rb") as fp:
+        while True:
+            data = fp.read(65536)  # buffer size
+            if not data:
+                break
+            sha1.update(data)
+    return sha1
 
 class LiotaConfigPath:
     path_liota_config = ''
@@ -287,6 +301,7 @@ def read_user_config(config_file_path):
         user_config[key] = ast.literal_eval(value)
     return user_config
 
+
 class DiscUtilities:
     """
     DiscUtilities is a wrapper of utility functions
@@ -313,7 +328,7 @@ class DiscUtilities:
                     log.error("Could not create directory for messenger pipe")
                     return False
             try:
-                os.mkfifo(pipe_file)
+                os.mkfifo(pipe_file, 0600)
                 log.info("Created pipe: " + pipe_file)
             except OSError:
                 log.error("Could not create messenger pipe")

@@ -32,14 +32,14 @@
 
 import logging
 import os
+import sys
 import fcntl
 import errno
 import ConfigParser
 from threading import Thread, Lock
 from Queue import Queue
 
-from liota.lib.utilities.utility import LiotaConfigPath
-from liota.lib.utilities.utility import DiscUtilities
+from liota.lib.utilities.utility import LiotaConfigPath, DiscUtilities
 from liota.disc_listeners.named_pipe import NamedPipeListener
 from liota.disc_listeners.socket_svr import SocketListener
 from liota.disc_listeners.mqtt import MqttListener
@@ -324,22 +324,32 @@ class DiscoveryThread(Thread):
             log.debug("Endpoint:{0}:{1}".format(key, value))
             if value is None or value == "None":
                 continue
+            ### TBR: because security consideration, currently only mqtt is allowed
+            mqtt_only = True
             if key.find('disc_msg_pipe') != -1:
                 pipe_thread = NamedPipeListener(pipe_file=value, name=key+"_Thread", discovery=self)
                 if pipe_thread is not None:
                     self._listeners[key] = pipe_thread
             if key.find('socket') != -1:
-                socket_thread = SocketListener(ip_port=value, name=key+"_Thread", discovery=self)
-                if socket_thread is not None:
-                    self._listeners[key] = socket_thread
+                if mqtt_only == False:
+                    socket_thread = SocketListener(ip_port=value, name=key+"_Thread", discovery=self)
+                    if socket_thread is not None:
+                        self._listeners[key] = socket_thread
+                else:
+                    log.warning("because security consideration, Socket Endpoint is not allowed!")
+                    print "because security consideration, Socket Endpoint is not allowed!"
             if key.find('mqtt') != -1:
                 mqtt_thread = MqttListener(mqtt_cfg=value, name=key+"_Thread", discovery=self)
                 if mqtt_thread is not None:
                     self._listeners[key] = mqtt_thread
             if key.find('coap') != -1:
-                coap_thread = CoapListener(ip_port=value, name=key+"_Thread", discovery=self)
-                if coap_thread is not None:
-                    self._listeners[key] = coap_thread
+                if mqtt_only == False:
+                    coap_thread = CoapListener(ip_port=value, name=key+"_Thread", discovery=self)
+                    if coap_thread is not None:
+                        self._listeners[key] = coap_thread
+                else:
+                    log.warning("because security consideration, Coap Endpoint is not allowed!")
+                    print "because security consideration, Coap Endpoint is not allowed!"
 
         # Listen on message queue for management or statistic commands
         self.cmd_messenger_thread = \
@@ -471,36 +481,38 @@ class DiscoveryThread(Thread):
         type_key_map = self._config['type_key_map']
         for key in type_dcc_map.iterkeys():
             log.debug("type_dcc_map:(%s : %s)\n" % (key, type_dcc_map[key]))
-        for key, value in data.iteritems():
-            key_dcc = type_dcc_map.get(key)
-            if key_dcc is None:
-                continue
-            if len(key_dcc) is 0:
-                continue
-            unique_key = type_key_map.get(key)
-            if unique_key is None:
-                continue
-            unique_key_value = ''
-            for k, v in value.iteritems():
-                if k == unique_key:
-                    unique_key_value = v
-            name = key + '_' + unique_key_value;
-            self._save_devinfo(name, key)
-            for dcc in key_dcc[:]:
-                # register device to dcc, set properties for the device
-                if 'iotcc' in dcc.lower():
-                    prop_dict = self.add_organization_properties("iotcc", value)
-                else:
-                    prop_dict = value
-                # TBM: temporarily assume dcc pkg will register edge_system as dcc name + "_edge_system"
-                edge_system_pkg = dcc + str("_edge_system")
-                (dev, reg_dev) = self.reg_device(dcc, edge_system_pkg, name, key, prop_dict)
-                if (dev is not None) and (reg_dev is not None):
-                    reg_rec = {}
-                    # add it in Records: currently only for debugging
-                    reg_rec[dcc] = (dev, reg_dev)
-                    self._update_devinfo(name, reg_rec)
-
+        try:
+            for key, value in data.iteritems():
+                key_dcc = type_dcc_map.get(key)
+                if key_dcc is None:
+                    continue
+                if len(key_dcc) is 0:
+                    continue
+                unique_key = type_key_map.get(key)
+                if unique_key is None:
+                    continue
+                unique_key_value = ''
+                for k, v in value.iteritems():
+                    if k == unique_key:
+                        unique_key_value = v
+                name = key + '_' + unique_key_value;
+                self._save_devinfo(name, key)
+                for dcc in key_dcc[:]:
+                    # register device to dcc, set properties for the device
+                    if 'iotcc' in dcc.lower():
+                        prop_dict = self.add_organization_properties("iotcc", value)
+                    else:
+                        prop_dict = value
+                    # TBM: temporarily assume dcc pkg will register edge_system as dcc name + "_edge_system"
+                    edge_system_pkg = dcc + str("_edge_system")
+                    (dev, reg_dev) = self.reg_device(dcc, edge_system_pkg, name, key, prop_dict)
+                    if (dev is not None) and (reg_dev is not None):
+                        reg_rec = {}
+                        # add it in Records: currently only for debugging
+                        reg_rec[dcc] = (dev, reg_dev)
+                        self._update_devinfo(name, reg_rec)
+        except:
+            log.exception("device_msg_process error:{0}".format(sys.exc_info()[0]))
 
 class CmdMessengerThread(Thread):
     """

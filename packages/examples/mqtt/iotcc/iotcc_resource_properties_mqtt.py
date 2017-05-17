@@ -39,6 +39,7 @@ dependencies = ["iotcc_mqtt"]
 
 class PackageClass(LiotaPackage):
     def run(self, registry):
+
         # Acquire resources from registry
         iotcc = registry.get("iotcc_mqtt")
 
