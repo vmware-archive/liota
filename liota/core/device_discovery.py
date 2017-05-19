@@ -32,6 +32,7 @@
 
 import logging
 import os
+import re
 import fcntl
 import errno
 import ConfigParser
@@ -44,6 +45,10 @@ from liota.disc_listeners.socket_svr import SocketListener
 from liota.disc_listeners.mqtt import MqttListener
 
 log = logging.getLogger(__name__)
+
+DEVICE_TYPE_SAFE_REGEX = '^[A-Za-z0-9_-]+$'
+DEVICE_KEY_SAFE_REGEX = '^[A-Za-z0-9_-]+$'
+DEVICE_VAL_SAFE_REGEX = '^[A-Za-z0-9\._-]+$'
 
 class DiscoveryThread(Thread):
     """
@@ -147,9 +152,13 @@ class DiscoveryThread(Thread):
                         for key in self.endpoint_list.iterkeys():
                             log.debug("endpoint_list:(%s : %s)\n" % (key, self.endpoint_list[key]))
 
+                        global DEVICE_TYPE_SAFE_REGEX
                         # retrieve device type to unique key mapping list
                         tmp_list = config.items('DEVICE_TYPE_TO_UNIQUEKEY_MAPPING')
                         for key, value in tmp_list[:]:
+                            if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                                log.warning("device type {0} contains unacceptable character".format(key))
+                                continue
                             if value is None or value == "None":
                                 continue
                             self.type_key_map[key] = value
@@ -159,6 +168,9 @@ class DiscoveryThread(Thread):
                         # retrieve device type to DCC mapping list
                         tmp_list = config.items('DEVICE_TYPE_TO_DCC_MAPPING')
                         for key, value in tmp_list[:]:
+                            if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                                log.warning("device type {0} contains unacceptable character".format(key))
+                                continue
                             if value is None or value == "None":
                                 continue
                             tmp_list2 = []
@@ -475,13 +487,21 @@ class DiscoveryThread(Thread):
         msg format is {'DeviceType':{key1:value1,key2:value2, …, keyn:valuen}},
         where UniqueKey is defined in liota.conf, ie.,
         """
+
         log.debug("device_msg_process")
         type_dcc_map = self._config['type_dcc_map']
         type_key_map = self._config['type_key_map']
         for key in type_dcc_map.iterkeys():
             log.debug("type_dcc_map:(%s : %s)\n" % (key, type_dcc_map[key]))
+
+        global DEVICE_TYPE_SAFE_REGEX
+        global DEVICE_KEY_SAFE_REGEX
+        global DEVICE_VAL_SAFE_REGEX
         try:
             for key, value in data.iteritems():
+                if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                    log.warning("device type {0} contains unacceptable character".format(key))
+                    return False
                 key_dcc = type_dcc_map.get(key)
                 if key_dcc is None:
                     continue
@@ -492,6 +512,12 @@ class DiscoveryThread(Thread):
                     continue
                 unique_key_value = ''
                 for k, v in value.iteritems():
+                    if not re.match(DEVICE_KEY_SAFE_REGEX, k):
+                        log.warning("Property key {0} contains unacceptable character".format(k))
+                        return False
+                    if not re.match(DEVICE_VAL_SAFE_REGEX, v):
+                        log.warning("Property value {0} contains unacceptable character".format(v))
+                        return False
                     if k == unique_key:
                         unique_key_value = v
                 name = key + '_' + unique_key_value;
