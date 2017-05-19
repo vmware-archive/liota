@@ -363,37 +363,47 @@ class PackageThread(Thread):
                 # Use these commands to handle package management tasks
 
                 with package_lock:
-                    if len(msg) < 2:
+                    offset = 0
+                    autoload_flag = False
+                    if msg[1] == '-r':
+                        offset = 1
+                        autoload_flag = True
+                    else:
+                        offset = 0
+                    if len(msg) < (2 + offset):
                         log.warning("No package is specified: %s" % command)
                         continue
-                    if len(msg) > 3:
-                        list_arg = msg[1:]
+                    if len(msg) > (3 + offset):
+                        list_arg = msg[(1 + offset):]
                         list_packages = []
                         cnt = len(list_arg)
+                        if (cnt % 2):
+                            log.warning("Package name and checksum are not paired correctly: %s" % command)
+                            continue
                         i = 0
-                        while (i < cnt):
+                        while ((i < cnt) and (i+1 < cnt)):
                             list_packages.append({list_arg[i]: list_arg[i+1]})
                             i += 2
                         if command == "load":
-                            self._package_load_list(list_packages)
+                            self._package_load_list(list_packages, autoload_flag)
                         elif command == "update":
-                            self._package_update_list(list_packages)
+                            self._package_update_list(list_packages, autoload_flag)
                         else:
                             log.warning("Batch operation not supported: %s"
                                         % command)
                         continue
-                    file_name = msg[1]
-                    if len(msg) == 2:
+                    file_name = msg[1 + offset]
+                    if len(msg) == (2 + offset):
                         log.warning("No checksum of {0} is specified: {1}".
                                     format(file_name, command))
                         continue
-                    checksum = msg[2]
+                    checksum = msg[2 + offset]
                     if command == "load":
-                        self._package_load(file_name, checksum)
+                        self._package_load(file_name, checksum, autoload_flag)
                     elif command == "reload":
-                        self._package_reload(file_name, checksum)
+                        self._package_reload(file_name, checksum, autoload_flag)
                     elif command == "update":
-                        self._package_update(file_name, checksum)
+                        self._package_update(file_name, checksum, autoload_flag)
                     else:  # should not happen
                         raise RuntimeError("Command category error")
             elif command in ["unload", "delete"]:
@@ -497,6 +507,64 @@ class PackageThread(Thread):
         return path_file_ext, file_ext, checksum_list
 
     #-------------------------------------------------------------------
+    # Guarantee package record is written into automatic load file.
+    # file_name:checksum
+    # checksum may need to be updated
+    def _write_package_into_autoload(self, file_name, checksum):
+        global package_startup_list_path
+
+        output_list = []
+        found_record = False
+        log.debug("_write_package_into_autoload {0} {1}".format(file_name, checksum))
+        if isinstance(package_startup_list_path, basestring):
+            try:
+                with open(package_startup_list_path, "r+") as fp:
+                    output_list = fp.read().split()
+                    fp.seek(0)
+                    for values in output_list:
+                        k, v = values.split(":")
+                        if (k != file_name):
+                            fp.write(values + '\n')
+                        elif ((k == file_name) and (checksum is not None)):
+                            fp.write(values + '\n')
+                            found_record = True
+                    if found_record == False:
+                        try:
+                            fp.write(file_name + ":" + checksum + '\n')
+                        except:
+                            log.exception("_write_package_into_autoload write record error")
+                    fp.truncate()
+            except IOError:
+                log.warning("Could not load start-up list from: %s"
+                            % package_startup_list_path)
+        else:
+            log.info("Invalid file path for package automatic loading")
+
+    #-------------------------------------------------------------------
+    # remove package record out of automatic load file.
+    def _remove_package_from_autoload(self, file_name):
+        global package_startup_list_path
+
+        output_list = []
+        log.debug("_remove_package_from_autoload {0}".format(file_name))
+
+        if isinstance(package_startup_list_path, basestring):
+            try:
+                with open(package_startup_list_path, "r+") as fp:
+                    output_list = fp.read().split()
+                    fp.seek(0)
+                    for values in output_list:
+                        k, v = values.split(":")
+                        if (k != file_name):
+                            fp.write(values + '\n')
+                    fp.truncate()
+            except IOError:
+                log.warning("Could not load start-up list from: %s"
+                            % package_startup_list_path)
+        else:
+            log.info("Invalid file path for package automatic loading")
+
+    #-------------------------------------------------------------------
     # Attempt to load package module from file.
     # Supported file types are source files (.py) with highest priority,
     #                          compiled files (.pyc),
@@ -533,7 +601,8 @@ class PackageThread(Thread):
     # This method is called to load package into current Liota process using
     # file_name (no_ext) as package identifier.
 
-    def _package_load(self, file_name, checksum=None, ext_forced=None, check_stack=None):
+    def _package_load(self, file_name, checksum=None, autoload_flag=False,
+                      ext_forced=None, check_stack=None):
 
         log.debug("Attempting to load package:{0}{1}".format(file_name, checksum))
 
@@ -640,6 +709,10 @@ class PackageThread(Thread):
         package_record.set_dependencies(dependencies)
         self._packages_loaded[file_name] = package_record
 
+        # if needed, put package name in automatically load file
+        if (autoload_flag == True):
+            self._write_package_into_autoload(file_name, sha1.hexdigest())
+
         log.info("Package class from module %s is initialized"
                  % module_loaded.__name__)
         return package_record
@@ -710,13 +783,31 @@ class PackageThread(Thread):
             track_list.append((file_name, package_record.get_ext(), package_record.get_sha1().hexdigest()))
         del self._packages_loaded[file_name]
 
+        # if exists, remove package name out of automatically load file
+        self._remove_package_from_autoload(file_name)
+
         log.info("Unloaded package: %s" % file_name)
         return True
 
-    def _package_delete(self, file_name):
-        log.debug("Attempting to delete package: %s" % file_name)
-        pass  # TODO
-        log.info("Deleted package: %s" % file_name)
+    #-----------------------------------------------------------------------
+    # This method is called to delete a list of packages.
+    # It returns True if all packages in list are successfully deleted.
+
+    def _package_delete_list(self, package_list):
+        list_failed = []
+        for file_name in package_list:
+            log.debug("Attempting to delete packages:{0}".format(file_name))
+            try:
+                if not self._package_delete(file_name):
+                    list_failed.append(file_name)
+            except:
+                log.exception("_package_delete_list exception")
+        if len(list_failed) > 0:
+            log.warning("Some packages specified in list failed to delete: %s"
+                        % " ".join(list_failed))
+        else:
+            log.info("Batch delete successful")
+        return len(list_failed) < 1
 
     #-----------------------------------------------------------------------
     # This method is called to reload package.
@@ -724,7 +815,7 @@ class PackageThread(Thread):
     # will always load exactly that same file, even if a different higher-
     # priority source file is added before reload.
 
-    def _package_reload(self, file_name, checksum):
+    def _package_reload(self, file_name, checksum, autoload_flag=False):
         log.debug("Attempting to reload package: {0}{1}".format(file_name, checksum))
 
         # Check if specified package is already loaded
@@ -747,8 +838,12 @@ class PackageThread(Thread):
                 log.debug("trace_item:{0}{1}".format(track_item[0], track_item[2]))
                 if track_item[0] in self._packages_loaded:
                     continue
-                temp_record = \
-                    self._package_load(track_item[0], track_item[2], ext_forced=track_item[1])
+                if (track_item[0] == file_name) and (checksum is not None) and (checksum != track_item[2]):
+                    temp_record = \
+                        self._package_load(track_item[0], checksum, ext_forced=track_item[1])
+                else:
+                    temp_record = \
+                        self._package_load(track_item[0], track_item[2], ext_forced=track_item[1])
                 if temp_record is not None:
                     if track_item[0] == file_name:
                         package_record = temp_record
@@ -757,6 +852,9 @@ class PackageThread(Thread):
                     log.error("Unloaded but could not reload package: %s"
                               % file_name)
             if not package_record is None:
+                # if needed, guarantee package name in automatically load file
+                if (autoload_flag == True):
+                    self._write_package_into_autoload(file_name, package_record.get_sha1().hexdigest())
                 return package_record
             else:
                 return False
@@ -774,7 +872,7 @@ class PackageThread(Thread):
     #       preferred priority order, so updated source file can be used to
     #       update target package even if it was loaded using compiled file.
 
-    def _package_update(self, file_name, checksum):
+    def _package_update(self, file_name, checksum, autoload_flag):
         log.debug("Attempting to update package: %s" % file_name)
 
         # Check if specified package is already loaded
@@ -796,8 +894,12 @@ class PackageThread(Thread):
             for track_item in track_list:
                 if track_item[0] in self._packages_loaded:
                     continue
-                temp_record = \
-                    self._package_load(track_item[0], track_item[2])
+                if (track_item[0] == file_name) and (checksum is not None) and (checksum != track_item[2]):
+                    temp_record = \
+                        self._package_load(track_item[0], checksum)
+                else:
+                    temp_record = \
+                        self._package_load(track_item[0], track_item[2])
                 if temp_record is not None:
                     if track_item[0] == file_name:
                         package_record = temp_record
@@ -806,6 +908,9 @@ class PackageThread(Thread):
                     log.error("Unloaded but could not reload package: %s"
                               % file_name)
             if not package_record is None:
+                # if needed, guarantee package name in automatically load file
+                if (autoload_flag == True):
+                    self._write_package_into_autoload(file_name, package_record.get_sha1().hexdigest())
                 return package_record
             else:
                 return False
@@ -822,7 +927,7 @@ class PackageThread(Thread):
     # reloaded.
     # It returns True if all packages in list are successfully loaded.
 
-    def _package_load_list(self, package_list):
+    def _package_load_list(self, package_list, autoload_flag=False):
         list_failed = []
         for file_string in package_list:
             log.debug("Attempting to load packages:{0}".format(file_string))
@@ -830,7 +935,7 @@ class PackageThread(Thread):
                 for file_name, checksum in file_string.items():
                     if file_name in self._packages_loaded:
                         continue
-                    if not self._package_load(file_name, checksum):
+                    if not self._package_load(file_name, checksum, autoload_flag):
                         list_failed.append(file_name)
             except:
                 log.exception("_package_load_list exception")
@@ -869,7 +974,7 @@ class PackageThread(Thread):
     # This method is called to update a list of packages.
     # It first unload packages in that list, and then load them back.
 
-    def _package_update_list(self, package_list):
+    def _package_update_list(self, package_list, autoload_flag):
         filename_list = []
         for file_string in package_list:
             log.debug("Attempting to update packages:{0}".format(file_string))
@@ -887,14 +992,14 @@ class PackageThread(Thread):
         track_list.reverse()
 
         # Load packages, in case some packages not loaded are to be updated
-        if not self._package_load_list(package_list):
+        if not self._package_load_list(package_list, autoload_flag):
             flag_failed = True
 
         # Load all dependents
         if len(track_list) > 0:
             track_string_list = []
             map(lambda x: track_string_list.append({x[0]: x[2]}), track_list)
-            if not self._package_load_list(track_string_list):
+            if not self._package_load_list(track_string_list, autoload_flag):
                 flag_failed = True
 
         if flag_failed:
@@ -920,7 +1025,6 @@ class PackageThread(Thread):
                 with open(package_startup_list_path, "r") as fp:
                     output_list = fp.read().split()
                 for values in output_list:
-                    print values
                     k, v = values.split(":")
                     package_startup_list.append({k: v})
             except IOError:
@@ -1004,6 +1108,8 @@ class PackageThread(Thread):
         if flag_failed:
             log.warning("Some files failed to delete. See log for details")
         else:
+            # if exists, remove package name out of automatically load file
+            self._remove_package_from_autoload(file_name)
             log.info("Package is deleted: %s" % file_name)
         return not flag_failed
 

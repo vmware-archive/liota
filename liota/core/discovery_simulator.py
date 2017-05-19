@@ -32,6 +32,7 @@
 
 import logging
 import os
+import re
 import fcntl
 import errno
 import ConfigParser
@@ -53,6 +54,8 @@ is_discovery_simulator_initialized = False
 cmd_message_queue = None
 # simulator related obj
 simulator_thread = None
+
+DEVICE_TYPE_SAFE_REGEX = '^[A-Za-z0-9_-]+$'
 
 if __name__ == "__main__":
     log.warning("Device Simulator is not supposed to run alone")
@@ -172,9 +175,13 @@ class SimulatorThread(Thread):
                         for key in self.endpoint_list.iterkeys():
                             log.debug("endpoint_list:(%s : %s)\n" % (key, self.endpoint_list[key]))
 
+                        global DEVICE_TYPE_SAFE_REGEX
                         # retrieve device type to unique key mapping list
                         tmp_list = config.items('DEVICE_TYPE_TO_UNIQUEKEY_MAPPING')
                         for key, value in tmp_list[:]:
+                            if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                                log.warning("device type {0} contains unacceptable character".format(key))
+                                continue
                             if value is None or value == "None":
                                 continue
                             self.type_key_map[key] = value
@@ -184,6 +191,9 @@ class SimulatorThread(Thread):
                         # retrieve device type to DCC mapping list
                         tmp_list = config.items('DEVICE_TYPE_TO_DCC_MAPPING')
                         for key, value in tmp_list[:]:
+                            if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                                log.warning("device type {0} contains unacceptable character".format(key))
+                                continue
                             if value is None or value == "None":
                                 continue
                             tmp_list2 = []
