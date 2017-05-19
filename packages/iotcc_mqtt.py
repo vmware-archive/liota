@@ -67,8 +67,7 @@ class PackageClass(LiotaPackage):
         tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
 
         # Initialize DCC object with MQTT transport
-        self.iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
-                                 MqttDccComms(edge_system_name=edge_system.name,
+        self.iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
                                               url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
                                               tls_conf=tls_conf,
                                               enable_authentication=True))

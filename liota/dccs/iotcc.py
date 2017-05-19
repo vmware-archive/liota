@@ -93,8 +93,10 @@ class IotControlCenter(DataCenterComponent):
                 log.error("HelixProtocolException: " + repr(error))
 
         # Block on Queue for not more then 300 seconds else it will raise an exception
-        on_response(self.recv_msg_queue.get(True,300))
-        log.info("Logged in to DCC successfully")
+        if on_response(self.recv_msg_queue.get(True,300)):
+            log.info("Logged in to DCC successfully")
+        else:
+            raise Exception("HelixProtocolException")
 
     def register(self, entity_obj):
         """ Register the objects

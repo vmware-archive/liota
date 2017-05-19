@@ -111,8 +111,7 @@ if __name__ == '__main__':
     # Encapsulate TLS parameters
     tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
 
-    iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
-                             MqttDccComms(edge_system_name=edge_system.name,
+    iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
                                           url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
                                           tls_conf=tls_conf,
                                           enable_authentication=True))
