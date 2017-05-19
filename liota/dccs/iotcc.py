@@ -79,27 +79,20 @@ class IotControlCenter(DataCenterComponent):
         self.file_ops_lock = Lock()
 
         def on_response(msg):
-            try:
-                log.debug("Received msg: {0}".format(msg))
-                json_msg = json.loads(msg)
-                self.proto.on_receive(json_msg)
-                if json_msg["type"] == "connection_response" and json_msg["body"]["result"] == "succeeded":
+            log.debug("Received msg: {0}".format(msg))
+            json_msg = json.loads(msg)
+            self.proto.on_receive(json_msg)
+            if json_msg["type"] == "connection_response":
+                if json_msg["body"]["result"] == "succeeded":
                     log.info("Connection verified")
-                    return True
                 else:
-                    log.debug("Processed msg: {0}".format(json_msg["type"]))
-                    if on_response(self.recv_msg_queue.get(True,300)):
-                        return True
-                    else:
-                        raise Exception("HelixProtocolException")
-            except Exception as error:
-                log.error("HelixProtocolException: " + repr(error))
+                    raise Exception("Helix Protocol Version mismatch")
+            else:
+                log.debug("Processed msg: {0}".format(json_msg["type"]))
+                on_response(self.recv_msg_queue.get(True, 300))
 
         # Block on Queue for not more then 300 seconds else it will raise an exception
-        if on_response(self.recv_msg_queue.get(True,300)):
-            log.info("Logged in to DCC successfully")
-        else:
-            raise Exception("HelixProtocolException")
+        on_response(self.recv_msg_queue.get(True, 300))
 
     def register(self, entity_obj):
         """ Register the objects
@@ -124,7 +117,7 @@ class IotControlCenter(DataCenterComponent):
                         self.reg_entity_id = json_msg["body"]["uuid"]
                     else:
                         log.info("Waiting for resource creation")
-                        on_response(self.recv_msg_queue.get(True,300))
+                        on_response(self.recv_msg_queue.get(True, 300))
                 except:
                     raise Exception("Exception while registering resource")
 
@@ -132,19 +125,21 @@ class IotControlCenter(DataCenterComponent):
                 entity_obj.entity_type = "HelixGateway"
             self.comms.send(json.dumps(
                 self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
-            on_response(self.recv_msg_queue.get(True,300))
+            on_response(self.recv_msg_queue.get(True, 300))
             if not self.reg_entity_id:
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
-                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id, entity_obj.entity_id)
+                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
+                                              entity_obj.entity_id)
                 store_edge_system_uuid(entity_name=entity_obj.name, entity_id=entity_obj.entity_id,
                                        reg_entity_id=self.reg_entity_id)
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
                                                      self.reg_entity_id, None, None)
             else:
-                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id, entity_obj.entity_id)
+                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
+                                              entity_obj.entity_id)
                 # get dev_type, and prop_dict if possible
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("Devices", entity_obj.name, self.reg_entity_id,
@@ -163,17 +158,18 @@ class IotControlCenter(DataCenterComponent):
                 json_msg = json.loads(msg)
                 log.debug("Processed msg: {0}".format(json_msg["type"]))
                 if json_msg["type"] == "remove_resource_response" and json_msg["body"]["result"] == "succeeded":
-                        log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
+                    log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
                 else:
-                        log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
+                    log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
             except:
                 raise Exception("Exception while unregistering resource")
 
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
-        on_response(self.recv_msg_queue.get(True,20))
+        on_response(self.recv_msg_queue.get(True, 20))
         self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
         if entity_obj.ref_entity.entity_type != "HelixGateway":
-            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, entity_obj.ref_entity.entity_type, None, True)
+            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name,
+                                   entity_obj.ref_entity.entity_type, None, True)
         else:
             self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
 
@@ -267,7 +263,8 @@ class IotControlCenter(DataCenterComponent):
             }]
         })
 
-    def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, entity_local_uuid, properties):
+    def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, entity_local_uuid,
+                                          properties):
         log.info("Organization Group Properties defined for resource {0}".format(reg_entity_name))
         self.comms.send(json.dumps(
             self._properties(self.next_id(), reg_entity_type, entity_local_uuid, reg_entity_name,
@@ -356,7 +353,8 @@ class IotControlCenter(DataCenterComponent):
                     break
             if not entity_exist:
                 msg["iotcc"]["Devices"].append(
-                    {"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type, "LocalUuid": entity_local_uuid})
+                    {"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type,
+                     "LocalUuid": entity_local_uuid})
         if msg != '':
             with open(self._iotcc_json, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
@@ -373,13 +371,14 @@ class IotControlCenter(DataCenterComponent):
         except IOError, err:
             log.error('Could not open {0} file '.format(self._iotcc_json) + str(err))
         log.debug('Remove {0}:{1} from iotcc.json'.format(entity_name, reg_entity_id))
-        if msg["iotcc"]["EdgeSystem"]["SystemName"]==entity_name and msg["iotcc"]["EdgeSystem"]["uuid"]==reg_entity_id:
+        if msg["iotcc"]["EdgeSystem"]["SystemName"] == entity_name and msg["iotcc"]["EdgeSystem"][
+            "uuid"] == reg_entity_id:
             del msg["iotcc"]["EdgeSystem"]
             log.info("Removed {0} edge-system from iotcc.json".format(entity_name))
         else:
             entity_exist = False
             for device in msg["iotcc"]["Devices"]:
-                if device["uuid"] == reg_entity_id and device["uuid"] == reg_entity_id :
+                if device["uuid"] == reg_entity_id and device["uuid"] == reg_entity_id:
                     entity_exist = True
                     try:
                         msg["iotcc"]["Devices"].remove(device)
