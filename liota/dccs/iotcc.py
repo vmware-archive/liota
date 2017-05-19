@@ -88,7 +88,10 @@ class IotControlCenter(DataCenterComponent):
                     return True
                 else:
                     log.debug("Processed msg: {0}".format(json_msg["type"]))
-                    on_response(self.recv_msg_queue.get(True,300))
+                    if on_response(self.recv_msg_queue.get(True,300)):
+                        return True
+                    else:
+                        raise Exception("HelixProtocolException")
             except Exception as error:
                 log.error("HelixProtocolException: " + repr(error))
 
