@@ -68,6 +68,7 @@ class systemUUID:
         if (mac >> 40) % 2:
             # retry after 30 seconds to get the mac address
             # if not able to detect mac address after this try then go ahead with alternate mechanism
+            log.info('Retrying getting the mac address')
             time.sleep(30)
             mac = uuid.getnode()
             if (mac >> 40) % 2:
