@@ -107,10 +107,16 @@ def read_mem_free():
 if __name__ == '__main__':
 
     # create a data center object, IoTCC in this case, using websocket as a transport layer
-    # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
+    # this object encapsulates the formats and protocols necessary for the agent to interact with the dcc
     # UID/PASS login for now.
-    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-                             WebSocketDccComms(url=config['WebSocketUrl']))
+    identity = Identity(root_ca_cert=config['WebsocketCaCertFile'], username=config['IotCCUID'],
+                        password=config['IotCCPassword'],
+                        cert_file=config['ClientCertFile'], key_file=config['ClientKeyFile'])
+
+    # Initialize DCC object with transport
+    iotcc = IotControlCenter(
+        WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyServerCert'], identity=identity)
+    )
 
     try:
         # create a System object encapsulating the particulars of a IoT System

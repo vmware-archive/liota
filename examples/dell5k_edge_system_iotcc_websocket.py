@@ -100,7 +100,6 @@ def read_mem_free():
 
 if __name__ == '__main__':
 
-
     # create a data center object, IoTCC in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols necessary for the agent to interact with the dcc
     # UID/PASS login for now.

@@ -47,7 +47,7 @@ import ConfigParser
 import stat
 import json
 import subprocess
-
+import time
 
 log = logging.getLogger(__name__)
 
@@ -66,15 +66,21 @@ class systemUUID:
     def _getMacAddrIfaceHash(self):
         mac = uuid.getnode()
         if (mac >> 40) % 2:
-            log.warn(
-                'could not find a mac address, an unlikely potential exists for uuid collisions with liota instances on other IoT gateways')
-            # generate a 48-bit random integer from this seed
-            # always returns the same random integer
-            # however in get_uuid below a unique uuid for each resource name will be created
-            # this allows us not to have to store any uuid on the persistent storage yet
-            # create a unique system uuid
-            random.seed(1234567)
-            mac = random.randint(0, 281474976710655)
+            # retry after 30 seconds to get the mac address
+            # if not able to detect mac address after this try then go ahead with alternate mechanism
+            log.info('Retrying getting the mac address')
+            time.sleep(30)
+            mac = uuid.getnode()
+            if (mac >> 40) % 2:
+                log.warn(
+                    'could not find a mac address, an unlikely potential exists for uuid collisions with liota instances on other IoT gateways')
+                # generate a 48-bit random integer from this seed
+                # always returns the same random integer
+                # however in get_uuid below a unique uuid for each resource name will be created
+                # this allows us not to have to store any uuid on the persistent storage yet
+                # create a unique system uuid
+                random.seed(1234567)
+                mac = random.randint(0, 281474976710655)
         m = hashlib.md5()
         m.update(str(mac))
         self.macHash = m.hexdigest()
@@ -144,7 +150,7 @@ def get_disk_name():
 def getUTCmillis():
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
-  
+
 def mkdir(path):
     if not os.path.exists(path):
         try:
@@ -154,6 +160,7 @@ def mkdir(path):
                 pass
             else:
                 raise
+
 
 def store_edge_system_uuid(entity_name, entity_id, reg_entity_id):
     """
@@ -179,6 +186,7 @@ def store_edge_system_uuid(entity_name, entity_id, reg_entity_id):
     except ConfigParser.ParsingError, err:
         log.error('Could not open config file ' + str(err))
 
+
 def sha1sum(path_file):
     """
     This method calculates SHA-1 checksum of file.
@@ -194,6 +202,7 @@ def sha1sum(path_file):
                 break
             sha1.update(data)
     return sha1
+
 
 class LiotaConfigPath:
     path_liota_config = ''
@@ -264,7 +273,7 @@ class LiotaConfigPath:
             # missing config file
             log.warn('liota.conf file missing')
 
-            
+
 def read_liota_config(section, name):
     """
     Returns the value of name within the specified section.
@@ -286,6 +295,7 @@ def read_liota_config(section, name):
         # missing config file
         log.warn('liota.conf file missing')
     return value
+
 
 def read_user_config(config_file_path):
     """
