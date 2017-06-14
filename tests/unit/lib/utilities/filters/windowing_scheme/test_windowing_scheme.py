@@ -36,6 +36,7 @@ import unittest
 from liota.lib.utilities.filters.range_filter import RangeFilter, Type
 from liota.lib.utilities.filters.windowing_scheme.windowing_scheme import WindowingScheme
 
+
 class WindowingSchemeTest(unittest.TestCase):
     """
     Unit test cases for Windowing Scheme
@@ -44,8 +45,9 @@ class WindowingSchemeTest(unittest.TestCase):
         """Initialize lower bound, upper bound and a filter for Windowing scheme test"""
         self.lower_bound = 10
         self.upper_bound = 20
+        self.middle_value = (self.lower_bound + self.upper_bound)/2
+        self.more_than_upper_bound = self.lower_bound + self.middle_value
         self.window_test_filter = RangeFilter(Type.CLOSED, self.lower_bound, self.upper_bound)
-
 
     def test_init_windowing_scheme_filter(self):
         """If filter not provided in Windowing scheme, raise TypeError"""
@@ -59,8 +61,8 @@ class WindowingSchemeTest(unittest.TestCase):
     def test_window_filter(self):
         """If filter returns a valid value, windowing_scheme should return it"""
         test_window_scheme = WindowingScheme(self.window_test_filter, 5)
-        filtered_value = test_window_scheme.filter(15)
-        self.assertEquals(filtered_value, 15)
+        filtered_value = test_window_scheme.filter(self.middle_value)
+        self.assertEquals(filtered_value, self.middle_value)
 
     """
     Tests for next window time has elapsed
@@ -71,18 +73,18 @@ class WindowingSchemeTest(unittest.TestCase):
         """If next window time has elapsed with no sample passed so far then pass collected value"""
         test_window_scheme = WindowingScheme(self.window_test_filter, 3)
         time.sleep(4)
-        collected_value = test_window_scheme.filter(25)
-        self.assertEquals(collected_value, 25)
+        collected_value = test_window_scheme.filter(self.more_than_upper_bound)
+        self.assertEquals(collected_value, self.more_than_upper_bound)
 
     def test_next_window_time_sample_passed(self):
         """If next window time has elapsed with at least one sample passed then pass filtered value"""
         test_window_scheme = WindowingScheme(self.window_test_filter, 3)
         # Value 15 will be filtered as it ranges between lower and upper bound limits
-        filtered_value = test_window_scheme.filter(15)
-        self.assertEquals(filtered_value, 15)
+        filtered_value = test_window_scheme.filter(self.middle_value)
+        self.assertEquals(filtered_value, self.middle_value)
         # Let next window time elapse
         time.sleep(4)
-        filtered_value = test_window_scheme.filter(25)
+        filtered_value = test_window_scheme.filter(self.more_than_upper_bound)
         # None is expected as filtered value because at least one sample has been already passed and
         # value ranges outside lower and upper bound limits
         self.assertEquals(filtered_value, None)

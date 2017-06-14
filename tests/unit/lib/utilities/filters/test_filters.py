@@ -43,6 +43,9 @@ class RangeFilterTest(unittest.TestCase):
         """Initialize lower and upper bound for filter test"""
         self.lower_bound = 10
         self.upper_bound = 20
+        self.less_than_lower_bound = self.lower_bound/2
+        self.middle_value = (self.lower_bound + self.upper_bound) / 2
+        self.more_than_upper_bound = self.lower_bound + self.middle_value
 
     def test_init_filter_type (self):
         """If invalid filter type, raise TypeError"""
@@ -81,32 +84,32 @@ class RangeFilterTest(unittest.TestCase):
     def test_closed_filter(self):
         """If CLOSED filter applied value will be accepted if: lower_bound <= value <= upper_bound"""
         closed_filter = RangeFilter(Type.CLOSED, self.lower_bound, self.upper_bound)
-        value = closed_filter.filter(15)
-        self.assertEquals(value, 15)
+        value = closed_filter.filter(self.middle_value)
+        self.assertEquals(value, self.middle_value)
 
     def test_open_filter(self):
         """If OPEN filter applied value will be accepted if: lower_bound < value < upper_bound"""
         open_filter = RangeFilter(Type.OPEN, self.lower_bound, self.upper_bound)
-        out_range_value = open_filter.filter(10)
-        in_range_value = open_filter.filter(15)
+        out_range_value = open_filter.filter(self.lower_bound)
+        in_range_value = open_filter.filter(self.middle_value)
         self.assertEquals(out_range_value, None)
-        self.assertEquals(in_range_value, 15)
+        self.assertEquals(in_range_value, self.middle_value)
 
     def test_closed_open_filter(self):
         """If CLOSED_OPEN filter applied value will be accepted if: lower_bound <= value < upper_bound """
         closed_open_filter = RangeFilter(Type.CLOSED_OPEN, self.lower_bound, self.upper_bound)
-        out_range_value = closed_open_filter.filter(20)
-        in_range_value = closed_open_filter.filter(10)
+        out_range_value = closed_open_filter.filter(self.upper_bound)
+        in_range_value = closed_open_filter.filter(self.lower_bound)
         self.assertEquals(out_range_value, None)
-        self.assertEquals(in_range_value, 10)
+        self.assertEquals(in_range_value, self.lower_bound)
 
     def test_open_closed_filter(self):
         """If OPEN_CLOSED filter applied value will be accepted if: lower_bound < value <= upper_bound """
         open_closed_filter = RangeFilter(Type.OPEN_CLOSED, self.lower_bound, self.upper_bound)
-        out_range_value = open_closed_filter.filter(10)
-        in_range_value = open_closed_filter.filter(20)
+        out_range_value = open_closed_filter.filter(self.lower_bound)
+        in_range_value = open_closed_filter.filter(self.upper_bound)
         self.assertEquals(out_range_value, None)
-        self.assertEquals(in_range_value, 20)
+        self.assertEquals(in_range_value, self.upper_bound)
 
     """
     Reject filters : Bounded at both end
@@ -115,33 +118,33 @@ class RangeFilterTest(unittest.TestCase):
     def test_closed_reject(self):
         """If CLOSED_REJECT filter applied value will be discarded if: lower_bound <= value <= upper_bound"""
         closed_reject_filter = RangeFilter(Type.CLOSED_REJECT, self.lower_bound, self.upper_bound)
-        out_range_value = closed_reject_filter.filter(21)
-        in_range_value = closed_reject_filter.filter(10)
-        self.assertEquals(out_range_value, 21)
+        out_range_value = closed_reject_filter.filter(self.more_than_upper_bound)
+        in_range_value = closed_reject_filter.filter(self.lower_bound)
+        self.assertEquals(out_range_value, self.more_than_upper_bound)
         self.assertEquals(in_range_value, None)
 
     def test_open_reject(self):
         """If OPEN_REJECT filter applied value will be discarded if: lower_bound < value < upper_bound"""
         open_reject_filter = RangeFilter(Type.OPEN_REJECT, self.lower_bound, self.upper_bound)
-        out_range_value = open_reject_filter.filter(10)
-        in_range_value = open_reject_filter.filter(15)
-        self.assertEquals(out_range_value, 10)
+        out_range_value = open_reject_filter.filter(self.lower_bound)
+        in_range_value = open_reject_filter.filter(self.middle_value)
+        self.assertEquals(out_range_value, self.lower_bound)
         self.assertEquals(in_range_value, None)
 
     def test_closed_open_reject(self):
         """If CLOSED_OPEN_REJECT filter applied value will be discarded if: lower_bound <= value < upper_bound"""
         closed_open_reject = RangeFilter(Type.CLOSED_OPEN_REJECT, self.lower_bound, self.upper_bound)
-        out_range_value = closed_open_reject.filter(20)
-        in_range_value = closed_open_reject.filter(10)
-        self.assertEquals(out_range_value, 20)
+        out_range_value = closed_open_reject.filter(self.upper_bound)
+        in_range_value = closed_open_reject.filter(self.lower_bound)
+        self.assertEquals(out_range_value, self.upper_bound)
         self.assertEquals(in_range_value, None)
 
     def test_open_closed_reject(self):
         """If OPEN_CLOSED_REJECT filter applied value will be discarded if: lower_bound < value <= upper_bound"""
         open_closed_reject = RangeFilter(Type.OPEN_CLOSED_REJECT, self.lower_bound, self.upper_bound)
-        out_range_value = open_closed_reject.filter(10)
-        in_range_value = open_closed_reject.filter(20)
-        self.assertEquals(out_range_value, 10)
+        out_range_value = open_closed_reject.filter(self.lower_bound)
+        in_range_value = open_closed_reject.filter(self.upper_bound)
+        self.assertEquals(out_range_value, self.lower_bound)
         self.assertEquals(in_range_value, None)
 
     """
@@ -150,34 +153,34 @@ class RangeFilterTest(unittest.TestCase):
     def test_less_than(self):
         """If LESS_THAN filter applied value will be accepted if: value < lower_bound"""
         less_than_filter = RangeFilter(Type.LESS_THAN, self.lower_bound, self.upper_bound)
-        out_range_value = less_than_filter.filter(10)
-        in_range_value = less_than_filter.filter(0)
+        out_range_value = less_than_filter.filter(self.lower_bound)
+        in_range_value = less_than_filter.filter(self.less_than_lower_bound)
         self.assertEquals(out_range_value, None)
-        self.assertEquals(in_range_value, 0)
+        self.assertEquals(in_range_value, self.less_than_lower_bound)
 
     def test_at_most(self):
         """If AT_MOST filter applied value will be accepted if: value <= lower_bound"""
         at_most_filter = RangeFilter(Type.AT_MOST, self.lower_bound, self.upper_bound)
-        out_range_value = at_most_filter.filter(20)
-        in_range_value = at_most_filter.filter(0)
+        out_range_value = at_most_filter.filter(self.upper_bound)
+        in_range_value = at_most_filter.filter(self.less_than_lower_bound)
         self.assertEquals(out_range_value, None)
-        self.assertEquals(in_range_value, 0)
+        self.assertEquals(in_range_value, self.less_than_lower_bound)
 
     def test_greater_than(self):
         """If GREATER_THAN filter applied value will be accepted if: value > upper_bound"""
         greater_than_filter = RangeFilter(Type.GREATER_THAN, self.lower_bound, self.upper_bound)
-        out_range_value = greater_than_filter.filter(20)
-        in_range_value = greater_than_filter.filter(30)
+        out_range_value = greater_than_filter.filter(self.upper_bound)
+        in_range_value = greater_than_filter.filter(self.more_than_upper_bound)
         self.assertEquals(out_range_value, None)
-        self.assertEquals(in_range_value, 30)
+        self.assertEquals(in_range_value, self.more_than_upper_bound)
 
     def test_at_least(self):
         """If AT_LEAST filter applied value will be accepted if: value >= upper_bound"""
         at_least_filter = RangeFilter(Type.AT_LEAST, self.lower_bound, self.upper_bound)
-        out_range_value = at_least_filter.filter(0)
-        in_range_value = at_least_filter.filter(30)
+        out_range_value = at_least_filter.filter(self.less_than_lower_bound)
+        in_range_value = at_least_filter.filter(self.more_than_upper_bound)
         self.assertEquals(out_range_value, None)
-        self.assertEquals(in_range_value, 30)
+        self.assertEquals(in_range_value, self.more_than_upper_bound)
 
 if __name__ == '__main__':
     unittest.main(verbosity=1)
