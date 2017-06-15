@@ -46,7 +46,7 @@ class WindowingSchemeTest(unittest.TestCase):
         self.lower_bound = 10
         self.upper_bound = 20
         self.middle_value = (self.lower_bound + self.upper_bound)/2
-        self.more_than_upper_bound = self.lower_bound + self.middle_value
+        self.more_than_upper_bound = self.upper_bound + 10
         self.window_test_filter = RangeFilter(Type.CLOSED, self.lower_bound, self.upper_bound)
 
     def test_init_windowing_scheme_filter(self):

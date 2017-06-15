@@ -43,9 +43,9 @@ class RangeFilterTest(unittest.TestCase):
         """Initialize lower and upper bound for filter test"""
         self.lower_bound = 10
         self.upper_bound = 20
-        self.less_than_lower_bound = self.lower_bound/2
+        self.less_than_lower_bound = self.lower_bound - 10
         self.middle_value = (self.lower_bound + self.upper_bound) / 2
-        self.more_than_upper_bound = self.lower_bound + self.middle_value
+        self.more_than_upper_bound = self.upper_bound + 10
 
     def test_init_filter_type (self):
         """If invalid filter type, raise TypeError"""
