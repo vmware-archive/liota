@@ -113,7 +113,6 @@ To enable/disable the autostart service perform the following steps:
 ### On systemd based systems:
 
 ```bash
-  $ systemctl enable liota.socket
   $ systemctl enable liota.service
 ```
 
