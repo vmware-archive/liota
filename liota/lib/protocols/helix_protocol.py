@@ -34,7 +34,7 @@ import logging
 import json
 import time
 
-PROTOCOL_VERSION = "2.8"
+PROTOCOL_VERSION = "2.9"
 log = logging.getLogger(__name__)
 
 

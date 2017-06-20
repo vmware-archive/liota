@@ -24,13 +24,13 @@ The Metric subclass of Entity is the local object representing a stream of (numb
 The abstract class DeviceComms represent mechanisms through which devices send and receive data to/from edge systems. Some examples are CAN bus, Modbus, ProfiNet, Zibgee, GPIO pins, Industrial Serial Protocols as well as sockets, websockets, MQTT, CoAP. The DeviceComms abstract class is a placeholder for these various communication mechanisms.
 
 ## DCCComms
-The abstract class DCCComms represents communication protocols between edge systems and DCCs. Currently, liota supports MQTT, WebSocket and plain old BSD sockets. In near future it will support CoAP. MQTT, WebSocket and CoAP are ‘Application’ or layer-7 protocols. MQTT is a pub-sub system using TCP and CoAP implements reliable UDP datagrams and a data format specification. These protocols are capable of satisfying most of the use cases for transferring data from IoT gateways to data-center components. With the current implementation the gateway acts as MQTT, WebSocket or a traditional Socket client.
+The abstract class DCCComms represents communication protocols between edge systems and DCCs. Currently, liota supports MQTT, WebSocket and plain old BSD sockets. In near future it will support CoAP. MQTT, WebSocket and CoAP are 'Application' or layer-7 protocols. MQTT is a pub-sub system using TCP and CoAP implements reliable UDP datagrams and a data format specification. These protocols are capable of satisfying most of the use cases for transferring data from IoT gateways to data-center components. With the current implementation the gateway acts as MQTT, WebSocket or a traditional Socket client.
 
 ## DCC (Data Center Component)
-The abstract class DCC represents an application in a data-center. It is potentially the most important and complex abstraction of liota. It provides flexibility to developers for choosing the data-center components they need and using API’s provided by liota. With help of this abstraction developers may build custom solutions. The abstract class states basic methods and encapsulates them into unified common API’s required to send data to various DCC’s. Graphite and Project Ice are currently the data-center components supported with AWS, BlueMix and ThingWorx to come soon. New DCC’s can easily be integrated in the abstraction.
+The abstract class DCC represents an application in a data-center. It is potentially the most important and complex abstraction of liota. It provides flexibility to developers for choosing the data-center components they need and using API's provided by liota. With help of this abstraction developers may build custom solutions. The abstract class states basic methods and encapsulates them into unified common API's required to send data to various DCC's. Graphite and Project Ice are currently the data-center components supported with AWS, BlueMix and ThingWorx to come soon. New DCC's can easily be integrated in the abstraction.
 
 ## Transports
-Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols.  Refer ![MQTT](/examples/mqtt/README.md) to know more on different MQTT configuration options available.
+Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols.  Refer [MQTT](https://github.com/vmware/liota/blob/master/examples/mqtt/README.md) to know more on different MQTT configuration options available.
 
 ## Identity and TLS Configurations
 * Identity class encapsulates certificates or credentials related to a connection used at both DCC and Device side.
@@ -41,20 +41,20 @@ Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols
 Liota applications can be broken into small pieces that can be loaded and unloaded into a running liota process. We recommend putting the EdgeSystems, Devices, Metrics and DCC(s) in separate packages. Then each construct can be loaded and unloaded at will. See the README in the package directory for complete details.
 
 ## Device Discovery
-Liota SDK provides users a way to discover new devices at run-time through a dedicated discovery thread. The discovery thread could listen on a list of end points by spinning up a listening thread for each of them. Currently, Liota supports 4 kinds of end points: MQTT, COAP, Socket, and Named Pipe.
+Liota SDK provides users a way to discover new devices at run-time through a dedicated discovery thread. The discovery thread could listen on a list of end points by spinning up a listening thread for each of them. Currently, Liota supports 4 kinds of end points: MQTT, COAP, Socket, and Named Pipe. However, because of security consideration on edge system, currently only MQTT and Named Pipe are allowed, especially Named Pipe is only accessible to its owner user.
 
 Assume there is a list of DeviceType-to-DCC Mappings, such as {TypeA:[DCC1-Package-Name, DCC2-Package-Name], TypeB:[DCC3-Package-Name]}. Listening thread waits for a json message from devices, registers new devices with each DCC in the mapping list, sets any properties, fills out device file for AW agent. AW agent enrolls discovered device and pushes content to bring the device to compliance.
 
 The json message from devices starts with Device Type and comprises a dictionary, that is,
-{ ‘DeviceType’:{key1:value1,key2:value2, …, keyn:valuen}} e.g., {LM35:{k1:v1,…,SN:12345,kn:vn}}. Assume there is specified unique key for each ‘Type’ of devices, e.g.,
-[{‘Type’:’LM35’, ‘UniqueKey’:’SN’}]. We will concatenate the type and unique id to LM35_12345 and use this as the name to register the device.
+{ 'DeviceType':{key1:value1,key2:value2, ..., keyn:valuen}} e.g., {LM35:{k1:v1,...,SN:12345,kn:vn}}. Assume there is specified unique key for each 'Type' of devices, e.g.,
+[{'Type':'LM35', 'UniqueKey':'SN'}]. We will concatenate the type and unique id to LM35_12345 and use this as the name to register the device.
 
 See the README in the dev_disc directory under package directory for complete usage details.
 
 ## SI Units
 Liota supports SI units and the conversion of the units with help of Pint library which is included in liota package to provide developers the capability to use SI units in their code. We have also included the example [simulated_graphite_temp.py](https://github.com/vmware/liota/blob/master/examples/simulated_graphite_temp.py) which uses the library to convert temperature value from Celsius to Fahrenheit and Kelvin. More details on the usage of the Pint library and conversion of units can be found at this [link](https://pint.readthedocs.io/en/0.7.2/index.html).
 
-## Liota – Future Enhancements
+## Liota - Future Enhancements
 Toward the goal of ubiquity for liota we plan to include the following enhancements:
 * Full support for IEEE 1451, Electronic Transducer Data Sheets
 * Support for CoAP as transports
@@ -72,7 +72,7 @@ In general, liota can be installed with:
 It requires a Python 2.7 environment already installed.
 
 ## Autostarting Liota Daemon
-For starting liotad.py in background automatically at reboot perform the following steps: 
+For starting liotad.py in background automatically at reboot perform the following steps:
 
 * Copy autostartliota script present in scripts folder to location:
 ```bash

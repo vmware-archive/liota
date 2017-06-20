@@ -32,6 +32,7 @@
 
 from liota.core.package_manager import LiotaPackage
 from linux_metrics import mem_stat
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["iotcc"]
 
@@ -50,21 +51,20 @@ class PackageClass(LiotaPackage):
         import copy
 
         # Acquire resources from registry
-        iotcc = registry.get("iotcc")
+        self.iotcc = registry.get("iotcc")
         # Creating a copy of edge_system object to keep original object "clean"
-        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
+        self.iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        self.config = read_user_config(config_path + '/sampleProp.conf')
 
         # Register device
-        ram_device = SimulatedDevice(config['DeviceName'], "Device-RAM")
-        reg_ram_device = iotcc.register(ram_device)
-        iotcc.set_properties(reg_ram_device, config['DevicePropList'])
+        ram_device = SimulatedDevice(self.config['DeviceName'], "Device-RAM")
+        self.reg_ram_device = self.iotcc.register(ram_device)
+        self.iotcc.set_properties(self.reg_ram_device, self.config['DevicePropList'])
 
-        iotcc.create_relationship(iotcc_edge_system, reg_ram_device)
+        self.iotcc.create_relationship(self.iotcc_edge_system, self.reg_ram_device)
 
         # Create metrics
         self.metrics = []
@@ -75,14 +75,18 @@ class PackageClass(LiotaPackage):
             interval=10,
             sampling_function=read_mem_free
         )
-        reg_mem_free_metric = iotcc.register(mem_free_metric)
-        iotcc.create_relationship(reg_ram_device, reg_mem_free_metric)
+        reg_mem_free_metric = self.iotcc.register(mem_free_metric)
+        self.iotcc.create_relationship(self.reg_ram_device, reg_mem_free_metric)
         reg_mem_free_metric.start_collecting()
         self.metrics.append(reg_mem_free_metric)
 
         # Use the iotcc_device_name as identifier in the registry to easily refer the device in other packages
-        registry.register("reg_ram_device", reg_ram_device)
+        registry.register("reg_ram_device", self.reg_ram_device)
 
     def clean_up(self):
         for metric in self.metrics:
             metric.stop_collecting()
+
+        #Unregister iotcc device
+        if self.config['ShouldUnregisterOnUnload'] == "True":
+            self.iotcc.unregister(self.reg_ram_device)

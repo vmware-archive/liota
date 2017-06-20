@@ -75,13 +75,13 @@ class SocketListener(DiscoveryListener):
                 break
             try:
                 payload = json.loads(msg)
+                Thread(target=self.proc_dev_msg, name="SocketMsgProc_Thread", args=(payload,)).start()
+                msg = "Received~"
+                conn.sendall(msg)
             except ValueError, err:
                 # json can't be parsed
                 log.error('Value: {0}, Error:{1}'.format(msg, str(err)))
                 continue
-            Thread(target=self.proc_dev_msg, name="SocketMsgProc_Thread", args=(payload,)).start()
-            msg = "Received~"
-            conn.sendall(msg)
         log.info('closing {0} connection socket {0}'.format(addr, conn))
         conn.close()
 

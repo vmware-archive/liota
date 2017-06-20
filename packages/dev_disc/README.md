@@ -3,7 +3,7 @@ Device Discovery consists of three parts:
 
 (1) A DiscoveryThread that spawn out various Listener Threads, maintain global data structures and run discovery initialization/clean-up codes,
 
-(2) Discovery Listener Threads which listen on one or more specific communication channels, which could be MQTT subscriber, Coap Server, Socket Server, or a Named Pipe Reader for now, to receive Messages from devices for discovering and registering devices,
+(2) Discovery Listener Threads which listen on one or more specific communication channels, which could be MQTT subscriber, Coap Server, Socket Server, or a Named Pipe Reader for now, to receive Messages from devices for discovering and registering devices, (However, because of security consideration on edge system, currently only MQTT subscriber and Named Pipe Reader are allowed)
 
 (3) Discovery Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Discovery Thread.
 
@@ -13,7 +13,7 @@ Device Simulator is a separate debugging and simulation tool for device discover
 
 (1) A SimulatorThread that spawns out various Simulator Threads, maintain global data structures and run simulator initialization/clean-up codes,
 
-(2) Device Simulator Threads which make use of one or more specific communication channels, which could be MQTT Publisher, Coap Client, Socket Client, or a Named Pipe Writer for now, to send Messages to Liota Device Discovery Listeners for advertising device information, 
+(2) Device Simulator Threads which make use of one or more specific communication channels, which could be MQTT Publisher, Coap Client, Socket Client, or a Named Pipe Writer for now, to send Messages to Liota Device Discovery Listeners for advertising device information, (However, because of security consideration on edge system, currently only MQTT Publisher and Named Pipe Writer are allowed)
 
 (3) Command Messenger Threads which listen on a named pipe for now, to provide with an interface for users and automated agents to send commands to Simulator Thread.
 
@@ -21,9 +21,10 @@ Device Simulator will get configuration from liota.conf and initialize the data 
 
 ### How to Start Device Discovery
 
-Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc inside packages_auto.txt)
+Device Discovery could be started through the Liota package of 'dev_disc.py' under the folder of packages/dev_disc/, which will initialize a Device Discovery Thread. If you want it ran automatically when you start package manager, you can put dev_disc/dev_disc and its sha1 checksum inside packages_auto.txt.
+To be reminded, to let discovered devices registered to user specified DCCs, at least one DCC package should be loaded.
 
-In details, after installation with (sudo python setup.py install), you can do the following:
+In details, after installation with (sudo python setup.py install or pip install liota), you can do the following:
 # Configuration A (under /etc/liota/conf, inside liota.conf, default/example settings are available)
 [IOTCC_PATH]
 
@@ -33,7 +34,7 @@ entity_file_path = /etc/liota/conf/entity # the folder where store discovered de
 
 [DISC_CFG]
 
-disc_cmd_msg_pipe = /var/tmp/liota/disc_cmd_messenger.fifo # the named pipe path for discovery CmdMessengerThread
+disc_cmd_msg_pipe = /etc/liota/packages/dev_disc/disc_cmd_messenger.fifo # the named pipe path for discovery CmdMessengerThread
 
 [DEVICE_TYPE_TO_UNIQUEKEY_MAPPING] # device discovery can only process device types which are listed here, among its attributes,
 
@@ -45,45 +46,43 @@ Apple56 = SN
 
 Banana23 = serial
 
-[DEVICE_TYPE_TO_DCC_MAPPING]  # for each device type, corresponding package file name should be written and must start with DCC
+[DEVICE_TYPE_TO_DCC_MAPPING]  # for each device type, list each DCC's package name where discovered devices would like to be registered to
 
-LM35 = Graphite-pkg.py, IOTCC-pkg.py		# name, currently only support Graphite or IOTCC, later when device is successfully
+LM35 = graphite, iotcc_mqtt, iotcc		# DCC's package might be more than one, since may use different DCCComms, e.g., iotcc_mqtt and iotcc
 
-Press64 = IOTCC-pkg1.py						# registered in IOTCC, and enrolled in Airwatch, corresponding package will be
+Press64 = iotcc_mqtt, iotcc		# DCC could be ANY one that liota supports
 
-Apple56 = IOTCC-pkg2.py						# downloaded from Airwatch Console/Server to start collecting data (defined in
+Apple56 = iotcc_mqtt 	# If a DCC's package is not loaded, no registration will be carried out, while other tasks keep on going
 
-Banana23 = IOTCC-pkg3.py					# package file)
+Banana23 = iotcc	# Later user could create Liota Package for discovered devices to start collecting metrics
 
 [DEVSIM_CFG]
 
-devsim_cmd_msg_pipe = /var/tmp/liota/devsim_cmd_messenger.fifo	# the named pipe path for Device Simulator CmdMessengerThread
+devsim_cmd_msg_pipe = /etc/liota/packages/dev_disc/devsim_cmd_messenger.fifo # named pipe for Device Simulator CmdMessengerThread
 
 [DISC_ENDPOINT_LIST]		# Endpoing list where you want discovery listens on and simulator send messages to
 
 							# if no item in this list, Device Discovery will not be started
 
-disc_msg_pipe = /var/tmp/liota/discovery_messenger.fifo		# currently, only support these 4 types
+disc_msg_pipe = /etc/liota/packages/dev_disc/discovery_messenger.fifo	# currently, support these 4 types (currently,
 
-socket = 127.0.0.1:5000						# you can only use some of them by deleting others
+socket = 127.0.0.1:5000						# coap and socket are not allowed for security consideration).
 
-mqtt = 127.0.0.1:1883:device_discovery				# IP address should be updated according to your system
+mqtt = 127.0.0.1:1882:device_discovery		# Mqtt broker should be started first before publish/subscribe
 
-coap = 10.1.170.173:5683					# Mqtt broker should be started first before publish/subscribe
-
-								# reference: https://mosquitto.org/download/
+coap = 127.0.0.1:5683					# reference: https://mosquitto.org/download/
 
 [DISC_MQTT_CFG]							# Mqtt with TLS authentication need more settings
+enable_authentication = True
+broker_username = User_Name						# *default setting does not need certificate, but basic authentication
 
-broker_username = None						# default setting does not need certificate or password
+broker_password = Password						# should be used for security, please change settings
 
-broker_password = None						# to use it, please change settings
+broker_root_ca_cert = None
 
-broker_root_ca_cert = /etc/liota/packages/dev_disc/certs/ca.crt
+edge_system_cert_file = None
 
-edge_system_cert_file = /etc/liota/packages/dev_disc/certs/client.crt
-
-edge_system_key_file = /etc/liota/packages/dev_disc/certs/client.key
+edge_system_key_file = None
 
 cert_required = CERT_NONE
 
@@ -106,6 +105,8 @@ retry = 5
 keep_alive = 60
 
 ConnectDisconnectTimeout = 10
+* When MQTT broker also sits on the edge system, MQTT subscriber can listen on 127.0.0.1/localhost with a unique port (rather than well-known 1883) and use basic authentication
+to guarantee secured communication with MQTT broker. It's MQTT broker and MQTT publisher's responsibility to guarantee MQTT broker and external world communicate securely.
 
 # Configuration B (under /etc/liota/packages, inside sampleProf.conf)
 
@@ -136,7 +137,7 @@ b). when dev_disc is not inside packages_auto.txt:
 
 	start package manager with cmd line in 1., then load device discovery package by
 
-	sudo ./liotapkg.sh load dev_disc/dev_disc
+	sudo ./liotapkg.sh load dev_disc/dev_disc sha1_checksum
 
 (can check logs through "tail -f /var/log/liota/liota.log")
 

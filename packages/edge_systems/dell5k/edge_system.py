@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 class PackageClass(LiotaPackage):
     """
@@ -44,8 +45,7 @@ class PackageClass(LiotaPackage):
 
         # getting values from conf file
         config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        config = read_user_config(config_path + '/sampleProp.conf')
 
         # Initialize edgesystem
         edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])

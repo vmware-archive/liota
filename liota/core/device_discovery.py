@@ -32,19 +32,23 @@
 
 import logging
 import os
+import re
 import fcntl
 import errno
 import ConfigParser
 from threading import Thread, Lock
 from Queue import Queue
 
-from liota.lib.utilities.utility import LiotaConfigPath
-from liota.lib.utilities.utility import DiscUtilities
+from liota.lib.utilities.utility import LiotaConfigPath, DiscUtilities
 from liota.disc_listeners.named_pipe import NamedPipeListener
 from liota.disc_listeners.socket_svr import SocketListener
 from liota.disc_listeners.mqtt import MqttListener
 
 log = logging.getLogger(__name__)
+
+DEVICE_TYPE_SAFE_REGEX = '^[A-Za-z0-9_-]+$'
+DEVICE_KEY_SAFE_REGEX = '^[A-Za-z0-9_-]+$'
+DEVICE_VAL_SAFE_REGEX = '^[A-Za-z0-9\._-]+$'
 
 class DiscoveryThread(Thread):
     """
@@ -65,10 +69,9 @@ class DiscoveryThread(Thread):
 
         # listener related configuration
         self.endpoint_list = {} # Listener list: (comm type, ip:port or folder)
-        self.type_dcc_map = {} # Device Type to DCC mapping: (device type, dcc list)
-        self.type_dcc_pkg_map = {} # Device Type to DCC-Package-Name mapping: (device type, dcc-pkg-name list)
+        self.type_dcc_map = {} # Device Type to DCC mapping: (device type, dcc package name list (e.g., iotcc, iotcc_mqtt))
         self.type_key_map = {} # Device Type to Unique Key mapping: (device type, unique key)
-        self.type_tuple_key_dcc_pkg = {} # Device Type to Tuple of (unique key, dcc, dcc_pkg)
+        self.type_tuple_key_dcc_pkg = {} # Device Type to Tuple of (unique key,  dcc_pkg)
 
         # device registration to dcc related
         self.pkg_registry = registry
@@ -149,9 +152,13 @@ class DiscoveryThread(Thread):
                         for key in self.endpoint_list.iterkeys():
                             log.debug("endpoint_list:(%s : %s)\n" % (key, self.endpoint_list[key]))
 
+                        global DEVICE_TYPE_SAFE_REGEX
                         # retrieve device type to unique key mapping list
                         tmp_list = config.items('DEVICE_TYPE_TO_UNIQUEKEY_MAPPING')
                         for key, value in tmp_list[:]:
+                            if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                                log.warning("device type {0} contains unacceptable character".format(key))
+                                continue
                             if value is None or value == "None":
                                 continue
                             self.type_key_map[key] = value
@@ -161,23 +168,19 @@ class DiscoveryThread(Thread):
                         # retrieve device type to DCC mapping list
                         tmp_list = config.items('DEVICE_TYPE_TO_DCC_MAPPING')
                         for key, value in tmp_list[:]:
+                            if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                                log.warning("device type {0} contains unacceptable character".format(key))
+                                continue
                             if value is None or value == "None":
                                 continue
                             tmp_list2 = []
                             tmp_list2 = [x.strip() for x in value.split(',')]
-                            self.type_dcc_pkg_map[key] = tmp_list2
-                            tmp_list3 = []
-                            for value in tmp_list2[:]:
-                                dcc = value.split('-')[0]
-                                tmp_list3.append(dcc) # assume one packet per dcc
-                            self.type_dcc_map[key] = tmp_list3
-                            self.type_tuple_key_dcc_pkg[key] = (self.type_key_map[key], tmp_list3, tmp_list2)
-                        for key in self.type_dcc_pkg_map.iterkeys():
-                            log.debug("type_dcc_pkg_map:(%s : %s)\n" % (key, self.type_dcc_pkg_map[key]))
+                            self.type_dcc_map[key] = tmp_list2
+                            self.type_tuple_key_dcc_pkg[key] = (self.type_key_map[key], tmp_list2)
                         for key in self.type_dcc_map.iterkeys():
                             log.debug("type_dcc_map:(%s : %s)\n" % (key, self.type_dcc_map[key]))
                         for key in self.type_tuple_key_dcc_pkg.iterkeys():
-                            log.debug("type_dcc_map:(%s : %s)\n" % (key, self.type_tuple_key_dcc_pkg[key]))
+                            log.debug("type_tuple_key_dcc_pkg:(%s : %s)\n" % (key, self.type_tuple_key_dcc_pkg[key]))
                     except ConfigParser.ParsingError:
                         log.error('Could not parse log config file')
                         exit(-4)
@@ -209,10 +212,8 @@ class DiscoveryThread(Thread):
         # listen related
         # Listener list: (comm type, ip:port or folder)
         self._config['endpoint_list'] = self.endpoint_list
-        # Device Type to DCC mapping: (device type, dcc list)
+        # Device Type to DCC mapping: (device type, dcc package name list (e.g., iotcc, iotcc_mqtt))
         self._config['type_dcc_map'] = self.type_dcc_map
-        # Device Type to DCC-Package-Name mapping: (device type, dcc-pkg-name list)
-        self._config['type_dcc_pkg_map'] = self.type_dcc_pkg_map
         # Device Type to Unique Key mapping: (device type, unique key)
         self._config['type_key_map'] = self.type_key_map
         # Device Type to Tuple of (unique key, dcc, dcc_pkg)
@@ -230,7 +231,7 @@ class DiscoveryThread(Thread):
     def _cmd_handler_list(self, parameter):
         # configurations
         if parameter == "configurations" or parameter == "cfg":
-            stats = ["n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]
+            stats = ["n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]
             stats[0] = str(self._config['cmd_msg_pipe']) + '\n\t'
             tmp = ''
             endpoint_list = self._config['endpoint_list']
@@ -245,30 +246,23 @@ class DiscoveryThread(Thread):
             stats[2] = tmp
 
             tmp = ''
-            type_dcc_pkg_map = self._config['type_dcc_pkg_map']
-            for key in type_dcc_pkg_map.iterkeys():
-                tmp += str(key) + ': ' + str(type_dcc_pkg_map[key]) + '\n\t\t'
-            stats[3] = tmp
-
-            tmp = ''
             type_key_map = self._config['type_key_map']
             for key in type_key_map.iterkeys():
                 tmp += str(key) + ': ' + str(type_key_map[key]) + '\n\t\t'
-            stats[4] = tmp
+            stats[3] = tmp
 
             tmp = ''
             type_tuple_key_dcc_pkg = self._config['type_tuple_key_dcc_pkg']
             for key in type_tuple_key_dcc_pkg.iterkeys():
                 tmp += str(key) + ': ' + str(type_tuple_key_dcc_pkg[key]) + '\n\t\t'
-            stats[5] = tmp
+            stats[4] = tmp
 
-            stats[6] = str(self._config['package_path']) + '\n\t'
-            stats[7] = str(self._config['dev_file_path']) + '\n\t'
+            stats[5] = str(self._config['package_path']) + '\n\t'
+            stats[6] = str(self._config['dev_file_path']) + '\n\t'
             log.warning(("List of configurations - \n\t"
                         + "cmd_msg_pipe: %s\n\t"
                         + "endpoint_list: %s\n\t"
                         + "type_dcc_map: %s\n\t"
-                        + "type_dcc_pkg_map: %s\n\t"
                         + "type_key_map: %s\n\t"
                         + "type_tuple_key_dcc_pkg: %s\n\t"
                         + "dev_file_path: %s\n\t"
@@ -341,22 +335,32 @@ class DiscoveryThread(Thread):
             log.debug("Endpoint:{0}:{1}".format(key, value))
             if value is None or value == "None":
                 continue
+            ### TBR: because security consideration, currently only mqtt is allowed
+            mqtt_only = True
             if key.find('disc_msg_pipe') != -1:
                 pipe_thread = NamedPipeListener(pipe_file=value, name=key+"_Thread", discovery=self)
                 if pipe_thread is not None:
                     self._listeners[key] = pipe_thread
             if key.find('socket') != -1:
-                socket_thread = SocketListener(ip_port=value, name=key+"_Thread", discovery=self)
-                if socket_thread is not None:
-                    self._listeners[key] = socket_thread
+                if mqtt_only == False:
+                    socket_thread = SocketListener(ip_port=value, name=key+"_Thread", discovery=self)
+                    if socket_thread is not None:
+                        self._listeners[key] = socket_thread
+                else:
+                    log.warning("because security consideration, Socket Endpoint is not allowed!")
+                    print "because security consideration, Socket Endpoint is not allowed!"
             if key.find('mqtt') != -1:
                 mqtt_thread = MqttListener(mqtt_cfg=value, name=key+"_Thread", discovery=self)
                 if mqtt_thread is not None:
                     self._listeners[key] = mqtt_thread
             if key.find('coap') != -1:
-                coap_thread = CoapListener(ip_port=value, name=key+"_Thread", discovery=self)
-                if coap_thread is not None:
-                    self._listeners[key] = coap_thread
+                if mqtt_only == False:
+                    coap_thread = CoapListener(ip_port=value, name=key+"_Thread", discovery=self)
+                    if coap_thread is not None:
+                        self._listeners[key] = coap_thread
+                else:
+                    log.warning("because security consideration, Coap Endpoint is not allowed!")
+                    print "because security consideration, Coap Endpoint is not allowed!"
 
         # Listen on message queue for management or statistic commands
         self.cmd_messenger_thread = \
@@ -431,33 +435,7 @@ class DiscoveryThread(Thread):
             reg_list.append(reg_rec)
             self._devices_discoverd[name] = (dev_type, reg_list)
 
-    def reg_device_graphite(self, name, dev_type, prop_dict):
-        from liota.entities.devices.device import Device
-        from liota.lib.utilities.utility import systemUUID
-
-        # Get values from configuration file
-        config_path = self._config['package_path']
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
-
-        # Acquire resources from registry
-        if not self.pkg_registry.has("graphite"):
-            log.warning("graphite package is not running, please load it first!")
-            return None, None
-        graphite = self.pkg_registry.get("graphite")
-
-        tmp = systemUUID().get_uuid(name)
-        dev = Device(name, tmp, dev_type)
-        # Register device
-        try:
-            with self.discovery_lock:
-                reg_dev = graphite.register(dev)
-                graphite.set_properties(reg_dev, prop_dict)
-        except:
-            return None, None
-        return dev, reg_dev
-
-    def add_organization_properties(self, iotcc, prop_dict):
+    def add_organization_properties(self, key, prop_dict):
         import json
 
         # Get organization info file path
@@ -466,7 +444,7 @@ class DiscoveryThread(Thread):
             return prop_dict
         try:
             with open(iotcc_json_path, 'r') as f:
-                iotcc_details_json_obj = json.load(f)["iotcc"]
+                iotcc_details_json_obj = json.load(f)[key]
             f.close()
         except IOError, err:
             return prop_dict
@@ -476,37 +454,31 @@ class DiscoveryThread(Thread):
         new_prop_dict = dict(prop_dict.items() + org_group_properties.items())
         return new_prop_dict
 
-    def reg_device_iotcc(self, name, dev_type, prop_dict):
+    def reg_device(self, dcc_pkg, edge_system_pkg, name, dev_type, prop_dict):
         from liota.entities.devices.device import Device
         from liota.lib.utilities.utility import systemUUID
 
-        # Get values from configuration file
-        config_path = self._config['package_path']
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
-
         # Acquire resources from registry
-        if not self.pkg_registry.has("iotcc"):
-            log.warning("iotcc package is not running, please load it first!")
+        if not self.pkg_registry.has(dcc_pkg):
+            log.warning("%s package is not running" % dcc_pkg)
             return None, None
-        iotcc = self.pkg_registry.get("iotcc")
+        dcc = self.pkg_registry.get(dcc_pkg)
 
         dev = Device(name, systemUUID().get_uuid(name), dev_type)
-        prop_dict = self.add_organization_properties(iotcc, prop_dict)
         # Register device
         try:
             with self.discovery_lock:
-                reg_dev = iotcc.register(dev)
-                iotcc.set_properties(reg_dev, prop_dict)
+                reg_dev = dcc.register(dev)
+                dcc.set_properties(reg_dev, prop_dict)
         except:
             return None, None
 
         # TBM: temporarily assume devices will be attached to the only edge system
-        if self.pkg_registry.has("iotcc_edge_system"):
-            iotcc_edge_system = self.pkg_registry.get("iotcc_edge_system")
-            iotcc.create_relationship(iotcc_edge_system, reg_dev)
+        if self.pkg_registry.has(edge_system_pkg):
+            edge_system = self.pkg_registry.get(edge_system_pkg)
+            dcc.create_relationship(edge_system, reg_dev)
         else:
-            log.warning("iotcc_edge_system package is not loaded, please load it!")
+            log.warning("%s package is not loaded, please load it!" % edge_system_pkg)
         return dev, reg_dev
 
     def device_msg_process(self, data):
@@ -515,44 +487,57 @@ class DiscoveryThread(Thread):
         msg format is {'DeviceType':{key1:value1,key2:value2, …, keyn:valuen}},
         where UniqueKey is defined in liota.conf, ie.,
         """
+
         log.debug("device_msg_process")
         type_dcc_map = self._config['type_dcc_map']
         type_key_map = self._config['type_key_map']
         for key in type_dcc_map.iterkeys():
             log.debug("type_dcc_map:(%s : %s)\n" % (key, type_dcc_map[key]))
-        for key, value in data.iteritems():
-            key_dcc = type_dcc_map.get(key)
-            if key_dcc is None:
-                continue
-            if len(key_dcc) is 0:
-                continue
-            unique_key = type_key_map.get(key)
-            if unique_key is None:
-                continue
-            unique_key_value = ''
-            for k, v in value.iteritems():
-                if k == unique_key:
-                    unique_key_value = v
-            name = key + '_' + unique_key_value;
-            self._save_devinfo(name, key)
-            for dcc in key_dcc[:]:
-                # register device to dcc, set properties for the device
-                if dcc == 'Graphite':
-                    (dev, reg_dev) = self.reg_device_graphite(name, key, value)
-                    if (dev is not None) and (reg_dev is not None):
-                        reg_rec = {}
-                        # add it in Records: currently only for debugging
-                        reg_rec['Graphite'] = (dev, reg_dev)
-                        self._update_devinfo(name, reg_rec)
-                if dcc == 'IOTCC':
-                # fill out device file for AW agent: will be done inside iotcc.py
-                    (dev, reg_dev) = self.reg_device_iotcc(name, key, value)
-                    if (dev is not None) and (reg_dev is not None):
-                        reg_rec = {}
-                        # add it in Records: currently only for debugging
-                        reg_rec['IOTCC'] = (dev, reg_dev)
-                        self._update_devinfo(name, reg_rec)
 
+        global DEVICE_TYPE_SAFE_REGEX
+        global DEVICE_KEY_SAFE_REGEX
+        global DEVICE_VAL_SAFE_REGEX
+        try:
+            for key, value in data.iteritems():
+                if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                    log.warning("device type {0} contains unacceptable character".format(key))
+                    return False
+                key_dcc = type_dcc_map.get(key)
+                if key_dcc is None:
+                    continue
+                if len(key_dcc) is 0:
+                    continue
+                unique_key = type_key_map.get(key)
+                if unique_key is None:
+                    continue
+                unique_key_value = ''
+                for k, v in value.iteritems():
+                    if not re.match(DEVICE_KEY_SAFE_REGEX, k):
+                        log.warning("Property key {0} contains unacceptable character".format(k))
+                        return False
+                    if not re.match(DEVICE_VAL_SAFE_REGEX, v):
+                        log.warning("Property value {0} contains unacceptable character".format(v))
+                        return False
+                    if k == unique_key:
+                        unique_key_value = v
+                name = key + '_' + unique_key_value;
+                self._save_devinfo(name, key)
+                for dcc in key_dcc[:]:
+                    # register device to dcc, set properties for the device
+                    if 'iotcc' in dcc.lower():
+                        prop_dict = self.add_organization_properties("iotcc", value)
+                    else:
+                        prop_dict = value
+                    # TBM: temporarily assume dcc pkg will register edge_system as dcc name + "_edge_system"
+                    edge_system_pkg = dcc + str("_edge_system")
+                    (dev, reg_dev) = self.reg_device(dcc, edge_system_pkg, name, key, prop_dict)
+                    if (dev is not None) and (reg_dev is not None):
+                        reg_rec = {}
+                        # add it in Records: currently only for debugging
+                        reg_rec[dcc] = (dev, reg_dev)
+                        self._update_devinfo(name, reg_rec)
+        except:
+            log.exception("device_msg_process exception")
 
 class CmdMessengerThread(Thread):
     """

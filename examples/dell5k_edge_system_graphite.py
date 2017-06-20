@@ -35,10 +35,10 @@ from liota.dcc_comms.socket_comms import SocketDccComms
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
+from liota.lib.utilities.utility import read_user_config
 
 # getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
 
 def read_cpu_utilization(sample_duration_sec=1):
     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)

@@ -32,6 +32,7 @@
 
 import logging
 import os
+import re
 import fcntl
 import errno
 import ConfigParser
@@ -41,6 +42,7 @@ from time import sleep
 
 from liota.lib.utilities.utility import LiotaConfigPath
 from liota.lib.utilities.utility import DiscUtilities
+from liota.lib.utilities.utility import read_user_config
 from liota.dev_sims.named_pipe import NamedPipeSimulator
 from liota.dev_sims.socket_clnt import SocketSimulator
 from liota.dev_sims.mqtt import MqttSimulator
@@ -52,6 +54,8 @@ is_discovery_simulator_initialized = False
 cmd_message_queue = None
 # simulator related obj
 simulator_thread = None
+
+DEVICE_TYPE_SAFE_REGEX = '^[A-Za-z0-9_-]+$'
 
 if __name__ == "__main__":
     log.warning("Device Simulator is not supposed to run alone")
@@ -93,10 +97,9 @@ class SimulatorThread(Thread):
 
         # simulator related configuration
         self.endpoint_list = {} # simulator list: (comm type, ip:port or folder)
-        self.type_dcc_map = {} # Device Type to DCC mapping: (device type, dcc list)
-        self.type_dcc_pkg_map = {} # Device Type to DCC-Package-Name mapping: (device type, dcc-pkg-name list)
+        self.type_dcc_map = {} # Device Type to DCC mapping: (device type, dcc package name list (e.g., iotcc, iotcc_mqtt))
         self.type_key_map = {} # Device Type to Unique Key mapping: (device type, unique key)
-        self.type_tuple_key_dcc_pkg = {} # Device Type to Tuple of (unique key, dcc, dcc_pkg)
+        self.type_tuple_key_dcc_pkg = {} # Device Type to Tuple of (unique key, dcc_pkg)
 
         self._config = {} #key: cfg type, value: cfg list/info
         self._get_config_from_file() # extract configuration from liota.conf first
@@ -104,8 +107,7 @@ class SimulatorThread(Thread):
         self._save_config()
         # create an edge system instance
         config_path = self._config['package_path']
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        config = read_user_config(config_path + '/sampleProp.conf')
         self.edge_system_object = Dell5KEdgeSystem(config['EdgeSystemName'])
 
         # Initialization of simulator messenger queue and lock
@@ -173,9 +175,13 @@ class SimulatorThread(Thread):
                         for key in self.endpoint_list.iterkeys():
                             log.debug("endpoint_list:(%s : %s)\n" % (key, self.endpoint_list[key]))
 
+                        global DEVICE_TYPE_SAFE_REGEX
                         # retrieve device type to unique key mapping list
                         tmp_list = config.items('DEVICE_TYPE_TO_UNIQUEKEY_MAPPING')
                         for key, value in tmp_list[:]:
+                            if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                                log.warning("device type {0} contains unacceptable character".format(key))
+                                continue
                             if value is None or value == "None":
                                 continue
                             self.type_key_map[key] = value
@@ -185,23 +191,19 @@ class SimulatorThread(Thread):
                         # retrieve device type to DCC mapping list
                         tmp_list = config.items('DEVICE_TYPE_TO_DCC_MAPPING')
                         for key, value in tmp_list[:]:
+                            if not re.match(DEVICE_TYPE_SAFE_REGEX, key):
+                                log.warning("device type {0} contains unacceptable character".format(key))
+                                continue
                             if value is None or value == "None":
                                 continue
                             tmp_list2 = []
                             tmp_list2 = [x.strip() for x in value.split(',')]
-                            self.type_dcc_pkg_map[key] = tmp_list2
-                            tmp_list3 = []
-                            for value in tmp_list2[:]:
-                                dcc = value.split('-')[0]
-                                tmp_list3.append(dcc) # assume one packet per dcc
-                            self.type_dcc_map[key] = tmp_list3
-                            self.type_tuple_key_dcc_pkg[key] = (self.type_key_map[key], tmp_list3, tmp_list2)
-                        for key in self.type_dcc_pkg_map.iterkeys():
-                            log.debug("type_dcc_pkg_map:(%s : %s)\n" % (key, self.type_dcc_pkg_map[key]))
+                            self.type_dcc_map[key] = tmp_list2
+                            self.type_tuple_key_dcc_pkg[key] = (self.type_key_map[key], tmp_list2)
                         for key in self.type_dcc_map.iterkeys():
                             log.debug("type_dcc_map:(%s : %s)\n" % (key, self.type_dcc_map[key]))
                         for key in self.type_tuple_key_dcc_pkg.iterkeys():
-                            log.debug("type_dcc_map:(%s : %s)\n" % (key, self.type_tuple_key_dcc_pkg[key]))
+                            log.debug("type_tuple_key_dcc_pkg:(%s : %s)\n" % (key, self.type_tuple_key_dcc_pkg[key]))
                     except ConfigParser.ParsingError:
                         log.error('Could not parse log config file')
                         exit(-4)
@@ -229,10 +231,8 @@ class SimulatorThread(Thread):
         # simulator related
         # simulator list: (comm type, ip:port or folder)
         self._config['endpoint_list'] = self.endpoint_list
-        # Device Type to DCC mapping: (device type, dcc list)
+        # Device Type to DCC mapping: (device type, dcc package name list (e.g., iotcc, iotcc_mqtt))
         self._config['type_dcc_map'] = self.type_dcc_map
-        # Device Type to DCC-Package-Name mapping: (device type, dcc-pkg-name list)
-        self._config['type_dcc_pkg_map'] = self.type_dcc_pkg_map
         # Device Type to Unique Key mapping: (device type, unique key)
         self._config['type_key_map'] = self.type_key_map
         # Device Type to Tuple of (unique key, dcc, dcc_pkg)
@@ -248,7 +248,7 @@ class SimulatorThread(Thread):
     def _cmd_handler_list(self, parameter):
         # configurations
         if parameter == "configurations" or parameter == "cfg":
-            stats = ["n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]
+            stats = ["n/a", "n/a", "n/a", "n/a", "n/a", "n/a", "n/a"]
             stats[0] = str(self._config['cmd_msg_pipe']) + '\n\t'
             tmp = ''
             endpoint_list = self._config['endpoint_list']
@@ -263,30 +263,23 @@ class SimulatorThread(Thread):
             stats[2] = tmp
 
             tmp = ''
-            type_dcc_pkg_map = self._config['type_dcc_pkg_map']
-            for key in type_dcc_pkg_map.iterkeys():
-                tmp += str(key) + ': ' + str(type_dcc_pkg_map[key]) + '\n\t\t'
-            stats[3] = tmp
-
-            tmp = ''
             type_key_map = self._config['type_key_map']
             for key in type_key_map.iterkeys():
                 tmp += str(key) + ': ' + str(type_key_map[key]) + '\n\t\t'
-            stats[4] = tmp
+            stats[3] = tmp
 
             tmp = ''
             type_tuple_key_dcc_pkg = self._config['type_tuple_key_dcc_pkg']
             for key in type_tuple_key_dcc_pkg.iterkeys():
                 tmp += str(key) + ': ' + str(type_tuple_key_dcc_pkg[key]) + '\n\t\t'
-            stats[5] = tmp
+            stats[4] = tmp
 
-            stats[6] = str(self._config['package_path']) + '\n\t'
-            stats[7] = str(self._config['dev_file_path']) + '\n\t'
+            stats[5] = str(self._config['package_path']) + '\n\t'
+            stats[6] = str(self._config['dev_file_path']) + '\n\t'
             log.warning(("List of configurations - \n\t"
                         + "cmd_msg_pipe: %s\n\t"
                         + "endpoint_list: %s\n\t"
                         + "type_dcc_map: %s\n\t"
-                        + "type_dcc_pkg_map: %s\n\t"
                         + "type_key_map: %s\n\t"
                         + "type_tuple_key_dcc_pkg: %s\n\t"
                         + "dev_file_path: %s\n\t"
@@ -341,26 +334,36 @@ class SimulatorThread(Thread):
             log.debug("Endpoint:{0}:{1}".format(key, value))
             if value is None or value == "None":
                 continue
+            ### TBR: because security consideration, currently only mqtt is allowed
+            mqtt_only = True
             if key.find('disc_msg_pipe') != -1:
                 pipe_thread = NamedPipeSimulator(pipe_file=value,
                         name=key+"_Thread", simulator=self)
                 if pipe_thread is not None:
                     self._simulators[key] = pipe_thread
             if key.find('socket') != -1:
-                socket_thread = SocketSimulator(ip_port=value,
-                        name=key+"_Thread", simulator=self)
-                if socket_thread is not None:
-                    self._simulators[key] = socket_thread
+                if mqtt_only == False:
+                    socket_thread = SocketSimulator(ip_port=value,
+                            name=key+"_Thread", simulator=self)
+                    if socket_thread is not None:
+                        self._simulators[key] = socket_thread
+                else:
+                    log.warning("because security consideration, Socket Endpoint is not allowed!")
+                    print "because security consideration, Socket Endpoint is not allowed!"
             if key.find('mqtt') != -1:
                 mqtt_thread = MqttSimulator(mqtt_cfg=value,
                         name=key+"_Thread", simulator=self)
                 if mqtt_thread is not None:
                     self._simulators[key] = mqtt_thread
             if key.find('coap') != -1:
-                coap_thread = CoapSimulator(ip_port=value,
-                        name=key+"_Thread", simulator=self)
-                if coap_thread is not None:
-                    self._simulators[key] = coap_thread
+                if mqtt_only == False:
+                    coap_thread = CoapSimulator(ip_port=value,
+                            name=key+"_Thread", simulator=self)
+                    if coap_thread is not None:
+                        self._simulators[key] = coap_thread
+                else:
+                    log.warning("because security consideration, Coap Endpoint is not allowed!")
+                    print "because security consideration, Coap Endpoint is not allowed!"
 
         # Listen on message queue for management or statistic commands
         global cmd_message_queue

@@ -32,6 +32,7 @@ include packages/dev_disc/liota_disc_pipe.sh
 include packages/dev_disc/dev_disc.py
 include packages/dev_disc/liota_devsim_pipe.sh
 include packages/dev_disc/liota_devsim_load.py
+include packages/dev_disc/dev_disc_mqtt.py
 include packages/graphite.py
 include packages/iotcc.py
 include packages/iotcc_mqtt.py
@@ -40,6 +41,7 @@ include packages/sampleProp.conf
 include packages/liotad.py
 include packages/liotapkg.sh
 include packages/packages_auto.txt
+include packages/cal_sha1sum.py
 include packages/examples/bike_simulator.py
 include packages/examples/iotcc_ram.py
 include packages/examples/graphite_bike_simulated.py
@@ -56,8 +58,5 @@ include packages/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py
 include packages/examples/mqtt/aws_iot/simulated_home_topic_per_metric.py
 include packages/examples/mqtt/iotcc/iotcc_mqtt_edge_system_stats.py
 include packages/examples/mqtt/iotcc/iotcc_mqtt_ram.py
+include packages/examples/mqtt/iotcc/iotcc_resource_properties_mqtt.py
 include packages/edge_systems/dell5k/edge_system.py
-include packages/dev_disc/liota_disc_pipe.sh
-include packages/dev_disc/dev_disc.py
-include packages/dev_disc/liota_devsim_pipe.sh
-include packages/dev_disc/liota_devsim_load.py

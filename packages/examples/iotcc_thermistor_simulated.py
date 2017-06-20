@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["iotcc", "examples/thermistor_simulator"]
 
@@ -116,12 +117,13 @@ class PackageClass(LiotaPackage):
         import copy
 
         # Acquire resources from registry
-        iotcc = registry.get("iotcc")
-        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
-
+        self.config_path = registry.get("package_conf")
+        self.iotcc = registry.get("iotcc")
+        self.iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
         thermistor_simulator = registry.get("thermistor_simulator")
-        iotcc_thermistor = iotcc.register(thermistor_simulator)
-        iotcc.create_relationship(iotcc_edge_system, iotcc_thermistor)
+        
+        self.iotcc_thermistor = self.iotcc.register(thermistor_simulator)
+        self.iotcc.create_relationship(self.iotcc_edge_system, self.iotcc_thermistor)
 
         ureg = thermistor_simulator.ureg
         self.create_udm(thermistor_model=thermistor_simulator)
@@ -135,14 +137,22 @@ class PackageClass(LiotaPackage):
             interval=5,
             sampling_function=self.get_thermistor_temperature
         )
-        reg_thermistor_temper = iotcc.register(thermistor_temper)
-        iotcc.create_relationship(iotcc_thermistor, reg_thermistor_temper)
+        reg_thermistor_temper = self.iotcc.register(thermistor_temper)
+        self.iotcc.create_relationship(self.iotcc_thermistor, reg_thermistor_temper)
         reg_thermistor_temper.start_collecting()
         self.metrics.append(reg_thermistor_temper)
 
         # Use the iotcc_device_name as identifier in the registry to easily refer the registered device in other packages
-        registry.register("iotcc_thermistor_simulated", iotcc_thermistor)
+        registry.register("iotcc_thermistor_simulated", self.iotcc_thermistor)
 
     def clean_up(self):
+
+        # Get values from configuration file
+        config = read_user_config(self.config_path + '/sampleProp.conf')
+
         for metric in self.metrics:
             metric.stop_collecting()
+
+        #Unregister iotcc device
+        if config['ShouldUnregisterOnUnload'] == "True":
+            self.iotcc.unregister(self.iotcc_thermistor)

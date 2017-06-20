@@ -38,10 +38,10 @@ from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.entities.devices.bike_simulated import BikeSimulated
+from liota.lib.utilities.utility import read_user_config
 
 # getting values from conf file
-config = {}
-execfile('../sampleProp.conf', config)
+config = read_user_config('../sampleProp.conf')
 
 
 def static_vars(**kwargs):

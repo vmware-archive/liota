@@ -30,10 +30,16 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+from linux_metrics import cpu_stat, disk_stat, net_stat
+
 from liota.core.package_manager import LiotaPackage
-from linux_metrics import cpu_stat,disk_stat,net_stat
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name, read_user_config
 
 dependencies = ["graphite"]
+
+# Getting edge_system's network interface and disk name
+network_interface = get_default_network_interface()
+disk_name = get_disk_name()
 
 #---------------------------------------------------------------------------
 # User defined methods
@@ -49,11 +55,11 @@ def read_cpu_utilization(sample_duration_sec=1):
     
 
 def read_disk_usage_stats():
-    return round(disk_stat.disk_reads_writes('sda')[0], 2)
+    return round(disk_stat.disk_reads_writes(disk_name)[0], 2)
 
 
 def read_network_bytes_received():
-    return round(net_stat.rx_tx_bytes('ens33')[0], 2)
+    return round(net_stat.rx_tx_bytes(network_interface)[0], 2)
 
 class PackageClass(LiotaPackage):
 
@@ -62,14 +68,13 @@ class PackageClass(LiotaPackage):
         from liota.entities.metrics.metric import Metric
 
         # Acquire resources from registry
-        edge_system = copy.copy(registry.get("edge_system"))
+        edge_system = copy.copy(registry.get("graphite_edge_system"))
         graphite = registry.get("graphite")
         reg_edge_system = graphite.register(edge_system)
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        config = read_user_config(config_path + '/sampleProp.conf')
 
         # Create metrics
         self.metrics = []
