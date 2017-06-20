@@ -30,19 +30,20 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import unittest
+import os
+import ssl
 import sys
+import unittest
 
 import mock
 from paho.mqtt.client import Client
 
+from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.lib.transports.mqtt import Mqtt
 from liota.lib.transports.mqtt import MqttMessagingAttributes, QoSDetails
-from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.lib.utilities.identity import Identity
 from liota.lib.utilities.tls_conf import TLSConf
 from liota.lib.utilities.utility import systemUUID
-
 
 # MQTT configurations
 config = {}
@@ -250,29 +251,19 @@ class MQTTTest(unittest.TestCase):
                  self.client_clean_session, self.user_data, self.protocol, self.transport,
                  self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
-    def test_connect_soc_invalid_client_ca(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    def test_connect_soc_empty_client_ca(self, exists, tls_set):
         """
-        Test case to test validation for invalid client ca validation.
+        Test case to test validation for empty client certificate. 
         :return: None
         """
-        # Setting invalid client ca path
-        self.client_cert_file = "Invalid Client CA Path"
 
-        # Encapsulate the authentication details
-        self.identity = Identity(self.root_ca_cert, self.mqtt_username, self.mqtt_password,
-                                 self.client_cert_file, self.client_key_file)
+        # Assigning the return value for mocked methods.
+        # To ensure os.path.exists returns True for the root_ca_cert file.
+        exists.return_value = True
+        tls_set.return_value = None
 
-        # Checking whether implementation raising the ValueError for invalid client ca_certs
-        with self.assertRaises(ValueError):
-            Mqtt(self.url, self.port, self.identity, self.tls_conf, self.qos_details, self.client_id,
-                 self.client_clean_session, self.user_data, self.protocol, self.transport,
-                 self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
-
-    def test_connect_soc_empty_client_ca(self):
-        """
-        Test case to test validation for empty client certificate.
-        :return: None
-        """
         # Setting invalid client ca path
         self.client_cert_file = ""
 
@@ -286,29 +277,19 @@ class MQTTTest(unittest.TestCase):
                  self.client_clean_session, self.user_data, self.protocol, self.transport,
                  self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
-    def test_connect_soc_invalid_client_key(self):
-        """
-        Test case to test the validation for invalid client key.
-        :return: None
-        """
-        # Setting invalid client key path
-        self.client_key_file = "Invalid Client Key Path"
-
-        # Encapsulate the authentication details
-        self.identity = Identity(self.root_ca_cert, self.mqtt_username, self.mqtt_password,
-                                 self.client_cert_file, self.client_key_file)
-
-        # Checking whether implementation raising the ValueError for invalid client key
-        with self.assertRaises(ValueError):
-            Mqtt(self.url, self.port, self.identity, self.tls_conf, self.qos_details, self.client_id,
-                 self.client_clean_session, self.user_data, self.protocol, self.transport,
-                 self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
-
-    def test_connect_soc_empty_client_key(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    def test_connect_soc_empty_client_key(self, exists, tls_set):
         """
         Test case to test validation for empty client key.
         :return: None
         """
+
+        # Assigning the return value for mocked methods
+        # To ensure os.path.exists returns True for the root_ca_cert file.
+        exists.return_value = True
+        tls_set.return_value = None
+
         # Setting invalid client cert path
         self.client_key_file = ""
 
@@ -322,11 +303,17 @@ class MQTTTest(unittest.TestCase):
                  self.client_clean_session, self.user_data, self.protocol, self.transport,
                  self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
-    def test_connect_soc_for_empty_username(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    def test_connect_soc_for_empty_username(self, exists, tls_set):
         """
         Test case to test validation for empty username.
         :return: None
         """
+
+        # Assigning the return value for mocked methods
+        exists.return_value = True
+        tls_set.return_value = None
 
         # Encapsulate the authentication details
         self.identity = Identity(self.root_ca_cert, "", self.mqtt_password,
@@ -338,11 +325,17 @@ class MQTTTest(unittest.TestCase):
                  self.client_clean_session, self.user_data, self.protocol, self.transport,
                  self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
-    def test_connect_soc_for_empty_password(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    def test_connect_soc_for_empty_password(self, exists, tls_set):
         """
         Test case to test validation for empty password.
         :return: None
         """
+
+        # Assigning the return value for mocked methods
+        exists.return_value = True
+        tls_set.return_value = None
 
         # Encapsulate the authentication details
         self.identity = Identity(self.root_ca_cert, self.mqtt_username, "",
@@ -354,12 +347,18 @@ class MQTTTest(unittest.TestCase):
                  self.client_clean_session, self.user_data, self.protocol, self.transport,
                  self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
-    def test_connect_soc_connection_setup(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, 'exists')
+    def test_connect_soc_connection_setup(self, exists, tls_set):
         """
         Test case to test connection setup with connect_soc.
         :return: None
         """
         global connect_rc
+
+        # Assigning the return value for mocked methods
+        exists.return_value = True
+        tls_set.return_value = None
 
         # Setting connection accepted flag
         connect_rc = 0
@@ -375,12 +374,23 @@ class MQTTTest(unittest.TestCase):
         # Check we are able to generate Mqtt class object
         self.assertIsInstance(mqtt_client, Mqtt, "Invalid Mqtt class implementation")
 
-    def test_connect_soc_connection_timeout(self):
+        # Check mocked method call has been made with following params
+        tls_set.assert_called_with(self.identity.root_ca_cert, self.identity.cert_file, self.identity.key_file,
+                                   cert_reqs=getattr(ssl, self.tls_conf.cert_required),
+                                   tls_version=getattr(ssl, self.tls_conf.tls_version), ciphers=self.tls_conf.cipher)
+
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    def test_connect_soc_connection_timeout(self, exists, tls_set):
         """
         Test case to test connection setup timeout with connect_soc.
         :return: None
         """
         global connect_rc
+
+        # Assigning the return value for mocked methods
+        exists.return_value = True
+        tls_set.return_value = None
 
         # Setting connection timeout flag
         connect_rc = sys.maxsize
@@ -396,12 +406,18 @@ class MQTTTest(unittest.TestCase):
                  self.client_clean_session, self.user_data, self.protocol, self.transport,
                  self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
-    def test_connect_soc_connection_refused(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    def test_connect_soc_connection_refused(self, exists, tls_set):
         """
         Test case to test broker connection refused with connect_soc.
         :return: None
         """
         global connect_rc
+
+        # Assigning the return value for mocked methods
+        exists.return_value = True
+        tls_set.return_value = None
 
         # Setting connection refused flag
         connect_rc = 1
@@ -417,12 +433,21 @@ class MQTTTest(unittest.TestCase):
                  self.client_clean_session, self.user_data, self.protocol, self.transport,
                  self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
-    def test_mqtt_connection_over_only_root_ca_cert(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, 'exists')
+    @mock.patch.object(Client, "loop_start")
+    def test_mqtt_connection_over_only_root_ca_cert(self, loop_start, exists, tls_set):
         """
         Test case to test the implementation of connection_soc method for root_ca only.
         :return: None
         """
+
         global connect_rc
+
+        # Assigning the return value for mocked methods
+        exists.return_value = True
+        tls_set.return_value = None
+        loop_start.return_value = None
 
         # Encapsulate the authentication details
         self.identity = Identity(self.root_ca_cert, self.mqtt_username, self.mqtt_password, None, None)
@@ -432,13 +457,20 @@ class MQTTTest(unittest.TestCase):
 
         # Mocked the connect and loop_start method of Paho library
         Client.connect = mocked_connect
-        Client.loop_start = mocked_loop_start
 
         mqtt_client = Mqtt(self.url, self.port, self.identity, self.tls_conf, self.qos_details, self.client_id,
                            self.client_clean_session, self.user_data, self.protocol, self.transport, self.keep_alive,
                            self.enable_authentication, self.connection_disconnect_timeout)
+
         # Check we are able to generate Mqtt class object
         self.assertIsInstance(mqtt_client, Mqtt, "Invalid Mqtt class implementation")
+
+        # Check mocked method call has been made
+        tls_set.assert_called_with(self.identity.root_ca_cert, cert_reqs=getattr(ssl, self.tls_conf.cert_required),
+                                   tls_version=getattr(ssl, self.tls_conf.tls_version), ciphers=self.tls_conf.cipher)
+
+        # Check implementation calling the loop start method
+        loop_start.assert_called()
 
     @mock.patch.object(Mqtt, 'connect_soc')
     def test_client_clean_session_and_client_id_implementation(self, mock_connect):
@@ -449,7 +481,7 @@ class MQTTTest(unittest.TestCase):
         """
 
         # Mocked connect_soc method
-        mock_connect.returnvalue = None
+        mock_connect.return_value = None
 
         mqtt_client = Mqtt(self.url, self.port, self.identity, self.tls_conf, self.qos_details, self.client_id,
                            self.client_clean_session, self.user_data, self.protocol, self.transport, self.keep_alive,
@@ -463,12 +495,20 @@ class MQTTTest(unittest.TestCase):
         # Checking the client_id implementation
         self.assertEqual(self.client_id, client_id, "Received invalid client-id, check the implementation.")
 
-    def test_clean_disconnect_connection(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    @mock.patch.object(Client, "loop_stop")
+    def test_clean_disconnect_connection(self, loop_stop, exists, tls_set):
         """
         Test case to test clean-connection disconnect.
         :return: None
         """
         global connect_rc, disconnect_rc
+
+        # Assigning the return value for mocked methods
+        loop_stop.return_value = None
+        exists.return_value = True
+        tls_set.return_value = None
 
         # Setting connection accepted flag
         connect_rc = 0
@@ -479,20 +519,31 @@ class MQTTTest(unittest.TestCase):
         Client.connect = mocked_connect
         Client.disconnect = mocked_disconnect
         Client.loop_start = mocked_loop_start
-        Client.loop_stop = mocked_loop_stop
 
         mqtt_client = Mqtt(self.url, self.port, self.identity, self.tls_conf, self.qos_details, self.client_id,
                            self.client_clean_session, self.user_data, self.protocol, self.transport,
                            self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
-        self.assertEqual(mqtt_client.disconnect(), None)
+        # Call disconnect method
+        mqtt_client.disconnect()
 
-    def test_timeout_disconnect_connection(self):
+        # Check loop_start method call has been made
+        loop_stop.assert_called()
+
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    @mock.patch.object(Client, "loop_stop")
+    def test_timeout_disconnect_connection(self, loop_stop, exists, tls_set):
         """
         Test case to test timeout-connection disconnect.
         :return: None
         """
         global connect_rc, disconnect_rc
+
+        # Assigning the return value for mocked methods
+        exists.return_value = True
+        tls_set.return_value = None
+        loop_stop.return_value = None
 
         # Setting connection accepted flag
         connect_rc = 0
@@ -503,7 +554,7 @@ class MQTTTest(unittest.TestCase):
         Client.connect = mocked_connect
         Client.disconnect = mocked_disconnect
         Client.loop_start = mocked_loop_start
-        Client.loop_stop = mocked_loop_stop
+
 
         # Checking whether implementation raising the Exception for broker disconnect timeout
         with self.assertRaises(Exception):
@@ -511,14 +562,21 @@ class MQTTTest(unittest.TestCase):
                                self.client_clean_session, self.user_data, self.protocol, self.transport,
                                self.keep_alive, self.enable_authentication, self.connection_disconnect_timeout)
 
+            # Call Mqtt disconnect method
             mqtt_client.disconnect()
 
-    def test_invalid_disconnect_connection(self):
+    @mock.patch.object(Client, "tls_set")
+    @mock.patch.object(os.path, "exists")
+    def test_invalid_disconnect_connection(self, exists, tls_set):
         """
         Test case to test invalid-connection disconnect.
         :return: None
         """
         global connect_rc, disconnect_rc
+
+        # Assigning the return value for mocked methods
+        exists.return_value = True
+        tls_set.return_value = None
 
         # Setting connection accepted flag
         connect_rc = 0
@@ -657,13 +715,6 @@ class MqttMessagingAttributesTest(unittest.TestCase):
         """
         self.assertRaises(ValueError, MqttMessagingAttributes, self.edge_system.name,
                           sub_callback="")
-
-    def test_validation_of_sub_and_pub_topic_attributes(self):
-        """
-        Test case to test validation of subscribe, publish and sub_callback attributes.
-        :return: None
-        """
-        self.assertRaises(ValueError, MqttMessagingAttributes)
 
 
 class QoSDetailsTest(unittest.TestCase):
