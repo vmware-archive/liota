@@ -6,7 +6,5 @@
 
 From the top directory:
 
-```
-python -m unittest discover -vv -s tests -t $PWD
-```
+    python -m unittest discover
 

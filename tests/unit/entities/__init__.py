@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
-#  Copyright © 2017 VMware, Inc. All Rights Reserved.                    #
+#  Copyright © 2015-2017 VMware, Inc. All Rights Reserved.                    #
 #                                                                             #
 #  Licensed under the BSD 2-Clause License (the “License”); you may not use   #
 #  this file except in compliance with the License.                           #
@@ -29,30 +29,3 @@
 #  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF     #
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
-import unittest
-
-import mock
-
-from liota.dccs.graphite import Graphite
-from liota.dcc_comms.dcc_comms import DCCComms
-
-
-class TestDCCGraphite(unittest.TestCase):
-
-    def test_graphite_dcc_init_fail_without_DCCComms(self):
-        with self.assertRaises(Exception):
-            g = Graphite("asd")
-            assert not isinstance(g, Graphite)
-
-        with self.assertRaises(Exception):
-            # noinspection PyArgumentList
-            g = Graphite()
-            assert g is None
-
-    def test_graphite_dcc_init_takes_DCCComms(self):
-        mock_dccc = mock.create_autospec(DCCComms)
-        g = Graphite(mock_dccc)
-        assert isinstance(g, Graphite)
-
-if __name__ == '__main__':
-    unittest.main()
