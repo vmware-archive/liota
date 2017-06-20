@@ -102,8 +102,5 @@ class TestSIUnits(unittest.TestCase):
             with self.assertRaises(UnsupportedUnitError):
                 parse_unit(obj_unit)
 
-                # self.assertTrue('not' in context.exception)
-
-
 if __name__ == '__main__':
     unittest.main()
