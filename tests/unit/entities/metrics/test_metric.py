@@ -37,7 +37,7 @@ from liota.entities.metrics.metric import Metric
 import pint
 
 
-class TestEntitiesMetricsMetric(unittest.TestCase):
+class TestEntitiesMetric(unittest.TestCase):
 
     def test_metric_init(self):
         m = Metric("test")
