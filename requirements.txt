@@ -1,6 +1,8 @@
-websocket-client==0.37.0
-linux-metrics==0.1.4
-pint==0.7.2
-paho-mqtt==1.2
-aenum==1.4.5
 CoAPthon==4.0.2
+aenum==1.4.5
+linux-metrics==0.1.4
+mock==2.0.0
+paho-mqtt==1.2
+pint==0.7.2
+websocket-client==0.37.0
+
