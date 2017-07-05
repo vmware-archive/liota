@@ -32,6 +32,7 @@
 
 from liota.core.package_manager import LiotaPackage
 from linux_metrics import mem_stat
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["iotcc"]
 
@@ -56,8 +57,7 @@ class PackageClass(LiotaPackage):
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
-        self.config = {}
-        execfile(config_path + '/sampleProp.conf', self.config)
+        self.config = read_user_config(config_path + '/sampleProp.conf')
 
         # Register device
         ram_device = SimulatedDevice(self.config['DeviceName'], "Device-RAM")

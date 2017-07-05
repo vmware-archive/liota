@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["edge_systems/dell5k/edge_system"]
 
@@ -55,8 +56,7 @@ class PackageClass(LiotaPackage):
 
         # Get values from configuration file
         config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        config = read_user_config(config_path + '/sampleProp.conf')
         # Encapsulates Identity
         identity = Identity(root_ca_cert=config['broker_root_ca_cert'], username=None, password=None,
                             cert_file=config['edge_system_cert_file'], key_file=config['edge_system_key_file'])

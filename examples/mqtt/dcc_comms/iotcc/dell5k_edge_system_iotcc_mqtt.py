@@ -39,12 +39,11 @@ from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
 from liota.dccs.dcc import RegistrationFailure
 from liota.lib.utilities.tls_conf import TLSConf
-from liota.lib.utilities.utility import get_default_network_interface, get_disk_name
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name, read_user_config
 
 
 # getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
 
 # Getting edge_system's network interface and disk name
 
@@ -112,8 +111,7 @@ if __name__ == '__main__':
     # Encapsulate TLS parameters
     tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
 
-    iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
-                             MqttDccComms(edge_system_name=edge_system.name,
+    iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
                                           url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
                                           tls_conf=tls_conf,
                                           enable_authentication=True))

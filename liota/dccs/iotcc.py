@@ -39,8 +39,6 @@ import os
 import Queue
 from time import gmtime, strftime
 from threading import Lock
-import xml.etree.cElementTree as ET
-from xml.dom import minidom
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.lib.protocols.helix_protocol import HelixProtocol
@@ -58,16 +56,20 @@ class IotControlCenter(DataCenterComponent):
 
     """
 
-    def __init__(self, username, password, con):
+    def __init__(self, con):
         log.info("Logging into DCC")
         self.comms = con
-        self.username = username
-        self.password = password
+        if not self.comms.identity.username:
+            log.error("Username not found")
+            raise ValueError("Username not found")
+        elif not self.comms.identity.password:
+            log.error("Password not found")
+            raise ValueError("Password not found")
         thread = threading.Thread(target=self.comms.receive)
         thread.daemon = True
         # This thread will continuously run in background to receive response or actions from DCC
         thread.start()
-        self.proto = HelixProtocol(self.comms, username, password)
+        self.proto = HelixProtocol(self.comms, self.comms.identity.username, self.comms.identity.password)
         self._iotcc_json = self._create_iotcc_json()
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
@@ -75,24 +77,26 @@ class IotControlCenter(DataCenterComponent):
         # Liota internal entity file system path special for iotcc
         self.entity_file_path = self._get_file_storage_path("entity_file_path")
         self.file_ops_lock = Lock()
-
-        def on_response(msg):
-            try:
+        try:
+            def on_response(msg):
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
                 self.proto.on_receive(json_msg)
-                if json_msg["type"] == "connection_response" and json_msg["body"]["result"] == "succeeded":
-                    log.info("Connection verified")
-                    return True
+                if json_msg["type"] == "connection_response":
+                    if json_msg["body"]["result"] == "succeeded":
+                        log.info("Connection verified")
+                    else:
+                        raise Exception("Helix Protocol Version mismatch")
                 else:
                     log.debug("Processed msg: {0}".format(json_msg["type"]))
-                    on_response(self.recv_msg_queue.get(True,300))
-            except Exception as error:
-                log.error("HelixProtocolException: " + repr(error))
+                    on_response(self.recv_msg_queue.get(True, 300))
 
-        # Block on Queue for not more then 300 seconds else it will raise an exception
-        on_response(self.recv_msg_queue.get(True,300))
-        log.info("Logged in to DCC successfully")
+            # Block on Queue for not more then 300 seconds else it will raise an exception
+            on_response(self.recv_msg_queue.get(True, 300))
+        except Exception as error:
+            self.comms.client.disconnect()
+            log.error("HelixProtocolException: " + repr(error))
+            raise Exception("HelixProtocolException")
 
     def register(self, entity_obj):
         """ Register the objects
@@ -117,7 +121,7 @@ class IotControlCenter(DataCenterComponent):
                         self.reg_entity_id = json_msg["body"]["uuid"]
                     else:
                         log.info("Waiting for resource creation")
-                        on_response(self.recv_msg_queue.get(True,300))
+                        on_response(self.recv_msg_queue.get(True, 300))
                 except:
                     raise Exception("Exception while registering resource")
 
@@ -125,19 +129,21 @@ class IotControlCenter(DataCenterComponent):
                 entity_obj.entity_type = "HelixGateway"
             self.comms.send(json.dumps(
                 self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
-            on_response(self.recv_msg_queue.get(True,300))
+            on_response(self.recv_msg_queue.get(True, 300))
             if not self.reg_entity_id:
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
-                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id)
+                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
+                                              entity_obj.entity_id)
                 store_edge_system_uuid(entity_name=entity_obj.name, entity_id=entity_obj.entity_id,
                                        reg_entity_id=self.reg_entity_id)
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
                                                      self.reg_entity_id, None, None)
             else:
-                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id)
+                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
+                                              entity_obj.entity_id)
                 # get dev_type, and prop_dict if possible
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("Devices", entity_obj.name, self.reg_entity_id,
@@ -156,17 +162,21 @@ class IotControlCenter(DataCenterComponent):
                 json_msg = json.loads(msg)
                 log.debug("Processed msg: {0}".format(json_msg["type"]))
                 if json_msg["type"] == "remove_resource_response" and json_msg["body"]["result"] == "succeeded":
-                        log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
+                    log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
                 else:
-                        log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
+                    log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
             except:
                 raise Exception("Exception while unregistering resource")
 
-        self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.reg_entity_id)))
-        on_response(self.recv_msg_queue.get(True,20))
+        self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
+        on_response(self.recv_msg_queue.get(True, 20))
         self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
         if entity_obj.ref_entity.entity_type != "HelixGateway":
-            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, entity_obj.ref_entity.entity_type, None, True)
+            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name,
+                                   entity_obj.ref_entity.entity_type, None, True)
+        else:
+            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
+
         log.info("Unregistration of resource {0} with IoTCC complete".format(entity_obj.ref_entity.name))
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
@@ -214,13 +224,14 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 
-    def _properties(self, msg_id, res_uuid, res_kind, timestamp, properties):
+    def _properties(self, msg_id, entity_type, entity_id, entity_name, timestamp, properties):
         msg = {
             "transationID": msg_id,
             "type": "add_properties",
-            "uuid": res_uuid,
             "body": {
-                "kind": res_kind,
+                "kind": entity_type,
+                "id": entity_id,
+                "name": entity_name,
                 "timestamp": timestamp,
                 "property_data": []
             }
@@ -244,7 +255,11 @@ class IotControlCenter(DataCenterComponent):
             return
         return json.dumps({
             "type": "add_stats",
-            "uuid": reg_metric.reg_entity_id,
+            "body": {
+                "kind": reg_metric.parent.ref_entity.entity_type,
+                "id": reg_metric.parent.ref_entity.entity_id,
+                "name": reg_metric.parent.ref_entity.name
+            },
             "metric_data": [{
                 "statKey": reg_metric.ref_entity.name,
                 "timestamps": _timestamps,
@@ -252,10 +267,11 @@ class IotControlCenter(DataCenterComponent):
             }]
         })
 
-    def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, properties):
+    def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, entity_local_uuid,
+                                          properties):
         log.info("Organization Group Properties defined for resource {0}".format(reg_entity_name))
         self.comms.send(json.dumps(
-            self._properties(self.next_id(), reg_entity_id, reg_entity_type,
+            self._properties(self.next_id(), reg_entity_type, entity_local_uuid, reg_entity_name,
                              getUTCmillis(), properties)))
 
     def set_properties(self, reg_entity_obj, properties):
@@ -269,7 +285,7 @@ class IotControlCenter(DataCenterComponent):
 
         log.info("Properties defined for resource {0}".format(entity.name))
         self.comms.send(json.dumps(
-            self._properties(self.next_id(), reg_entity_id, entity.entity_type,
+            self._properties(self.next_id(), entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), properties)))
         if entity.entity_type == "HelixGateway":
             with self.file_ops_lock:
@@ -294,17 +310,10 @@ class IotControlCenter(DataCenterComponent):
         self.set_properties(reg_entity_obj, properties_added)
         log.info("Published metric unit with prefix to IoTCC")
 
-    def prettify(self, elem):
-        """Return a pretty-printed XML string for the Element.
-        """
-        rough_string = ET.tostring(elem)
-        reparsed = minidom.parseString(rough_string)
-        return reparsed.toprettyxml(indent="    ")
-
     def _create_iotcc_json(self):
         msg = {
             "iotcc": {
-                "EdgeSystem": {"SystemName": "", "EntityType": "", "uuid": ""},
+                "EdgeSystem": {"SystemName": "", "EntityType": "", "uuid": "", "LocalUuid": ""},
                 "OGProperties": {"OrganizationGroup": ""},
                 "Devices": []
             }
@@ -322,7 +331,7 @@ class IotControlCenter(DataCenterComponent):
             log.error('Could not open {0} file '.format(iotcc_path) + err)
         return iotcc_path
 
-    def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id):
+    def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id, entity_local_uuid):
         msg = ''
         if self._iotcc_json == '':
             log.warn('iotcc.json file missing')
@@ -338,6 +347,7 @@ class IotControlCenter(DataCenterComponent):
             msg["iotcc"]["EdgeSystem"]["SystemName"] = entity_name
             msg["iotcc"]["EdgeSystem"]["uuid"] = reg_entity_id
             msg["iotcc"]["EdgeSystem"]["EntityType"] = entity_type
+            msg["iotcc"]["EdgeSystem"]["LocalUuid"] = entity_local_uuid
         else:
             entity_exist = False
             for device in msg["iotcc"]["Devices"]:
@@ -347,7 +357,8 @@ class IotControlCenter(DataCenterComponent):
                     break
             if not entity_exist:
                 msg["iotcc"]["Devices"].append(
-                    {"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type})
+                    {"DeviceName": entity_name, "uuid": reg_entity_id, "EntityType": entity_type,
+                     "LocalUuid": entity_local_uuid})
         if msg != '':
             with open(self._iotcc_json, 'w') as f:
                 json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
@@ -364,13 +375,14 @@ class IotControlCenter(DataCenterComponent):
         except IOError, err:
             log.error('Could not open {0} file '.format(self._iotcc_json) + str(err))
         log.debug('Remove {0}:{1} from iotcc.json'.format(entity_name, reg_entity_id))
-        if msg["iotcc"]["EdgeSystem"]["SystemName"]==entity_name and msg["iotcc"]["EdgeSystem"]["uuid"]==reg_entity_id:
+        if msg["iotcc"]["EdgeSystem"]["SystemName"] == entity_name and msg["iotcc"]["EdgeSystem"][
+            "uuid"] == reg_entity_id:
             del msg["iotcc"]["EdgeSystem"]
             log.info("Removed {0} edge-system from iotcc.json".format(entity_name))
         else:
             entity_exist = False
             for device in msg["iotcc"]["Devices"]:
-                if device["uuid"] == reg_entity_id and device["uuid"] == reg_entity_id :
+                if device["uuid"] == reg_entity_id and device["uuid"] == reg_entity_id:
                     entity_exist = True
                     try:
                         msg["iotcc"]["Devices"].remove(device)
@@ -384,44 +396,59 @@ class IotControlCenter(DataCenterComponent):
             json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
         f.close()
 
-    def store_edge_system_info(self, uuid, name, prop_dict):
-        """
-        create (can overwrite) edge system info file of UUID.xml, with format of
-        <attributes>
-        <attribute name=attribute name value=attribute value/>
-        …
-        </attributes>
-        except the first attribute is edge system name, all other attributes may vary
-        """
-
-        log.debug("store_edge_system_info")
-        log.debug('{0}:{1}, prop_list: {2}'.format(uuid, name, prop_dict))
-        root = ET.Element("attributes")
-        # add edge system name as an attribute
-        ET.SubElement(root, "attribute", name="edge system name", value=name)
-        # add edge system properties as attributes
+    def write_entity_json_file(self, prop_dict, attribute_list, uuid, remove):
         if prop_dict is not None:
             for key in prop_dict.iterkeys():
                 value = prop_dict[key]
                 if key == 'entity type' or key == 'name' or key == 'device type':
                     continue
-                ET.SubElement(root, "attribute", name=key, value=value)
-        # add time stamp
-        ET.SubElement(root, "attribute", name="LastSeenTimestamp",
-                      value=strftime("%Y-%m-%dT%H:%M:%S", gmtime()))
+                attribute_list.append({key: value})
+        attribute_list.append({"LastSeenTimestamp": strftime("%Y-%m-%dT%H:%M:%S", gmtime())})
+        log.debug('attribute_list: {0}'.format(attribute_list))
+        msg = {
+            "discovery": {
+                "remove": remove,
+                "attributes": attribute_list
+            }
+        }
+        log.debug('msg: {0}'.format(msg))
+        log.debug("store_entity_json_file dev_file_path:{0}".format(self.dev_file_path))
+        file_path = self.dev_file_path + '/' + uuid + '.json'
+        try:
+            with open(file_path, 'w') as f:
+                json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
+                log.debug('Initialized ' + file_path)
+            f.close()
+        except IOError, err:
+            log.error('Could not open {0} file '.format(file_path) + err)
 
-        log.debug("store_edge_system_info dev_file_path:{0}".format(self.dev_file_path))
-        file_path = self.dev_file_path + '/' + uuid + '.xml'
-        with open(file_path, "w") as fp:
-            fp.write(self.prettify(root))
-        return
+    def store_edge_system_info(self, uuid, name, prop_dict, remove):
+        """
+        create (can overwrite) edge system info file of UUID.json, with format of
+        {
+            "discovery":  {
+                "remove": false,
+                "attributes": [
+                    {"edge system name" : "EdgeSystem-Name"},
+                    {"attribute name" : "attribute value"},
+                    …
+                ]
+            }
+        }
+        except the first attribute is edge system name, all other attributes may vary
+        """
+
+        log.debug("store_edge_system_info")
+        log.debug('{0}:{1}, prop_list: {2}'.format(uuid, name, prop_dict))
+        attribute_list = [{"edge system name": name}]
+        self.write_entity_json_file(prop_dict, attribute_list, uuid, remove)
 
     def store_device_info(self, uuid, name, dev_type, prop_dict, remove_device):
         """
         create (can overwrite) device info file of device_UUID.json, with format of
         {
             "discovery":  {
-                "remove" : false,
+                "remove": false,
                 "attributes": [
                     {"IoTDeviceType" : "LM35"},
                     {"IoTDeviceName" : "LM35-12345"},
@@ -439,31 +466,7 @@ class IotControlCenter(DataCenterComponent):
         log.debug('prop_dict: {0}'.format(prop_dict))
         attribute_list = [{"IoTDeviceType": dev_type},
                           {"IoTDeviceName": name}]
-        # attribute_list.append(prop_dict)
-        if prop_dict is not None:
-            for key in prop_dict.iterkeys():
-                value = prop_dict[key]
-                if key == 'entity type' or key == 'name' or key == 'device type':
-                    continue
-                attribute_list.append({key: value})
-        attribute_list.append({"LastSeenTimestamp": strftime("%Y-%m-%dT%H:%M:%S", gmtime())})
-        log.debug('attribute_list: {0}'.format(attribute_list))
-        msg = {
-            "discovery": {
-                "remove": remove_device,
-                "attributes": attribute_list
-            }
-        }
-        log.debug('msg: {0}'.format(msg))
-        log.debug("store_device_info dev_file_path:{0}".format(self.dev_file_path))
-        file_path = self.dev_file_path + '/' + uuid + '.json'
-        try:
-            with open(file_path, 'w') as f:
-                json.dump(msg, f, sort_keys=True, indent=4, ensure_ascii=False)
-                log.debug('Initialized ' + file_path)
-            f.close()
-        except IOError, err:
-            log.error('Could not open {0} file '.format(file_path) + err)
+        self.write_entity_json_file(prop_dict, attribute_list, uuid, remove_device)
 
     def write_entity_file(self, prop_dict, res_uuid):
         file_path = self.entity_file_path + '/' + res_uuid + '.json'
@@ -532,14 +535,13 @@ class IotControlCenter(DataCenterComponent):
         self.write_entity_file(new_prop_dict, reg_entity_id)
         ### Write IOTCC device file for AW agents
         if entity_type == "EdgeSystem":
-            self.store_edge_system_info(reg_entity_id, entity_name, new_prop_dict)
+            self.store_edge_system_info(reg_entity_id, entity_name, new_prop_dict, False)
         elif entity_type == "Devices":
             self.store_device_info(reg_entity_id, entity_name, dev_type, new_prop_dict, False)
         else:
             return
 
     def _get_file_storage_path(self, name):
-        log.debug("_get_{0}".format(name))
         config = ConfigParser.RawConfigParser()
         fullPath = LiotaConfigPath().get_liota_fullpath()
         if fullPath != '':
@@ -561,7 +563,6 @@ class IotControlCenter(DataCenterComponent):
                             else:
                                 log.error('Could not create file storage directory')
                                 return None
-                    log.debug("_get_{0} file_path:{1}".format(name, file_path))
                     return file_path
                 else:
                     log.error('Could not open config file ' + fullPath)
@@ -579,11 +580,13 @@ class IotControlCenter(DataCenterComponent):
         # Enforce even IDs
         return int(self.counter * 2)
 
-    def _unregistration(self, msg_id, uuid):
+    def _unregistration(self, msg_id, ref_entity):
         return {
             "transactionID": msg_id,
             "type": "remove_resource_request",
             "body": {
-                "uuid": uuid
+                "kind": ref_entity.entity_type,
+                "id": ref_entity.entity_id,
+                "name": ref_entity.name
             }
         }

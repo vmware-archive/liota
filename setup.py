@@ -54,7 +54,7 @@ with open('README.md') as f:
 
 setup(
     name='liota',
-    version='0.2.6',
+    version='0.3',
     packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
@@ -128,7 +128,8 @@ setup(
                   'packages/sampleProp.conf',
                   'packages/liotad.py',
                   'packages/liotapkg.sh',
-                  'packages/packages_auto.txt']),
+                  'packages/packages_auto.txt',
+                  'packages/cal_sha1sum.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/dev_disc',
                  ['packages/dev_disc/liota_disc_pipe.sh',
                   'packages/dev_disc/dev_disc.py',

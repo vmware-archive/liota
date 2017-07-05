@@ -46,6 +46,7 @@ include packages/sampleProp.conf
 include packages/liotad.py
 include packages/liotapkg.sh
 include packages/packages_auto.txt
+include packages/cal_sha1sum.py
 include packages/examples/bike_simulator.py
 include packages/examples/iotcc_ram.py
 include packages/examples/graphite_bike_simulated.py

@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["edge_systems/dell5k/edge_system"]
 
@@ -51,8 +52,7 @@ class PackageClass(LiotaPackage):
 
         # Get values from configuration file
         self.config_path = registry.get("package_conf")
-        config = {}
-        execfile(self.config_path + '/sampleProp.conf', config)
+        config = read_user_config(self.config_path + '/sampleProp.conf')
 
         # Acquire resources from registry
         # Creating a copy of edge_system object to keep original object "clean"
@@ -67,8 +67,7 @@ class PackageClass(LiotaPackage):
         tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
 
         # Initialize DCC object with MQTT transport
-        self.iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
-                                 MqttDccComms(edge_system_name=edge_system.name,
+        self.iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
                                               url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
                                               tls_conf=tls_conf,
                                               enable_authentication=True))
@@ -88,8 +87,7 @@ class PackageClass(LiotaPackage):
 
     def clean_up(self):
         # Get values from configuration file
-        config = {}
-        execfile(self.config_path + '/sampleProp.conf', config)
+        config = read_user_config(self.config_path + '/sampleProp.conf')
 
         #Unregister edge system
         if config['ShouldUnregisterOnUnload'] == "True":

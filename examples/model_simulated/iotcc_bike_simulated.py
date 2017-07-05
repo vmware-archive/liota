@@ -31,16 +31,17 @@
 # ----------------------------------------------------------------------------#
 
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
+from liota.lib.utilities.identity import Identity
 from liota.dccs.iotcc import IotControlCenter
 from liota.entities.metrics.metric import Metric
 from liota.entities.devices.bike_simulated import BikeSimulated
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
+from liota.lib.utilities.utility import read_user_config
 
 
 # getting values from conf file
-config = {}
-execfile('../sampleProp.conf', config)
+config = read_user_config('../sampleProp.conf')
 
 import time
 import math
@@ -156,8 +157,14 @@ if __name__ == '__main__':
     # create a data center object, IotCC in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
     # UID/PASS login for now.
-    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-                             WebSocketDccComms(url=config['WebSocketUrl']))
+    identity = Identity(root_ca_cert=config['WebsocketCaCertFile'], username=config['IotCCUID'],
+                        password=config['IotCCPassword'],
+                        cert_file=config['ClientCertFile'], key_file=config['ClientKeyFile'])
+
+    # Initialize DCC object with transport
+    iotcc = IotControlCenter(
+        WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyServerCert'], identity=identity)
+    )
 
     try:
 

@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["edge_systems/dell5k/edge_system"]
 
@@ -43,6 +44,7 @@ class PackageClass(LiotaPackage):
 
     def run(self, registry):
         import copy
+        from liota.lib.utilities.identity import Identity
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
         from liota.dccs.dcc import RegistrationFailure
@@ -53,14 +55,16 @@ class PackageClass(LiotaPackage):
 
         # Get values from configuration file
         self.config_path = registry.get("package_conf")
-        config = {}
-        execfile(self.config_path + '/sampleProp.conf', config)
+        config = read_user_config(self.config_path + '/sampleProp.conf')
+
+        identity = Identity(root_ca_cert=config['WebsocketCaCertFile'], username=config['IotCCUID'],
+                            password=config['IotCCPassword'],
+                            cert_file=config['ClientCertFile'], key_file=config['ClientKeyFile'])
 
         # Initialize DCC object with transport
         self.iotcc = IotControlCenter(
-            config['IotCCUID'], config['IotCCPassword'],
-            WebSocketDccComms(url=config['WebSocketUrl'])
-        )
+            WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyServerCert'], identity=identity)
+            )
 
         try:
             # Register edge system (gateway)
@@ -77,10 +81,9 @@ class PackageClass(LiotaPackage):
 
     def clean_up(self):
         # Get values from configuration file
-        config = {}
-        execfile(self.config_path + '/sampleProp.conf', config)
+        config = read_user_config(self.config_path + '/sampleProp.conf')
 
-        #Unregister edge system
+        # Unregister edge system
         if config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(self.iotcc_edge_system)
         self.iotcc.comms.client.close()
