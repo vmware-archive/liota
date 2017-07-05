@@ -38,10 +38,22 @@ from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
 from liota.dccs.dcc import RegistrationFailure
+from liota.lib.utilities.tls_conf import TLSConf
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name, read_user_config
+
 
 # getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
+
+# Getting edge_system's network interface and disk name
+
+# There are situations where route may not actually return a default route in the
+# main routing table, as the default route might be kept in another table.
+# Such cases should be handled manually.
+network_interface = get_default_network_interface()
+# If edge_system has multiple disks, only first disk will be returned.
+# Such cases should be handled manually.
+disk_name = get_disk_name()
 
 
 # some standard metrics for Linux systems
@@ -66,11 +78,11 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 
 def read_disk_usage_stats():
-    return round(disk_stat.disk_reads_writes('sda')[0], 2)
+    return round(disk_stat.disk_reads_writes(disk_name)[0], 2)
 
 
 def read_network_bytes_received():
-    return round(net_stat.rx_tx_bytes('ens33')[0], 2)
+    return round(net_stat.rx_tx_bytes(network_interface)[0], 2)
 
 
 def read_mem_free():
@@ -94,14 +106,15 @@ if __name__ == '__main__':
     #  Creating EdgeSystem
     edge_system = Dell5KEdgeSystem(config['EdgeSystemName'])
     #  Encapsulates Identity
-    identity = Identity(root_ca_cert=None, username=config['broker_username'], password=config['broker_password'],
-                        cert_file=None, key_file=None)
+    identity = Identity(root_ca_cert=config['broker_root_ca_cert'], username=config['broker_username'], password=config['broker_password'],
+                        cert_file=config['edge_system_cert_file'], key_file=config['edge_system_key_file'])
+    # Encapsulate TLS parameters
+    tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
 
-    iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
-                             MqttDccComms(edge_system_name=edge_system.name,
+    iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
                                           url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
-                                          enable_authentication=True,
-                                          clean_session=True))
+                                          tls_conf=tls_conf,
+                                          enable_authentication=True))
 
     try:
 

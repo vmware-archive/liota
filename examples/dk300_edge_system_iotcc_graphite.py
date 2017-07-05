@@ -31,8 +31,11 @@
 # ----------------------------------------------------------------------------#
 
 import random
-from linux_metrics import cpu_stat,disk_stat,net_stat,mem_stat
+
+from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
+
 from liota.dccs.iotcc import IotControlCenter
+from liota.lib.utilities.identity import Identity
 from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
@@ -40,10 +43,21 @@ from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
 from liota.dcc_comms.socket_comms import SocketDccComms
 from liota.dccs.graphite import Graphite
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name, read_user_config
+
 
 # getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
+
+# Getting edge_system's network interface and disk name
+
+# There are situations where route may not actually return a default route in the
+# main routing table, as the default route might be kept in another table.
+# Such cases should be handled manually.
+network_interface = get_default_network_interface()
+# If edge_system has multiple disks, only first disk will be returned.
+# Such cases should be handled manually.
+disk_name = get_disk_name()
 
 
 # some standard metrics for Linux systems
@@ -68,25 +82,26 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 
 def read_swap_mem_free():
-    total_swap = round(mem_stat.mem_stats()[4],4)
-    swap_mem_free = round(mem_stat.mem_stats()[5],4)
+    total_swap = round(mem_stat.mem_stats()[4], 4)
+    swap_mem_free = round(mem_stat.mem_stats()[5], 4)
     swap_free_percent = (swap_mem_free/total_swap)*100
     return round(swap_free_percent, 2)
 
 
 def read_disk_usage_stats():
-    return round(disk_stat.disk_reads_writes('sda')[0], 2)
+    return round(disk_stat.disk_reads_writes(disk_name)[0], 2)
 
 
 def read_mem_free():
-    total_mem = round(mem_stat.mem_stats()[1],4)
-    free_mem = round(mem_stat.mem_stats()[3],4)
+    total_mem = round(mem_stat.mem_stats()[1], 4)
+    free_mem = round(mem_stat.mem_stats()[3], 4)
     mem_free_percent = ((total_mem-free_mem)/total_mem)*100
     return round(mem_free_percent, 2)
     
 
 def read_network_packets_sent():
-    packets_sent = net_stat.rx_tx_dump('ens33')[1][1] + net_stat.rx_tx_dump('lo')[1][1]
+    # default network interface + loop_back
+    packets_sent = net_stat.rx_tx_dump(network_interface)[1][1] + net_stat.rx_tx_dump('lo')[1][1]
     return packets_sent
 
 
@@ -104,8 +119,14 @@ if __name__ == '__main__':
     # create a data center object, IoTCC in this case, using websocket as a transport layer
     # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
     # UID/PASS login for now.
-    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-                             WebSocketDccComms(url=config['WebSocketUrl']))
+    identity = Identity(root_ca_cert=config['WebsocketCaCertFile'], username=config['IotCCUID'],
+                        password=config['IotCCPassword'],
+                        cert_file=config['ClientCertFile'], key_file=config['ClientKeyFile'])
+
+    # Initialize DCC object with transport
+    iotcc = IotControlCenter(
+        WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyServerCert'], identity=identity)
+    )
 
     # create a System object encapsulating the particulars of a IoT System
     # argument is the name of this IoT System

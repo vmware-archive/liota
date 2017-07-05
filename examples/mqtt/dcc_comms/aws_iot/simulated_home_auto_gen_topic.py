@@ -43,10 +43,10 @@ from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.lib.transports.mqtt import QoSDetails
 from liota.lib.utilities.identity import Identity
 from liota.lib.utilities.tls_conf import TLSConf
+from liota.lib.utilities.utility import read_user_config
 
 # getting aws related values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
 
 # create a pint unit registry
 ureg = pint.UnitRegistry()
@@ -138,7 +138,6 @@ if __name__ == '__main__':
                               tls_conf=tls_conf,
                               qos_details=qos_details,
                               clean_session=True,
-                              userdata=config['userdata'],
                               protocol=config['protocol'], transport=['transport'],
                               conn_disconn_timeout=config['ConnectDisconnectTimeout']),
                  enclose_metadata=True)

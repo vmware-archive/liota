@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["edge_systems/dell5k/edge_system"]
 
@@ -47,39 +48,48 @@ class PackageClass(LiotaPackage):
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
         from liota.dccs.dcc import RegistrationFailure
+        from liota.lib.utilities.tls_conf import TLSConf
 
         # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = {}
-        execfile(config_path + '/sampleProp.conf', config)
+        self.config_path = registry.get("package_conf")
+        config = read_user_config(self.config_path + '/sampleProp.conf')
 
         # Acquire resources from registry
         # Creating a copy of edge_system object to keep original object "clean"
         edge_system = copy.copy(registry.get("edge_system"))
 
         #  Encapsulates Identity
-        identity = Identity(root_ca_cert=None, username=config['broker_username'], password=config['broker_password'],
-                            cert_file=None, key_file=None)
+        identity = Identity(root_ca_cert=config['broker_root_ca_cert'], username=config['broker_username'],
+                            password=config['broker_password'],
+                            cert_file=config['edge_system_cert_file'], key_file=config['edge_system_key_file'])
+
+        # Encapsulate TLS parameters
+        tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
 
         # Initialize DCC object with MQTT transport
-        self.iotcc = IotControlCenter(config['broker_username'], config['broker_password'],
-                                      MqttDccComms(edge_system_name=edge_system.name,
-                                                   url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
-                                                   enable_authentication=True,
-                                                   clean_session=True))
+        self.iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
+                                              url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
+                                              tls_conf=tls_conf,
+                                              enable_authentication=True))
 
         try:
             # Register edge system (gateway)
-            iotcc_edge_system = self.iotcc.register(edge_system)
+            self.iotcc_edge_system = self.iotcc.register(edge_system)
             """
             Use iotcc & iotcc_edge_system as common identifiers
             in the registry to easily refer the objects in other packages
             """
             registry.register("iotcc_mqtt", self.iotcc)
-            registry.register("iotcc_edge_system_mqtt", iotcc_edge_system)
+            registry.register("iotcc_mqtt_edge_system", self.iotcc_edge_system)
         except RegistrationFailure:
             print "EdgeSystem registration to IOTCC failed"
-        self.iotcc.set_properties(iotcc_edge_system, config['SystemPropList'])
+        self.iotcc.set_properties(self.iotcc_edge_system, config['SystemPropList'])
 
     def clean_up(self):
+        # Get values from configuration file
+        config = read_user_config(self.config_path + '/sampleProp.conf')
+
+        #Unregister edge system
+        if config['ShouldUnregisterOnUnload'] == "True":
+            self.iotcc.unregister(self.iotcc_edge_system)
         self.iotcc.comms.client.disconnect()

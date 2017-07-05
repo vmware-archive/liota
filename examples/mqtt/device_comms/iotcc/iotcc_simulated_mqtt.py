@@ -43,10 +43,10 @@ from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
 from liota.entities.metrics.metric import Metric
 from liota.lib.utilities.identity import Identity
 from liota.lib.utilities.tls_conf import TLSConf
+from liota.lib.utilities.utility import read_user_config
 
 # getting values from conf file
-config = {}
-execfile('samplePropMqtt.conf', config)
+config = read_user_config('samplePropMqtt.conf')
 
 # Create unit registry
 ureg = pint.UnitRegistry()
@@ -114,13 +114,13 @@ def get_value(queue):
 def mqtt_subscribe():
     # Encapsulates Identity
     identity = Identity(config['broker_root_ca_cert'], config['broker_username'], config['broker_password'],
-                              config['edge_system_cert_file'], config['edge_system_key_file'])
+                        config['edge_system_cert_file'], config['edge_system_key_file'])
     # Encapsulate TLS parameters
     tls_conf = TLSConf(cert_required=config['cert_required'], tls_version=config['tls_version'],
                        cipher=config['cipher'])
 
     # Create MQTT connection object with required params
-    mqtt_conn = MqttDeviceComms(url=config['BrokerIP'],  port=config['BrokerPort'], identity=identity,
+    mqtt_conn = MqttDeviceComms(url=config['BrokerIP'], port=config['BrokerPort'], identity=identity,
                                 tls_conf=tls_conf,
                                 qos_details=None,
                                 clean_session=True,
@@ -143,8 +143,14 @@ if __name__ == "__main__":
 
     # Create DCC object IoTCC using websocket transport
     # with UID and PASS
-    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-                             WebSocketDccComms(url=config['WebSocketUrl']))
+    ws_identity = Identity(root_ca_cert=config['WebsocketCaCertFile'], username=config['IotCCUID'],
+                           password=config['IotCCPassword'],
+                           cert_file=config['ClientCertFile'], key_file=config['ClientKeyFile'])
+
+    # Initialize DCC object with transport
+    iotcc = IotControlCenter(
+        WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyServerCert'], identity=ws_identity)
+    )
 
     try:
 
@@ -193,7 +199,7 @@ if __name__ == "__main__":
             name=metric_name_living_room_temperature,
             unit=ureg.degC,
             interval=0,
-            sampling_function=lambda:get_value(living_room_temperature_data)
+            sampling_function=lambda: get_value(living_room_temperature_data)
         )
 
         reg_living_room_temp = iotcc.register(living_room_temperature)
@@ -202,4 +208,3 @@ if __name__ == "__main__":
 
     except RegistrationFailure:
         print "Registration to IOTCC failed"
-

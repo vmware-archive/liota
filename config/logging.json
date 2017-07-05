@@ -3,6 +3,7 @@
     "disable_existing_loggers": false,
     "formatters": {
         "simple": {
+            "()" : "liota.lib.utilities.log_formatter.LiotaLogFormatter",
             "format": "%(asctime)s %(process)d %(levelname)s [%(threadName)s] %(name)s.%(funcName)s(%(lineno)d) - %(message)s",
             "datefmt" : "%Y-%m-%d %H:%M:%S %Z"
         }

@@ -101,12 +101,12 @@ class NamedPipeListener(DiscoveryListener):
                         try:
                             log.info('Received {0}'.format(data))
                             payload = json.loads(data)
+                            Thread(target=self.proc_dev_msg, name="PipeMsgProc_Thread", args=(payload,)).start()
+                            data = ''
                         except ValueError, err:
                             # json can't be parsed
                             log.error('Value: {0}, Error:{1}'.format(data, str(err)))
                             continue
-                        Thread(target=self.proc_dev_msg, name="PipeMsgProc_Thread", args=(payload,)).start()
-                        data = ''
         log.info("Thread exits: %s" % str(self.name))
 
     def clean_up(self):

@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
 dependencies = ["iotcc", "examples/bike_simulator"]
 
@@ -142,12 +143,13 @@ class PackageClass(LiotaPackage):
         import copy
 
         # Acquire resources from registry
-        iotcc = registry.get("iotcc")
-        iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
+        self.config_path = registry.get("package_conf")
+        self.iotcc = registry.get("iotcc")
+        self.iotcc_edge_system = copy.copy(registry.get("iotcc_edge_system"))
         bike_simulator = registry.get("bike_simulator")
 
-        iotcc_bike = iotcc.register(bike_simulator)
-        iotcc.create_relationship(iotcc_edge_system, iotcc_bike)
+        self.iotcc_bike = self.iotcc.register(bike_simulator)
+        self.iotcc.create_relationship(self.iotcc_edge_system, self.iotcc_bike)
 
         ureg = bike_simulator.ureg
         self.create_udm(bike_model=bike_simulator)
@@ -162,8 +164,8 @@ class PackageClass(LiotaPackage):
             interval=5,
             sampling_function=self.get_bike_speed
         )
-        reg_bike_speed = iotcc.register(bike_speed)
-        iotcc.create_relationship(iotcc_bike, reg_bike_speed)
+        reg_bike_speed = self.iotcc.register(bike_speed)
+        self.iotcc.create_relationship(self.iotcc_bike, reg_bike_speed)
         reg_bike_speed.start_collecting()
         self.metrics.append(reg_bike_speed)
 
@@ -174,15 +176,23 @@ class PackageClass(LiotaPackage):
             interval=5,
             sampling_function=self.get_bike_power
         )
-        reg_bike_power = iotcc.register(bike_power)
-        iotcc.create_relationship(iotcc_bike, reg_bike_power)
+        reg_bike_power = self.iotcc.register(bike_power)
+        self.iotcc.create_relationship(self.iotcc_bike, reg_bike_power)
         reg_bike_power.start_collecting()
         self.metrics.append(reg_bike_power)
 
         # Use the iotcc_device_name as identifier in the registry to easily refer the registered device in other packages
-        registry.register("iotcc_bike_simulated", iotcc_bike)
+        registry.register("iotcc_bike_simulated", self.iotcc_bike)
 
 
     def clean_up(self):
+
+        # Get values from configuration file
+        config = read_user_config(self.config_path + '/sampleProp.conf')
+
         for metric in self.metrics:
             metric.stop_collecting()
+
+        #Unregister iotcc device
+        if config['ShouldUnregisterOnUnload'] == "True":
+            self.iotcc.unregister(self.iotcc_bike)

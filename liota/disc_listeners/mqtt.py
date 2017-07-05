@@ -57,11 +57,11 @@ class MqttListener(DiscoveryListener):
         if message.payload != '':
             try:
                 payload = json.loads(message.payload)
+                Thread(target=self.proc_dev_msg, name="MqttMsgProc_Thread", args=(payload,)).start()
             except ValueError, err:
                 # json can't be parsed
                 log.error('Value: {0}, Error:{1}'.format(message.payload, str(err)))
                 return
-            Thread(target=self.proc_dev_msg, name="MqttMsgProc_Thread", args=(payload,)).start()
 
     def __init__(self, mqtt_cfg, name=None, discovery=None):
         super(MqttListener, self).__init__(name=name)
@@ -93,7 +93,11 @@ class MqttListener(DiscoveryListener):
         if self.flag_alive:
             # Acquire resources from registry
             if (self.discovery is not None):
-                self.edge_system_object = copy.copy(self.discovery.pkg_registry.get("edge_system"))
+                try:
+                    self.edge_system_object = copy.copy(self.discovery.pkg_registry.get("edge_system"))
+                except:
+                    log.exception("disc_listeners mqtt run exception")
+                    return
             else:
                 log.error("discovery.pkg_registry is None; could not start MqttListener!")
                 return
@@ -109,12 +113,13 @@ class MqttListener(DiscoveryListener):
                 self.tls_conf = TLSConf(self.cfg_sets['cert_required'], self.cfg_sets['tls_version'],
                                         self.cfg_sets['cipher'])
             # Encapsulate QoS related parameters
-            self.qos_details = QoSDetails(self.cfg_sets['in_flight'], self.cfg_sets['queue_size'], self.cfg_sets['retry'])
+            self.qos_details = QoSDetails(self.cfg_sets['in_flight'], int(self.cfg_sets['queue_size']), self.cfg_sets['retry'])
 
             # Create MQTT connection object with required params
             self.mqtt_conn = MqttDeviceComms(url=self.broker_ip, port=int(self.broker_port), identity=self.identity,
                                              tls_conf=self.tls_conf, qos_details=self.qos_details, clean_session=True,
-                                             keep_alive=int(self.cfg_sets['keep_alive']), enable_authentication=False)
+                                             keep_alive=int(self.cfg_sets['keep_alive']),
+                                             enable_authentication=self.cfg_sets['enable_authentication'])
             # Add callback methods
             self.mqtt_conn.subscribe(self.topic, 2, self.callback_msg_proc)
             log.debug("MqttListener is running")

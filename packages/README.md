@@ -9,9 +9,16 @@ Currently, supported commands include package action commands and statistical co
 
 ###Package action commands
 
-* **load** package_name [package_name] ...
+* **load** package_name sha1_checksum [package_name sha1_checksum] ...
 
-Load a package with the specified name. If the specified package provides with a list of dependencies, recursively load all its dependencies. If more than one package names are specified, load them (as well as their dependencies) in a batch and no package will be loaded twice or reloaded.
+Load a package with the specified name and its sha1 checksum. For example, linux os user can first use "sha1sum filename" cmd to get checksum, and then load package by
+"./liotapkg.sh load filename sha1_checksum".
+
+A python file of cal_sha1sum.py is also provided to help you calculate checksum for a file:
+python cal_sha1sum.py file_name (could be relative or absolute file name). For example, under /etc/liota/packages,
+python cal_sha1sum.py iotcc_mqtt.py
+
+If the specified package provides with a list of dependencies, recursively load all its dependencies. If more than one package names are specified, load them (as well as their dependencies) in a batch and no package will be loaded twice or reloaded.
 
 Liota packages must follow certain formats for package manager to process them correctly. It is up to the package developer to follow the format requirements. Details will be provided in later parts of this document. Please also refer to `packages` and `packages/example` for example packages we have provided.
 
@@ -19,19 +26,36 @@ If dependency lists of specified packages and their dependencies contain loops, 
 
 * **unload** package_name [package_name] ...
 
-Unload a package with the specified name. If the specified package has dependents loaded, recursively unload all its dependents. If more than one package names are specified, unload them (as well as their dependents) in a batch.\
+Unload a package with the specified name. If the specified package has dependents loaded, recursively unload all its dependents. If more than one package names are specified, unload them (as well as their dependents) in a batch.
 
-* **reload** package_name
+To `unregister` an entity while unloading set the following flag in `packages/sampleProp.conf` to `True`:
+```bash
+ShouldUnregisterOnUnload = "True"
+```
+
+* **reload** package_name sha1_checksum
 
 Unload a package with the specified name and attempt to reload the same package **using the same file name**. Batch operation is not supported for reloading. If the specified package is not loaded when this command is invoked, the command will fail.
 
-* **update** package_name [package_name] ...
+* **update** package_name sha1_checksum [package_name sha1_checksum] ...
 
 Unload a package with the specified name and attempt to reload the same package. If the specified package has dependents loaded, attempt to recursively update all these dependents. If the specified package is not loaded when this command is invoked, skip unloading and load the specified package directly.
 
 * **delete** package_name
 
 Remove a package with the specified name. By default, the removed package will be stashed into a separate folder in the package path, so package manager will not find it. However, if package manager fails to create the folder, or fails to move the file, the package file will be deleted from the file system.
+
+###Package Load Automation
+
+Load Liota Packages automatically when Package Manager starts by listing package names and checksums in the file specified by pkg_list in [PKG_CFG] of liota.conf, e.g., by default /etc/liota/packages/packages_auto.txt (Should NOT have " " around ":"):
+package_name:sha1_checksum
+[package_name:sha1_checksum]
+
+There are 2 options to add liota package names and checksum:
+1. manually write into pkg_list file;
+2. add at run time through command [load, reload, update] by specifiying option of "-r", e.g.,
+"./liotapkg.sh load -r filename sha1_checksum".
+To be reminded, unload command will remove it from pkg_list file.
 
 ###Statistical commands
 
