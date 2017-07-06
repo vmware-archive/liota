@@ -30,7 +30,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from linux_metrics import cpu_stat,disk_stat,net_stat,mem_stat
+from linux_metrics import cpu_stat, disk_stat, net_stat, mem_stat
 
 from liota.dccs.iotcc import IotControlCenter
 from liota.entities.metrics.metric import Metric
@@ -38,12 +38,16 @@ from liota.entities.devices.simulated_device import SimulatedDevice
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.dcc_comms.websocket_dcc_comms import WebSocketDccComms
 from liota.dccs.dcc import RegistrationFailure
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name, read_user_config
 from liota.lib.utilities.filters.range_filter import RangeFilter, Type
 from liota.lib.utilities.filters.windowing_scheme.windowing_scheme import WindowingScheme
 
 # getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
+
+# Getting edge_system's network interface and disk name
+network_interface = get_default_network_interface()
+disk_name = get_disk_name()
 
 # Filters to filter data at Sampling Functions
 # Simple filters
@@ -81,11 +85,11 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 
 def read_disk_usage_stats():
-    return disk_usage_filter.filter(round(disk_stat.disk_reads_writes('sda')[0], 2))
+    return disk_usage_filter.filter(round(disk_stat.disk_reads_writes(disk_name)[0], 2))
 
 
 def read_network_bytes_received():
-    return net_usage_filter_with_window.filter(round(net_stat.rx_tx_bytes('ens33')[0], 2))
+    return net_usage_filter_with_window.filter(round(net_stat.rx_tx_bytes(network_interface)[0], 2))
 
 
 def read_mem_free():
@@ -103,10 +107,16 @@ def read_mem_free():
 if __name__ == '__main__':
 
     # create a data center object, IoTCC in this case, using websocket as a transport layer
-    # this object encapsulates the formats and protocols neccessary for the agent to interact with the dcc
+    # this object encapsulates the formats and protocols necessary for the agent to interact with the dcc
     # UID/PASS login for now.
-    iotcc = IotControlCenter(config['IotCCUID'], config['IotCCPassword'],
-                             WebSocketDccComms(url=config['WebSocketUrl']))
+    identity = Identity(root_ca_cert=config['WebsocketCaCertFile'], username=config['IotCCUID'],
+                        password=config['IotCCPassword'],
+                        cert_file=config['ClientCertFile'], key_file=config['ClientKeyFile'])
+
+    # Initialize DCC object with transport
+    iotcc = IotControlCenter(
+        WebSocketDccComms(url=config['WebSocketUrl'], verify_cert=config['VerifyServerCert'], identity=identity)
+    )
 
     try:
         # create a System object encapsulating the particulars of a IoT System

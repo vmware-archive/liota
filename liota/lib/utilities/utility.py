@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
 #  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
@@ -36,6 +35,7 @@
 """
 
 from datetime import datetime
+import ast
 import hashlib
 import logging
 import os
@@ -45,6 +45,9 @@ import uuid
 import errno
 import ConfigParser
 import stat
+import json
+import subprocess
+import time
 
 log = logging.getLogger(__name__)
 
@@ -63,15 +66,21 @@ class systemUUID:
     def _getMacAddrIfaceHash(self):
         mac = uuid.getnode()
         if (mac >> 40) % 2:
-            log.warn(
-                'could not find a mac address, an unlikely potential exists for uuid collisions with liota instances on other IoT gateways')
-            # generate a 48-bit random integer from this seed
-            # always returns the same random integer
-            # however in get_uuid below a unique uuid for each resource name will be created
-            # this allows us not to have to store any uuid on the persistent storage yet
-            # create a unique system uuid
-            random.seed(1234567)
-            mac = random.randint(0, 281474976710655)
+            # retry after 30 seconds to get the mac address
+            # if not able to detect mac address after this try then go ahead with alternate mechanism
+            log.info('Retrying getting the mac address')
+            time.sleep(30)
+            mac = uuid.getnode()
+            if (mac >> 40) % 2:
+                log.warn(
+                    'could not find a mac address, an unlikely potential exists for uuid collisions with liota instances on other IoT gateways')
+                # generate a 48-bit random integer from this seed
+                # always returns the same random integer
+                # however in get_uuid below a unique uuid for each resource name will be created
+                # this allows us not to have to store any uuid on the persistent storage yet
+                # create a unique system uuid
+                random.seed(1234567)
+                mac = random.randint(0, 281474976710655)
         m = hashlib.md5()
         m.update(str(mac))
         self.macHash = m.hexdigest()
@@ -110,10 +119,39 @@ def get_linux_version():
     return platform.platform()
 
 
+def get_default_network_interface():
+    """
+    Works with Linux.
+    There are situations where route may not actually return a default route in the
+    main routing table, as the default route might be kept in another table.
+    Such cases should be handled manually.
+    :return: Default Network Interface of the Edge_System
+    """
+    cmd = "route | grep '^default' | grep -o '[^ ]*$'"
+    nw_iface = str(subprocess.check_output(cmd, shell=True)).rstrip()
+    log.info("Default network interface is : {0}".format(nw_iface))
+    return nw_iface
+
+
+def get_disk_name():
+    """
+    Works with Linux.
+    If edge_system has multiple disks, only first disk will be returned.
+    Such cases should be handled manually.
+
+    :return: Disk type of the Edge_System
+    """
+    cmd = "lsblk -io KNAME,TYPE | grep 'disk' | sed -n '1p' | grep -o '^\S*'"
+    disk_name = str(subprocess.check_output(cmd, shell=True)).rstrip()
+    log.info("Disk name is : {0}".format(disk_name))
+    return disk_name
+
+
 def getUTCmillis():
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
-def mkdir_log(path):
+
+def mkdir(path):
     if not os.path.exists(path):
         try:
             os.makedirs(path)
@@ -122,6 +160,49 @@ def mkdir_log(path):
                 pass
             else:
                 raise
+
+
+def store_edge_system_uuid(entity_name, entity_id, reg_entity_id):
+    """
+    Utility function to store EdgeSystem's Name, local-uuid and registered-uuid in the
+    specified file.
+    :param entity_name: EdgeSystem's Name
+    :param entity_id: Local uuid of the EdgeSystem
+    :param reg_entity_id: Registered uuid of the EdgeSystem
+    :return: None
+    """
+    try:
+        uuid_path = read_liota_config('UUID_PATH', 'uuid_path')
+        uuid_config = ConfigParser.RawConfigParser()
+        uuid_config.optionxform = str
+        uuid_config.add_section('GATEWAY')
+        uuid_config.set('GATEWAY', 'name', entity_name)
+        if entity_id:
+            uuid_config.set('GATEWAY', 'local-uuid', entity_id)
+        if reg_entity_id:
+            uuid_config.set('GATEWAY', 'registered-uuid', reg_entity_id)
+        with open(uuid_path, 'w') as configfile:
+            uuid_config.write(configfile)
+    except ConfigParser.ParsingError, err:
+        log.error('Could not open config file ' + str(err))
+
+
+def sha1sum(path_file):
+    """
+    This method calculates SHA-1 checksum of file.
+    :param path_file: absolute path of a file
+    """
+    if not os.path.isfile(path_file):
+        return None
+    sha1 = hashlib.sha1()
+    with open(path_file, "rb") as fp:
+        while True:
+            data = fp.read(65536)  # buffer size
+            if not data:
+                break
+            sha1.update(data)
+    return sha1
+
 
 class LiotaConfigPath:
     path_liota_config = ''
@@ -156,36 +237,91 @@ class LiotaConfigPath:
     def get_liota_fullpath(self):
         return LiotaConfigPath.path_liota_config
 
+    def setup_logging(self, default_level=logging.WARNING):
+        """
+        Setup logging configuration
+        """
+        log = logging.getLogger(__name__)
+        config = ConfigParser.RawConfigParser()
+        fullPath = self.get_liota_fullpath()
+        if fullPath != '':
+            try:
+                if config.read(fullPath) != []:
+                    # now use json file for logging settings
+                    try:
+                        log_path = config.get('LOG_PATH', 'log_path')
+                        log_cfg = config.get('LOG_CFG', 'json_path')
+                    except ConfigParser.ParsingError as err:
+                        log.error('Could not parse log config file')
+                else:
+                    raise IOError('Cannot open configuration file ' + fullPath)
+            except IOError as err:
+                log.error('Could not open log config file')
+            mkdir(log_path)
+            if os.path.exists(log_cfg):
+                with open(log_cfg, 'rt') as f:
+                    config = json.load(f)
+                logging.config.dictConfig(config)
+                log.info('created logger with ' + log_cfg)
+            else:
+                # missing logging.json file
+                logging.basicConfig(level=default_level)
+                log.warn(
+                    'logging.json file missing,created default logger with level = ' +
+                    str(default_level))
+        else:
+            # missing config file
+            log.warn('liota.conf file missing')
+
+
 def read_liota_config(section, name):
-     """Returns the value of name within the specified section.
- """
-     config = ConfigParser.RawConfigParser()
-     fullPath = LiotaConfigPath().get_liota_fullpath()
-     if fullPath != '':
-         try:
-             if config.read(fullPath) != []:
-                 try:
-                     value = config.get(section, name)			
-                 except ConfigParser.ParsingError as err:
-                     log.error('Could not parse log config file')
-             else:
-                 raise IOError('Cannot open configuration file ' + fullPath)
-         except IOError as err:
-             log.error('Could not open log config file')
-     else:
-         # missing config file
-         log.warn('liota.conf file missing')
-     return value
- 
+    """
+    Returns the value of name within the specified section.
+    """
+    config = ConfigParser.RawConfigParser()
+    fullPath = LiotaConfigPath().get_liota_fullpath()
+    if fullPath != '':
+        try:
+            if config.read(fullPath) != []:
+                try:
+                    value = config.get(section, name)
+                except ConfigParser.ParsingError as err:
+                    log.error('Could not parse log config file' + str(err))
+            else:
+                raise IOError('Cannot open configuration file ' + fullPath)
+        except IOError as err:
+            log.error('Could not open log config file')
+    else:
+        # missing config file
+        log.warn('liota.conf file missing')
+    return value
+
+
+def read_user_config(config_file_path):
+    """
+    Returns the user defined configuration as a dictionary from DEFAULT section.
+    """
+
+    config = ConfigParser.RawConfigParser()
+    config.optionxform = str
+    config.read(config_file_path)
+
+    user_config = dict(config.items('DEFAULT'))
+    for key, value in dict(config.items('DEFAULT')).iteritems():
+        user_config[key] = ast.literal_eval(value)
+    return user_config
+
+
 class DiscUtilities:
     """
     DiscUtilities is a wrapper of utility functions
     """
+
     def __init__(self):
         pass
 
     def validate_named_pipe(self, pipe_file):
-        assert(isinstance(pipe_file, basestring))
+        assert (isinstance(pipe_file, basestring))
         if os.path.exists(pipe_file):
             if stat.S_ISFIFO(os.stat(pipe_file).st_mode):
                 pass
@@ -202,10 +338,10 @@ class DiscUtilities:
                     log.error("Could not create directory for messenger pipe")
                     return False
             try:
-                os.mkfifo(pipe_file)
+                os.mkfifo(pipe_file, 0600)
                 log.info("Created pipe: " + pipe_file)
             except OSError:
                 log.error("Could not create messenger pipe")
                 return False
-        assert(stat.S_ISFIFO(os.stat(pipe_file).st_mode))
+        assert (stat.S_ISFIFO(os.stat(pipe_file).st_mode))
         return True

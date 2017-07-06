@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
-#  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
+#  Copyright © 2015-2017 VMware, Inc. All Rights Reserved.                    #
 #                                                                             #
 #  Licensed under the BSD 2-Clause License (the “License”); you may not use   #
 #  this file except in compliance with the License.                           #
@@ -30,24 +30,36 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import logging
-
-log = logging.getLogger(__name__)
+import unittest
 
 
-class TLSConf:
+from liota.entities.metrics.metric import Metric
+import pint
 
-    """
-    This class encapsulates TLS options.
-    """
 
-    def __init__(self, cert_required, tls_version, cipher):
-        """
-        :param cert_required: Defines the certificate requirements
-        :param tls_version: Version of SSL/TLS protocol to be used
-        :param cipher: Ciphers is a string specifying which encryption ciphers are allowable
-                        for a connection, or None to use the defaults.
-        """
-        self.cert_required = cert_required
-        self.tls_version = tls_version
-        self.cipher = cipher
+class TestEntitiesMetric(unittest.TestCase):
+
+    def test_metric_init(self):
+        m = Metric("test")
+        assert isinstance(m, Metric)
+
+    def test_metric_units(self):
+        ureg = pint.UnitRegistry()
+        m = Metric("test", unit=ureg.meter)
+        assert isinstance(m, Metric)
+
+    def test_metric_interval(self):
+        ureg = pint.UnitRegistry()
+
+        m = Metric("test5", interval=5)
+        assert isinstance(m, Metric)
+
+        m = Metric("test5.0", interval=5.0)
+        assert isinstance(m, Metric)
+
+        with self.assertRaises(TypeError):
+            m = Metric("test5s", interval=(5 * ureg.second))
+            assert m is None
+
+if __name__ == '__main__':
+    unittest.main()

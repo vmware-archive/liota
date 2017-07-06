@@ -36,10 +36,10 @@ from liota.dcc_comms.socket_comms import SocketDccComms
 from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dk300_edge_system import Dk300EdgeSystem
+from liota.lib.utilities.utility import read_user_config
 
 # getting values from conf file
-config = {}
-execfile('sampleProp.conf', config)
+config = read_user_config('sampleProp.conf')
 ureg = UnitRegistry()
 quantity = ureg.Quantity
 

@@ -32,6 +32,7 @@
 
 import os
 import pip
+import sys
 from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
@@ -39,13 +40,21 @@ from setuptools import setup, find_packages
 requirements = [str(requirement.req) for requirement in parse_requirements(
     'requirements.txt', session=pip.download.PipSession())]
 
+# Python Version check
+if not sys.version_info[0] == 2:
+    sys.exit('Python 3 is not supported')
+
+# Python 2.7.9 sub-version check
+if sys.version_info[1] <= 7 and sys.version_info[2] < 9:
+    sys.exit('Python 2.7.9+ versions are only supported')
+
 # Get the long description from the README file
 with open('README.md') as f:
     long_description = f.read()
 
 setup(
     name='liota',
-    version='0.2.1',
+    version='0.3',
     packages=find_packages(exclude=["*.json", "*.txt"]),
     description='IoT Agent',
     long_description=long_description,
@@ -86,7 +95,7 @@ setup(
                   'examples/simulated_graphite_event_based.py',
                   'examples/simulated_graphite_temp.py',
                   'examples/dell5k_edge_system_graphite.py',
-                  'examples/dell5k_edge_system_iotcc.py',
+                  'examples/dell5k_edge_system_iotcc_websocket.py',
                   'examples/dell5k_edge_system_with_filter_iotcc.py',
                   'examples/dell5k_sensor_tag_iotcc.py',
                   'examples/multi_metric_simulated_edge_system_graphite.py',
@@ -97,16 +106,26 @@ setup(
                   'examples/model_simulated/graphite_thermistor_simulated.py',
                   'examples/model_simulated/iotcc_bike_simulated.py',
                   'examples/model_simulated/iotcc_thermistor_simulated.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/examples/mqtt/iot_cc',
-                 ['examples/mqtt/iot_cc/iotcc_simulated_mqtt.py',
-                  'examples/mqtt/iot_cc/samplePropMqtt.conf']),
+                (os.path.abspath(os.sep) + '/../etc/liota/examples/mqtt/device_comms/iotcc',
+                 ['examples/mqtt/device_comms/iotcc/iotcc_simulated_mqtt.py',
+                  'examples/mqtt/device_comms/iotcc/samplePropMqtt.conf']),
+                (os.path.abspath(os.sep) + '/../etc/liota/examples/mqtt/dcc_comms/aws_iot',
+                 ['examples/mqtt/dcc_comms/aws_iot/sampleProp.conf',
+                  'examples/mqtt/dcc_comms/aws_iot/simulated_home_auto_gen_topic.py',
+                  'examples/mqtt/dcc_comms/aws_iot/simulated_home_topic_per_metric.py']),
+                (os.path.abspath(os.sep) + '/../etc/liota/examples/mqtt/dcc_comms/iotcc',
+                 ['examples/mqtt/dcc_comms/iotcc/sampleProp.conf',
+                  'examples/mqtt/dcc_comms/iotcc/dell5k_edge_system_iotcc_mqtt.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages',
-                 ['packages/graphite.py',
+                 ['packages/aws_iot.py',
+                  'packages/graphite.py',
                   'packages/iotcc.py',
+                  'packages/iotcc_mqtt.py',
                   'packages/sampleProp.conf',
                   'packages/liotad.py',
                   'packages/liotapkg.sh',
-                  'packages/packages_auto.txt']),
+                  'packages/packages_auto.txt',
+                  'packages/cal_sha1sum.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/dev_disc',
                  ['packages/dev_disc/liota_disc_pipe.sh',
                   'packages/dev_disc/dev_disc.py',
@@ -122,12 +141,20 @@ setup(
                   'packages/examples/graphite_edge_system_stats_with_filter.py',
                   'packages/examples/iotcc_edge_system_stats.py',
                   'packages/examples/iotcc_edge_system_stats_with_filter.py',
+                  'packages/examples/iotcc_resource_properties.py',
                   'packages/examples/thermistor_simulator.py',
                   'packages/examples/graphite_thermistor_simulated.py',
                   'packages/examples/iotcc_thermistor_simulated.py']),
+                (os.path.abspath(os.sep) + '/../etc/liota/packages/examples/mqtt/aws_iot',
+                 ['packages/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py',
+                  'packages/examples/mqtt/aws_iot/simulated_home_topic_per_metric.py']),
+                (os.path.abspath(os.sep) + '/../etc/liota/packages/examples/mqtt/iotcc',
+                 ['packages/examples/mqtt/iotcc/iotcc_mqtt_edge_system_stats.py',
+                  'packages/examples/mqtt/iotcc/iotcc_resource_properties_mqtt.py',
+                  'packages/examples/mqtt/iotcc/iotcc_mqtt_ram.py']),
                 (os.path.abspath(os.sep) + '/../etc/liota/packages/edge_systems/dell5k',
                  ['packages/edge_systems/dell5k/edge_system.py']),
-		(os.path.abspath(os.sep) + '/../etc/liota/scripts',
+                (os.path.abspath(os.sep) + '/../etc/liota/scripts',
                  ['scripts/autostartliota']),
                 (os.path.abspath(os.sep) + '/../etc/liota/conf',
                  ['config/liota.conf', 'config/logging.json']),
