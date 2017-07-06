@@ -33,7 +33,7 @@
 import time
 import Queue
 import logging
-from threading import Thread
+import threading
 
 from aenum import UniqueEnum
 from bluepy.sensortag import SensorTag
@@ -63,49 +63,34 @@ class Sensors(UniqueEnum):
     ALL = 8
 
 
-class SensorTagDevice(Device, SensorTag):
+class SensorTagDevice(Device):
     """
     SensorTag Device Entity.
 
     Texas Instrument's SensorTag
     http://www.ti.com/ww/en/wireless_connectivity/sensortag2015/?INTC=SensorTag&HQS=sensortag
-    """
 
-    def __init__(self, name, device_mac, entity_type="Device"):
-        Device.__init__(
-            self,
-            name=name,
-            entity_type=entity_type,
-            entity_id=systemUUID().get_uuid(name)
-        )
-        SensorTag.__init__(
-            self,
-            addr=device_mac
-        )
-
-
-class SensorTagCollector(Thread):
-    """
-    Helper-Thread to connect with SensorTagDevice over BLE (Bluetooth Low Energy)
-
-    Facilitates collecting sensor metrics even in-case of dis-connectivity due to external factors, without any need
+    This has helper thread implementation to connect with SensorTagDevice over BLE (Bluetooth Low Energy).  It
+    facilitates collecting sensor metrics even in-case of dis-connectivity due to external factors, without any need
     of manual restart of the program.
-
-    Use this class to collect metrics from SensorTag.
     """
 
-    def __init__(self, device_name, device_mac, sampling_interval_sec=10, retry_interval_sec=5, sensors=None):
+    def __init__(self, device_name, device_mac, entity_type="SensorTag",
+                 sampling_interval_sec=10, retry_interval_sec=5, sensors=None):
         """
         :param device_name: SensorTag Device's name
         :param device_mac: SensorTag's MAC Address
+        :param entity_type: EntityType of the device
         :param sampling_interval_sec: Time interval in seconds to collect metrics from sensors
         :param retry_interval_sec: Time interval in seconds to wait before attempting to retry establishing connection.
         :param sensors: List of Sensors to be enabled. Use Sensors Enum.
         """
-        Thread.__init__(self)
-        # To stop the thread
-        self._is_running = True
-        self.daemon = True
+        super(SensorTagDevice, self).__init__(
+            name=device_name,
+            entity_type=entity_type,
+            entity_id=systemUUID().get_uuid(device_name)
+        )
+
         self.tag = None
         self.device_name = device_name
         self.device_mac = device_mac
@@ -120,101 +105,26 @@ class SensorTagCollector(Thread):
         self._gyro_enabled = False
         self._bat_level_enabled = False
         self._light_enabled = False
-        # Queues to store sensor metrics
-        self._temp_queue = None
-        self._humi_queue = None
-        self._baro_queue = None
-        self._acce_queue = None
-        self._magn_queue = None
-        self._gyro_queue = None
-        self._bat_level_queue = None
-        self._light_queue = None
+
         if not isinstance(sensors, list) or len(sensors) == 0:
             log.error("List of sensors to be enabled is expected.")
             raise TypeError("List of sensors to be enabled is expected.")
         # List of sensors to be enabled
         self._enable_sensors_list = sensors
-        # Connects with re-try mechanism
-        self._re_connect()
-        self.start()
+        self.start_collecting()
 
-    def get_sensor_tag(self):
+    def start_collecting(self):
         """
-        Returns SensorTagDevice entity.
-        :return: SensorTagDevice entity object.
-        """
-        return self.tag
-
-    def get_temperature(self):
-        """
-        Blocks until value is available in queue
-        :return: (ambient_temp, target_temp) tuple in degC
-        """
-        return self._temp_queue.get(True, self._sampling_interval_sec+1)
-
-    def get_humidity(self):
-        """
-        Blocks until (sampling_interval_sec + 1 sec)
-        :return: (ambient_temp, rel_humidity) tuple
-        """
-        return self._humi_queue.get(True, self._sampling_interval_sec+1)
-
-    def get_barometer(self):
-        """
-        Blocks until (sampling_interval_sec + 1 sec)
-        :return: (ambient_temp in degC, pressure in millibars) tuple
-        """
-        return self._baro_queue.get(True, self._sampling_interval_sec+1)
-
-    def get_accelerometer(self):
-        """
-        Blocks until (sampling_interval_sec + 1 sec)
-        :return: (x_accel, y_accel, z_accel) tuple in units of g
-        """
-        return self._acce_queue.get(True, self._sampling_interval_sec+1)
-
-    def get_magnetometer(self):
-        """
-        Blocks until (sampling_interval_sec + 1 sec)
-        :return: (x_mag, y_mag, z_mag) in units of uT
-        """
-        return self._magn_queue.get(True, self._sampling_interval_sec+1)
-
-    def get_gyroscope(self):
-        """
-        Blocks until (sampling_interval_sec + 1 sec)
-        :return: (x_gyro, y_gyro, z_gyro) tple in units of degrees/sec
-        """
-        return self._gyro_queue.get(True, self._sampling_interval_sec+1)
-
-    def get_battery_level(self):
-        """
-        Blocks until (sampling_interval_sec + 1 sec)
-        :return: battery level in percent
-        """
-        return self._bat_level_queue.get(True, self._sampling_interval_sec+1)
-
-    def get_light_level(self):
-        """
-        Blocks until (sampling_interval_sec + 1 sec)
-        :return: value in lux
-        """
-        return self._light_queue.get(True, self._sampling_interval_sec+1)
-
-    def _connect(self):
-        """
-        Connects with a SensorTag Device and enables the specified sensors.
+        Connects with SensorTag and starts helper thread for collecting metrics.
         :return: None
         """
-        log.info("Connecting to SensorTag Device: {0} with MAC_ADDRESS: {1}".format(self.device_name, self.device_mac))
-        self.tag = SensorTagDevice(
-            name=self.device_name,
-            device_mac=self.device_mac
-        )
-        log.info("Connected with SensorTag Device: {0} with MAC_ADDRESS: {1} Successfully!".
-                 format(self.device_name, self.device_mac))
-        # Enabling sensors once connection is successful
-        self._enable()
+        # To stop the thread
+        self._is_running = True
+        # Connects with re-try mechanism
+        self._re_connect()
+        self._thread = threading.Thread(target=self._run)
+        self._thread.daemon = True
+        self._thread.start()
 
     def _re_connect(self):
         """
@@ -233,7 +143,19 @@ class SensorTagCollector(Thread):
             except BTLEException as e:
                 log.error(str(e))
 
-    def run(self):
+    def _connect(self):
+        """
+        Connects with a SensorTag Device and enables the specified sensors.
+        :return: None
+        """
+        log.info("Connecting to SensorTag Device: {0} with MAC_ADDRESS: {1}".format(self.device_name, self.device_mac))
+        self.tag = SensorTag(addr=self.device_mac)
+        log.info("Connected with SensorTag Device: {0} with MAC_ADDRESS: {1} Successfully!".
+                 format(self.device_name, self.device_mac))
+        # Enabling sensors once connection is successful
+        self._enable()
+
+    def _run(self):
         """
         Collects metrics from sensor in a single SensorTag Device and adds them to corresponding queue.
 
@@ -242,7 +164,7 @@ class SensorTagCollector(Thread):
         """
         # Loop for auto-reconnect on device disconnect due to BTLEException
         while self._is_running:
-            # Loop to read collect metrics from enabled sensors
+            # Loop to read and collect metrics from enabled sensors
             while self._is_running:
                 # Attempt reading from device with try-catch, as BTLEException occurs frequently
                 try:
@@ -284,9 +206,9 @@ class SensorTagCollector(Thread):
 
         log.info("Stopped SensorTagCollector Thread.")
 
-    def stop(self):
+    def stop_collecting(self):
         """
-        Disconnect from SensorTag and stops the SensorTagCollector Thread.
+        Disconnect from SensorTag and stops the Thread.
         :return:
         """
         self._is_running = False
@@ -449,3 +371,130 @@ class SensorTagCollector(Thread):
         else:
             log.error("lightmeter is not available in SensorTag Device: {0} with MAC_ADDRESS: {1}".
                       format(self.device_name, self.device_mac))
+
+    def get_sensor_tag(self):
+        """
+        Returns SensorTagDevice entity.
+        :return: SensorTagDevice entity object.
+        """
+        return self.tag
+
+    def get_temperature(self):
+        """
+        Blocks until (sampling_interval_sec + 1 sec); returns None otherwise
+        :return: (ambient_temp, target_temp) tuple in degC
+        """
+        try:
+            return self._temp_queue.get(True, self._sampling_interval_sec + 1)
+        except Queue.Empty:
+            # Not raising exception as it occurs due to BLE exception as device disconnects frequently
+            log.error("temperature not collected from SensorTag..")
+            return None
+        except Exception as e:
+            log.exception("temperature error traceback..")
+            raise e
+
+    def get_humidity(self):
+        """
+        Blocks until (sampling_interval_sec + 1 sec); returns None otherwise
+        :return: (ambient_temp, rel_humidity) tuple
+        """
+        try:
+            return self._humi_queue.get(True, self._sampling_interval_sec + 1)
+        except Queue.Empty:
+            # Not raising exception as it occurs due to BLE exception as device disconnects frequently
+            log.error("humidity not collected from SensorTag..")
+            return None
+        except Exception as e:
+            log.exception("humidity error traceback..")
+            raise e
+
+    def get_barometer(self):
+        """
+        Blocks until (sampling_interval_sec + 1 sec); returns None otherwise
+        :return: (ambient_temp in degC, pressure in millibars) tuple
+        """
+        try:
+            return self._baro_queue.get(True, self._sampling_interval_sec + 1)
+        except Queue.Empty:
+            # Not raising exception as it occurs due to BLE exception as device disconnects frequently
+            log.error("barometer not collected from SensorTag..")
+            return None
+        except Exception as e:
+            log.exception("barometer error traceback..")
+            raise e
+
+    def get_accelerometer(self):
+        """
+        Blocks until (sampling_interval_sec + 1 sec); returns None otherwise
+        :return: (x_accel, y_accel, z_accel) tuple in units of g
+        """
+        try:
+            return self._acce_queue.get(True, self._sampling_interval_sec + 1)
+        except Queue.Empty:
+            # Not raising exception as it occurs due to BLE exception as device disconnects frequently
+            log.error("accelerometer not collected from SensorTag..")
+            return None
+        except Exception as e:
+            log.exception("accelerometer error traceback..")
+            raise e
+
+    def get_magnetometer(self):
+        """
+        Blocks until (sampling_interval_sec + 1 sec); returns None otherwise
+        :return: (x_mag, y_mag, z_mag) in units of uT
+        """
+        try:
+            return self._magn_queue.get(True, self._sampling_interval_sec + 1)
+        except Queue.Empty:
+            # Not raising exception as it occurs due to BLE exception as device disconnects frequently
+            log.error("magnetometer not collected from SensorTag..")
+            return None
+        except Exception as e:
+            log.exception("magnetometer error traceback..")
+            raise e
+
+    def get_gyroscope(self):
+        """
+        Blocks until (sampling_interval_sec + 1 sec); returns None otherwise
+        :return: (x_gyro, y_gyro, z_gyro) tple in units of degrees/sec
+        """
+        try:
+            return self._gyro_queue.get(True, self._sampling_interval_sec + 1)
+        except Queue.Empty:
+            # Not raising exception as it occurs due to BLE exception as device disconnects frequently
+            log.error("gyroscope not collected from SensorTag..")
+            return None
+        except Exception as e:
+            log.exception("gyroscope error traceback..")
+            raise e
+
+    def get_battery_level(self):
+        """
+        Blocks until (sampling_interval_sec + 1 sec); returns None otherwise
+        :return: battery level in percent
+        """
+        try:
+            return self._bat_level_queue.get(True, self._sampling_interval_sec + 1)
+        except Queue.Empty:
+            # Not raising exception as it occurs due to BLE exception as device disconnects frequently
+            log.error("battery_level not collected from SensorTag..")
+            return None
+        except Exception as e:
+            log.exception("battery_level error traceback..")
+            raise e
+
+    def get_light_level(self):
+        """
+        Blocks until (sampling_interval_sec + 1 sec); returns None otherwise
+        :return: value in lux
+        """
+        try:
+            return self._light_queue.get(True, self._sampling_interval_sec + 1)
+        except Queue.Empty:
+            # Not raising exception as it occurs due to BLE exception as device disconnects frequently
+            log.error("light_level not collected from SensorTag..")
+            return None
+        except Exception as e:
+            log.exception("light_level error traceback..")
+            raise e
