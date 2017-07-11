@@ -94,7 +94,7 @@ def get_data_files():
         )
 
     data_files = [
-        (datadir, ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
+        (datadir, ['BSD_LICENSE.txt', 'BSD_NOTICE.txt', 'post-install-setup.sh']),
         ]
     for docs in ['examples', 'packages', 'config', 'packages', ]:
         file_list = get_tree_walk(docs)
