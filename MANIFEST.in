@@ -55,7 +55,7 @@ include packages/examples/iotcc_edge_system_stats_with_filter.py
 include packages/examples/iotcc_resource_properties.py
 include packages/examples/thermistor_simulator.py
 include packages/examples/graphite_thermistor_simulated.py
-include packages/examples/device_metrics/sensor_tag_ble_dell5k_mqtt_iotcc.py
+include packages/examples/metrics/sensor_tag_ble_dell5k_mqtt_iotcc.py
 include packages/examples/iotcc_thermistor_simulated.py
 include packages/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py
 include packages/examples/mqtt/aws_iot/simulated_home_topic_per_metric.py

@@ -374,8 +374,8 @@ class SensorTagDevice(Device):
 
     def get_sensor_tag(self):
         """
-        Returns SensorTagDevice entity.
-        :return: SensorTagDevice entity object.
+        Returns SensorTag Device object.
+        :return: SensorTag Device object.
         """
         return self.tag
 
