@@ -62,5 +62,5 @@ class DCCComms:
         pass
 
     @abstractmethod
-    def receive(self, msg_attr):
+    def receive(self, **kwargs):
         pass

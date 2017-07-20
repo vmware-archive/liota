@@ -18,6 +18,11 @@ include examples/model_simulated/graphite_bike_simulated.py
 include examples/model_simulated/graphite_thermistor_simulated.py
 include examples/model_simulated/iotcc_bike_simulated.py
 include examples/model_simulated/iotcc_thermistor_simulated.py
+include examples/amqp/README.md
+include examples/amqp/rabbitmq/sampleProp.conf
+include examples/amqp/rabbitmq/simulated_home_auto_gen.py
+include examples/amqp/rabbitmq/simulated_home_exchange_and_routing_key_per_metric.py
+include examples/amqp/rabbitmq/simulated_home_single_exchange_routing_key_per_metric.py
 include examples/mqtt/README.md
 include examples/mqtt/dcc_comms/README.md
 include examples/mqtt/dcc_comms/aws_iot/sampleProp.conf

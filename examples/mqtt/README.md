@@ -1,6 +1,6 @@
 # Using MQTT as Transport in LIOTA
 
-LIOTA offers MQTT protocol as transport at both Device & DCC ends via [MqttDeviceComms](https://github.com/vmware/liota/blob/master/liota/device_comms/mqtt_device_comms.py) & ![MqttDccComms](/liota/dcc_comms/mqtt_dcc_comms.py).
+LIOTA offers MQTT protocol as transport at both Device & DCC ends via [MqttDeviceComms](https://github.com/vmware/liota/blob/master/liota/device_comms/mqtt_device_comms.py) & [MqttDccComms](https://github.com/vmware/liota/blob/master/liota/dcc_comms/mqtt_dcc_comms.py).
 
 
 ## QoS

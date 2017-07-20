@@ -40,20 +40,19 @@ from liota.entities.metrics.metric import Metric
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.lib.utilities.dcc_utility import get_formatted_data
 
-
 log = logging.getLogger(__name__)
 
 
-class AWSIoT(DataCenterComponent):
+class RabbitMQ(DataCenterComponent):
     """
-    DCC for AWSIoT Platform.
+    DCC for RabbitMQ.
     """
     def __init__(self, con, enclose_metadata=False):
         """
         :param con: DccComms Object
         :param enclose_metadata: Include Gateway, Device and Metric names as part of payload or not
         """
-        super(AWSIoT, self).__init__(
+        super(RabbitMQ, self).__init__(
             comms=con
         )
         self.enclose_metadata = enclose_metadata
@@ -63,8 +62,8 @@ class AWSIoT(DataCenterComponent):
         :param entity_obj: Entity Object
         :return: RegisteredEntity Object
         """
-        log.info("Registering resource with AWSIoT DCC {0}".format(entity_obj.name))
-        super(AWSIoT, self).register(entity_obj)
+        log.info("Registering resource with RabbitMQ DCC {0}".format(entity_obj.name))
+        super(RabbitMQ, self).register(entity_obj)
         if isinstance(entity_obj, Metric):
             return RegisteredMetric(entity_obj, self, None)
         else:
@@ -107,16 +106,25 @@ class AWSIoT(DataCenterComponent):
         """
         return get_formatted_data(reg_metric, self.enclose_metadata)
 
-    def subscribe(self, msg_attr):
+    def consume(self, consume_msg_attr_list, auto_gen_callback=None):
         """
-        Subscribes to the given topic with QoS and callback provided through MqttMessagingAttributes object
-        :param msg_attr: MqttMessagingAttributes object
+        Consume messages from AMQP broker
+        :param consume_msg_attr_list: list of AmqpConsumeMessagingAttributes objects or None
+        :param auto_gen_callback: callback method to be invoked for auto-generated AmqpConsumeMessagingAttributes
         :return:
         """
-        self.comms.receive(msg_attr)
+        self.comms.receive(consume_msg_attr_list, auto_gen_callback)
+
+    def stop_consumers(self):
+        """
+        Stop consuming messages from AMQP broker
+        :return:
+        """
+        self.comms.stop_receiving()
 
     def set_properties(self, reg_entity, properties):
         raise NotImplementedError
 
     def unregister(self, entity_obj):
         raise NotImplementedError
+
