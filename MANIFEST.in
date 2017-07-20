@@ -3,6 +3,8 @@ include requirements.txt
 include BSD_LICENSE.txt
 include BSD_NOTICE.txt
 include scripts/autostartliota
+include scripts/liotad.service
+include scripts/liotad.socket
 include config/liota.conf
 include config/logging.json
 include examples/simulated_edge_system_graphite.py

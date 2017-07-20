@@ -116,6 +116,12 @@ To enable/disable the autostart service perform the following steps:
   $ chkconfig --del autostartliota
 ```
 
+### On systemd based systems:
+
+```bash
+  $ systemctl enable liota.service
+```
+
 ## Liota.conf
 liota.conf provides path to find out various configuration & log files. When initializing, liota does a multi-step search for the configuration file:
 * Looks in the current working directory '.'

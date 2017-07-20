@@ -1,0 +1,6 @@
+[Socket]
+ListenFIFO=/var/tmp/liota/package_messenger.fifo
+
+[Install]
+WantedBy=sockets.target
+
