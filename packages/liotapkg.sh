@@ -31,11 +31,12 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-liota_config="/etc/liota/conf/liota.conf"
+liota_config="/etc/liota/liota.conf"
 package_messenger_pipe=""
 
 if [ ! -f "$liota_config" ]; then
     echo "ERROR: Configuration file not found" >&2
+    echo "You made need to copy the distributed configuration file from /usr/share/doc/liota-<version>/liota.conf to /etc/liota/liota.conf" >&2
     exit -1
 fi
 

@@ -121,29 +121,29 @@ liota.conf provides path to find out various configuration & log files. When ini
 * Looks in the current working directory '.'
 * User's home directory '~'
 * A LIOTA_CONF environment variable
-* Finally the default location for every installation: /etc/liota/conf.
+* Finally the default location for every installation: /etc/liota/. (note this will need to be copied from the system doc directory, typically /usr/lib/liota/)
 
 Here is the default liota.conf file:
 
 ```bash
 [LOG_CFG]
-json_path = /etc/liota/conf/logging.json
+json_path = /etc/liota/logging.json
 
 [LOG_PATH]
 log_path = /var/log/liota
 
 [UUID_PATH]
-uuid_path = /etc/liota/conf/uuid.ini
+uuid_path = /etc/liota/uuid.ini
 
 [IOTCC_PATH]
-dev_file_path = /etc/liota/conf/devs
-entity_file_path = /etc/liota/conf/entity
-iotcc_path = /etc/liota/conf/iotcc.json
+dev_file_path = /etc/liota/devs
+entity_file_path = /etc/liota/entity
+iotcc_path = /etc/liota/iotcc.json
 
 [PKG_CFG]
-pkg_path = /etc/liota/packages
+pkg_path = /usr/share/liota/packages
 pkg_msg_pipe = /var/tmp/liota/package_messenger.fifo
-pkg_list = /etc/liota/packages/packages_auto.txt
+pkg_list = /usr/share/liota/packages/packages_auto.txt
 ```
 Feel free to modify [liota.conf](https://github.com/vmware/liota/blob/master/config/liota.conf) and [logging.json](https://github.com/vmware/liota/blob/master/config/logging.json) as appropriate for your testing.
 
@@ -151,7 +151,7 @@ Feel free to modify [liota.conf](https://github.com/vmware/liota/blob/master/con
 ## Examples
 Post-installation the sample codes for publishing the data to DCC can be found at following location:
 ```bash
-  /etc/liota/examples
+  /usr/share/doc/liota-&lt;version&gt;/examples
 ```
 
 Please look through the example code noting especially the files sampleProp.conf and dk300_edge_system_iotcc.py
