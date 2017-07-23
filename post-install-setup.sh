@@ -254,9 +254,9 @@ then
 	exit
 fi
 
-if [[ -e "${_LIOTA_CONFTO}" ]]
+if [[ -e "${_LIOTA_JSONTO}" ]]
 then
-	echo "ERROR: There is a configuration file already existing at ${_LIOTA_CONFTO}, not going to overwrite. This is a fatal error."
+	echo "ERROR: There is a json file already existing at ${_LIOTA_JSONTO}, not going to overwrite. This is a fatal error."
 	exit
 fi
 
