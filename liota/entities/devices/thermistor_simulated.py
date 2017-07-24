@@ -59,6 +59,7 @@ class ThermistorSimulated(Device):
             self.ureg = ureg
         else:
             self.ureg = pint.UnitRegistry()
+        self.run()
 
     def run(self):
         self.th = threading.Thread(target=self.simulate)

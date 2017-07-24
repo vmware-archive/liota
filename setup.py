@@ -30,12 +30,86 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+#
+# Includes
+#
+
 import os
 import pip
 import sys
 from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
+#
+# Useful Variables
+#
+
+PACKAGE_NAME = "liota"
+PACKAGE_VERSION = "0.2.1"
+
+#
+# Functions
+#
+
+
+def get_tree_walk(path):
+    filename_list = []
+    for dirpath, dirname, filenames in os.walk(path):
+        # We need to remove the leading directory
+        # as the os.walk adds it in, and it's not super
+        # useful to us in this case as we know it
+        dirpath_split = (dirpath.split(os.path.sep)[1:])
+
+        if( len( dirpath_split) > 0 ):
+            dirpath_trunk = os.path.join(*(dirpath_split))
+        else:
+            dirpath_trunk = ""
+
+        # If the filenames isn't empty, add the filenames
+        if( len( filenames ) > 0):
+            filename_list.append((dirpath, filenames))
+    return filename_list
+
+
+def get_data_files():
+    # Setup an empty return
+    data_files = []
+
+    #
+    # The following 4 lines would be useful if we were doing cross
+    # platform instalation.  It's currently unclear if this is
+    # supported so this is being left here in the off chance it
+    # becomes relevant
+    #
+    # if sys.platform == "win32":
+    #     datadir = os.path.join("doc", PACKAGE_NAME)
+    # else:
+    #    datadir = os.path.join("share", "doc", PACKAGE_NAME)
+
+    datadir = os.path.join(
+        os.path.abspath(os.sep),
+        "usr",
+        "lib",
+        PACKAGE_NAME
+        )
+
+    data_files = [
+        (datadir, ['BSD_LICENSE.txt', 'BSD_NOTICE.txt', 'post-install-setup.sh']),
+        ]
+    for docs in ['examples', 'packages', 'config', 'packages', ]:
+        file_list = get_tree_walk(docs)
+        if len(file_list):
+            for dirpath,files in file_list:
+                thesefiles = []
+                for sfile in files:
+                    thesefiles.append(os.path.join(dirpath, sfile))
+                data_files.append((os.path.join(datadir, dirpath), thesefiles))
+
+    return data_files
+
+#
+# Python setup.py definitions
+#
 
 requirements = [str(requirement.req) for requirement in parse_requirements(
     'requirements.txt', session=pip.download.PipSession())]
@@ -45,24 +119,25 @@ if not sys.version_info[0] == 2:
     sys.exit('Python 3 is not supported')
 
 # Python 2.7.9 sub-version check
-if sys.version_info[1] <= 7 and sys.version_info[2] < 9:
-    sys.exit('Python 2.7.9+ versions are only supported')
+if sys.version_info[1] < 7 or \
+        sys.version_info[1] == 7 and sys.version_info[2] < 9:
+    sys.exit('Python versions lower than 2.7.9 are not supported')
 
 # Get the long description from the README file
 with open('README.md') as f:
     long_description = f.read()
 
 setup(
-    name='liota',
-    version='0.3',
-    packages=find_packages(exclude=["*.json", "*.txt"]),
-    description='IoT Agent',
+    name=PACKAGE_NAME,
+    version=PACKAGE_VERSION,
+    packages=find_packages(exclude=["*.json", "*.txt",]),
+    description='Little IoT Agent (liota)',
     long_description=long_description,
     # include_package_data=True
 
     # The project's main homepage.
     url='https://github.com/vmware/liota',
-    author='The Python Packaging Authority',
+    author='Kohli Vaibhav (VMware)',
     author_email='vkohli@vmware.com',
 
     # License
@@ -90,79 +165,5 @@ setup(
     install_requires=requirements,
 
     # 'data_file'(conf_files) at custom location
-    data_files=[(os.path.abspath(os.sep) + '/../etc/liota/examples',
-                 ['examples/simulated_edge_system_graphite.py',
-                  'examples/simulated_graphite_event_based.py',
-                  'examples/simulated_graphite_temp.py',
-                  'examples/dell5k_edge_system_graphite.py',
-                  'examples/dell5k_edge_system_iotcc_websocket.py',
-                  'examples/dell5k_edge_system_with_filter_iotcc.py',
-                  'examples/multi_metric_simulated_edge_system_graphite.py',
-                  'examples/dk300_edge_system_iotcc_graphite.py',
-                  'examples/sampleProp.conf']),
-                (os.path.abspath(os.sep) + '/../etc/liota/examples/devices',
-                 ['examples/devices/sensor_tag_ble_dell5k_mqtt_iotcc.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/examples/model_simulated',
-                 ['examples/model_simulated/graphite_bike_simulated.py',
-                  'examples/model_simulated/graphite_thermistor_simulated.py',
-                  'examples/model_simulated/iotcc_bike_simulated.py',
-                  'examples/model_simulated/iotcc_thermistor_simulated.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/examples/mqtt/device_comms/iotcc',
-                 ['examples/mqtt/device_comms/iotcc/iotcc_simulated_mqtt.py',
-                  'examples/mqtt/device_comms/iotcc/samplePropMqtt.conf']),
-                (os.path.abspath(os.sep) + '/../etc/liota/examples/mqtt/dcc_comms/aws_iot',
-                 ['examples/mqtt/dcc_comms/aws_iot/sampleProp.conf',
-                  'examples/mqtt/dcc_comms/aws_iot/simulated_home_auto_gen_topic.py',
-                  'examples/mqtt/dcc_comms/aws_iot/simulated_home_topic_per_metric.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/examples/mqtt/dcc_comms/iotcc',
-                 ['examples/mqtt/dcc_comms/iotcc/sampleProp.conf',
-                  'examples/mqtt/dcc_comms/iotcc/dell5k_edge_system_iotcc_mqtt.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages',
-                 ['packages/aws_iot.py',
-                  'packages/graphite.py',
-                  'packages/iotcc.py',
-                  'packages/iotcc_mqtt.py',
-                  'packages/sampleProp.conf',
-                  'packages/liotad.py',
-                  'packages/liotapkg.sh',
-                  'packages/packages_auto.txt',
-                  'packages/cal_sha1sum.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages/dev_disc',
-                 ['packages/dev_disc/liota_disc_pipe.sh',
-                  'packages/dev_disc/dev_disc.py',
-                  'packages/dev_disc/liota_devsim_pipe.sh',
-                  'packages/dev_disc/liota_devsim_load.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages/devices',
-                 ['packages/devices/sensor_tag.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages/examples',
-                 ['packages/examples/bike_simulator.py',
-                  'packages/examples/iotcc_ram.py',
-                  'packages/examples/graphite_bike_simulated.py',
-                  'packages/examples/iotcc_bike_simulated.py',
-                  'packages/examples/graphite_edge_system_stats.py',
-                  'packages/examples/graphite_edge_system_stats_with_filter.py',
-                  'packages/examples/iotcc_edge_system_stats.py',
-                  'packages/examples/iotcc_edge_system_stats_with_filter.py',
-                  'packages/examples/iotcc_resource_properties.py',
-                  'packages/examples/thermistor_simulator.py',
-                  'packages/examples/graphite_thermistor_simulated.py',
-                  'packages/examples/iotcc_thermistor_simulated.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages/examples/metrics',
-                 ['packages/examples/metrics/sensor_tag_ble_dell5k_mqtt_iotcc.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages/examples/mqtt/aws_iot',
-                 ['packages/examples/mqtt/aws_iot/simulated_home_auto_gen_topic.py',
-                  'packages/examples/mqtt/aws_iot/simulated_home_topic_per_metric.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages/examples/mqtt/iotcc',
-                 ['packages/examples/mqtt/iotcc/iotcc_mqtt_edge_system_stats.py',
-                  'packages/examples/mqtt/iotcc/iotcc_resource_properties_mqtt.py',
-                  'packages/examples/mqtt/iotcc/iotcc_mqtt_ram.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/packages/edge_systems/dell5k',
-                 ['packages/edge_systems/dell5k/edge_system.py']),
-                (os.path.abspath(os.sep) + '/../etc/liota/scripts',
-                 ['scripts/autostartliota']),
-                (os.path.abspath(os.sep) + '/../etc/liota/conf',
-                 ['config/liota.conf', 'config/logging.json']),
-                (os.path.abspath(os.sep) + '/../etc/liota',
-                 ['BSD_LICENSE.txt', 'BSD_NOTICE.txt']),
-                (os.path.abspath(os.sep) + '/../var/log/liota', [])]
+    data_files=get_data_files()
 )
