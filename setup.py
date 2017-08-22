@@ -45,7 +45,7 @@ from setuptools import setup, find_packages
 #
 
 PACKAGE_NAME = "liota"
-PACKAGE_VERSION = "0.2.1"
+PACKAGE_VERSION = "0.3.1"
 
 #
 # Functions

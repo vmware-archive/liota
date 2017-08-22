@@ -43,7 +43,7 @@
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
 
 do_start() {
-	sudo python /etc/liota/packages/liotad.py &
+	sudo python /usr/lib/liota/packages/liotad.py &
 }
 
 case "$1" in

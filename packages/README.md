@@ -15,7 +15,7 @@ Load a package with the specified name and its sha1 checksum. For example, linux
 "./liotapkg.sh load filename sha1_checksum".
 
 A python file of cal_sha1sum.py is also provided to help you calculate checksum for a file:
-python cal_sha1sum.py file_name (could be relative or absolute file name). For example, under /etc/liota/packages,
+python cal_sha1sum.py file_name (could be relative or absolute file name). For example, under /usr/lib/liota/packages,
 python cal_sha1sum.py iotcc_mqtt.py
 
 If the specified package provides with a list of dependencies, recursively load all its dependencies. If more than one package names are specified, load them (as well as their dependencies) in a batch and no package will be loaded twice or reloaded.
@@ -47,7 +47,7 @@ Remove a package with the specified name. By default, the removed package will b
 
 ###Package Load Automation
 
-Load Liota Packages automatically when Package Manager starts by listing package names and checksums in the file specified by pkg_list in [PKG_CFG] of liota.conf, e.g., by default /etc/liota/packages/packages_auto.txt (Should NOT have " " around ":"):
+Load Liota Packages automatically when Package Manager starts by listing package names and checksums in the file specified by pkg_list in [PKG_CFG] of liota.conf, e.g., by default /usr/lib/liota/packages/packages_auto.txt (Should NOT have " " around ":"):
 package_name:sha1_checksum
 [package_name:sha1_checksum]
 

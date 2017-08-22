@@ -35,9 +35,7 @@
 #
 
 import os
-# import pip
 import sys
-# from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
 #
@@ -45,7 +43,7 @@ from setuptools import setup, find_packages
 #
 
 PACKAGE_NAME = "liota"
-PACKAGE_VERSION = "0.2.1"
+PACKAGE_VERSION = "0.3.1"
 
 #
 # Functions
@@ -114,9 +112,6 @@ def get_data_files():
 with open('requirements.txt') as f:
     required = f.read().splitlines()
 
-# requirements = [str(requirement.req) for requirement in parse_requirements(
-#     'requirements.txt', session=pip.download.PipSession())]
-
 # Python Version check
 if not sys.version_info[0] == 2:
     sys.exit('Python 3 is not supported')
@@ -134,7 +129,7 @@ setup(
     name=PACKAGE_NAME,
     version=PACKAGE_VERSION,
     packages=find_packages(exclude=["*.json", "*.txt",]),
-    description='Little IoT Agent (liota)-lite',
+    description='Little IoT Agent (liota)',
     long_description=long_description,
     # include_package_data=True
 
@@ -162,7 +157,7 @@ setup(
         # 'Programming Language :: Python :: 3.5',
     ],
 
-    keywords='iot liota-lite agent',
+    keywords='iot liota agent',
 
     # Installation requirement
     install_requires=required,
