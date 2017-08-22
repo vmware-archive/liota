@@ -69,6 +69,8 @@ class IotControlCenter(DataCenterComponent):
         thread.daemon = True
         # This thread will continuously run in background to receive response or actions from DCC
         thread.start()
+        # Wait for Subscription to be complete and then proceed to publish message
+        time.sleep(0.5)
         self.proto = HelixProtocol(self.comms, self.comms.identity.username, self.comms.identity.password)
         self._iotcc_json = self._create_iotcc_json()
         self.counter = 0

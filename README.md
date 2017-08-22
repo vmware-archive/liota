@@ -64,12 +64,29 @@ Toward the goal of ubiquity for liota we plan to include the following enhanceme
 * Language bindings apart from Python, starting with C, C++, Java and Lua
 
 # Installation and Testing
-In general, liota can be installed with:
+
+Liota requires a Python 2.7.9+ environment already installed.
+
+In general, liota can be installed:
 ```bash
   $ sudo pip install liota
 ```
 
-It requires a Python 2.7 environment already installed.
+Post liota-installation either you can manually copy the config files from "/usr/lib/liota/config/" to "/etc/liota".
+Or you can use the helper script "post-install-setup.sh" to copy the config files which exist at the path "/usr/lib/liota". The script on execution by default checks if the "liota" non-root user exist if it doesn't then non-root "liota" user is required to be created manually.
+If you require Liota to be installed with other non-root user which pre-exists in the system then the script will be required to be executed in the following way:
+
+```bash
+  $ cd /usr/lib/liota
+  $ LIOTA_USER="non-root user" ./post-install-setup.sh
+```
+
+It Liota is required to be installed as root user (not the preferred way) then the script should be executed in the following way:
+
+```bash
+  $ cd /usr/lib/liota
+  $ LIOTA_USER="root" ./post-install-setup.sh
+```
 
 ## Autostarting Liota Daemon
 For starting liotad.py in background automatically at reboot perform the following steps:
@@ -141,9 +158,9 @@ entity_file_path = /etc/liota/entity
 iotcc_path = /etc/liota/iotcc.json
 
 [PKG_CFG]
-pkg_path = /usr/share/liota/packages
+pkg_path = /usr/lib/liota/packages
 pkg_msg_pipe = /var/tmp/liota/package_messenger.fifo
-pkg_list = /usr/share/liota/packages/packages_auto.txt
+pkg_list = /usr/lib/liota/packages/packages_auto.txt
 ```
 Feel free to modify [liota.conf](https://github.com/vmware/liota/blob/master/config/liota.conf) and [logging.json](https://github.com/vmware/liota/blob/master/config/logging.json) as appropriate for your testing.
 
@@ -151,7 +168,8 @@ Feel free to modify [liota.conf](https://github.com/vmware/liota/blob/master/con
 ## Examples
 Post-installation the sample codes for publishing the data to DCC can be found at following location:
 ```bash
-  /usr/share/doc/liota-&lt;version&gt;/examples
+  /usr/lib/liota/examples
+  /usr/lib/liota/packages
 ```
 
 Please look through the example code noting especially the files sampleProp.conf and dk300_edge_system_iotcc.py
