@@ -108,7 +108,7 @@ class Mqtt():
         :param client: The client instance for this callback
         :param userdata: The private user data as set in Client() or userdata_set()
         :param mid: Message ID
-        :param granted_qos: Greanted QoS by the broker
+        :param granted_qos: Granted QoS by the broker
         :return:
         """
         log.debug("Subscribed: {0} {1}".format(str(mid), str(granted_qos)))

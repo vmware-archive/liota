@@ -35,9 +35,7 @@
 #
 
 import os
-import pip
 import sys
-from pip.req import parse_requirements
 from setuptools import setup, find_packages
 
 #
@@ -96,7 +94,7 @@ def get_data_files():
     data_files = [
         (datadir, ['BSD_LICENSE.txt', 'BSD_NOTICE.txt', 'post-install-setup.sh']),
         ]
-    for docs in ['examples', 'packages', 'config', ]:
+    for docs in ['config', ]:
         file_list = get_tree_walk(docs)
         if len(file_list):
             for dirpath,files in file_list:
@@ -111,8 +109,8 @@ def get_data_files():
 # Python setup.py definitions
 #
 
-requirements = [str(requirement.req) for requirement in parse_requirements(
-    'requirements.txt', session=pip.download.PipSession())]
+with open('requirements.txt') as f:
+    required = f.read().splitlines()
 
 # Python Version check
 if not sys.version_info[0] == 2:
@@ -162,7 +160,7 @@ setup(
     keywords='iot liota agent',
 
     # Installation requirement
-    install_requires=requirements,
+    install_requires=required,
 
     # 'data_file'(conf_files) at custom location
     data_files=get_data_files()

@@ -25,7 +25,7 @@ Device Discovery could be started through the Liota package of 'dev_disc.py' und
 To be reminded, to let discovered devices registered to user specified DCCs, at least one DCC package should be loaded.
 
 In details, after installation with (sudo python setup.py install or pip install liota), you can do the following:
-# Configuration A (under /etc/liota/conf, inside liota.conf, default/example settings are available)
+# Configuration A (under /etc/liota/, inside liota.conf, default/example settings are available)
 [IOTCC_PATH]
 
 dev_file_path = /etc/liota/conf/devs   # the folder where store discovered device information files
@@ -34,7 +34,7 @@ entity_file_path = /etc/liota/conf/entity # the folder where store discovered de
 
 [DISC_CFG]
 
-disc_cmd_msg_pipe = /etc/liota/packages/dev_disc/disc_cmd_messenger.fifo # the named pipe path for discovery CmdMessengerThread
+disc_cmd_msg_pipe = /usr/lib/liota/packages/dev_disc/disc_cmd_messenger.fifo # the named pipe path for discovery CmdMessengerThread
 
 [DEVICE_TYPE_TO_UNIQUEKEY_MAPPING] # device discovery can only process device types which are listed here, among its attributes,
 
@@ -58,13 +58,13 @@ Banana23 = iotcc	# Later user could create Liota Package for discovered devices 
 
 [DEVSIM_CFG]
 
-devsim_cmd_msg_pipe = /etc/liota/packages/dev_disc/devsim_cmd_messenger.fifo # named pipe for Device Simulator CmdMessengerThread
+devsim_cmd_msg_pipe = /usr/lib/liota/packages/dev_disc/devsim_cmd_messenger.fifo # named pipe for Device Simulator CmdMessengerThread
 
 [DISC_ENDPOINT_LIST]		# Endpoing list where you want discovery listens on and simulator send messages to
 
 							# if no item in this list, Device Discovery will not be started
 
-disc_msg_pipe = /etc/liota/packages/dev_disc/discovery_messenger.fifo	# currently, support these 4 types (currently,
+disc_msg_pipe = /usr/lib/liota/packages/dev_disc/discovery_messenger.fifo	# currently, support these 4 types (currently,
 
 socket = 127.0.0.1:5000						# coap and socket are not allowed for security consideration).
 
@@ -108,7 +108,7 @@ ConnectDisconnectTimeout = 10
 * When MQTT broker also sits on the edge system, MQTT subscriber can listen on 127.0.0.1/localhost with a unique port (rather than well-known 1883) and use basic authentication
 to guarantee secured communication with MQTT broker. It's MQTT broker and MQTT publisher's responsibility to guarantee MQTT broker and external world communicate securely.
 
-# Configuration B (under /etc/liota/packages, inside sampleProf.conf)
+# Configuration B (under /usr/lib/liota/packages, inside sampleProp.conf)
 
 Since when device is discovered, it will be registered to DCC based on your [DEVICE_TYPE_TO_DCC_MAPPING] in liota.conf,
 it will use DCC credentials. Therefore, please guarantee IOTCC or Graphite section in sampleProf.conf are configured well.
@@ -127,7 +127,7 @@ GraphitePort = 2003
 
 To be reminded, if DCC Liota package is not loaded, i.e., no corresponding DCC instance, although discovery thread can still listens on end points, device registration will not be carried out.
 
-# Start Device Discovery Liota Package (dev_disc.py under /etc/liota/packages/)
+# Start Device Discovery Liota Package (dev_disc.py under /usr/lib/liota/packages/)
 
 a). when keep dev_disc inside packages_auto.txt:
 
@@ -162,7 +162,7 @@ messages should be printed out to stdout, e.g.,
 
 (if running or started are printed out, listeners are started successfully)
 
-You can also use CmdMessage to check certain information (under /etc/liota/packages/dev_disc)
+You can also use CmdMessage to check certain information (under /usr/lib/liota/packages/dev_disc)
 
 	sudo ./liota_disc_pipe.sh list th
 
@@ -172,7 +172,7 @@ You can also use CmdMessage to check certain information (under /etc/liota/packa
 
 ### How to Start Device Simulator
 Device Simulator Must BE started after Device Discovery module is imported; and should be started
-separately by (under /etc/liota/packages/dev_disc)
+separately by (under /usr/lib/liota/packages/dev_disc)
 
 	sudo python liota_devsim_load.py (add & is optional)
 
@@ -194,7 +194,7 @@ Verification messages are as followings.
 
 	SocketSimulator is running...
 
-You can also use CmdMessage to check certain information (under /etc/liota/packages/dev_disc)
+You can also use CmdMessage to check certain information (under /usr/lib/liota/packages/dev_disc)
 
 	sudo ./liota_devsim_pipe.sh list th
 

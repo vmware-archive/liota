@@ -64,12 +64,29 @@ Toward the goal of ubiquity for liota we plan to include the following enhanceme
 * Language bindings apart from Python, starting with C, C++, Java and Lua
 
 # Installation and Testing
-In general, liota can be installed with:
+
+Liota requires a Python 2.7.9+ environment already installed.
+
+In general, liota can be installed:
 ```bash
-  $ sudo pip install liota
+  $ pip install liota
 ```
 
-It requires a Python 2.7 environment already installed.
+Post liota-installation either you can manually copy the config files from "/usr/lib/liota/config/" to "/etc/liota" and create "/var/log/liota" directory.
+Or you can use the helper script "post-install-setup.sh" to copy the config files which exist at the path "/usr/lib/liota". The script on execution by default checks if the "liota" non-root user exist if it doesn't then non-root "liota" user is required to be created manually.
+If you require Liota to be installed as the different non-root user which pre-exists on the system then the script will be required to be executed in the following way:
+
+```bash
+  $ cd /usr/lib/liota
+  $ LIOTA_USER="non-root user" ./post-install-setup.sh
+```
+
+It Liota is required to be installed as root user (not the preferred way) then the script should be executed in the following way:
+
+```bash
+  $ cd /usr/lib/liota
+  $ LIOTA_USER="root" ./post-install-setup.sh
+```
 
 ## Autostarting Liota Daemon
 For starting liotad.py in background automatically at reboot perform the following steps:
@@ -121,7 +138,7 @@ liota.conf provides path to find out various configuration & log files. When ini
 * Looks in the current working directory '.'
 * User's home directory '~'
 * A LIOTA_CONF environment variable
-* Finally the default location for every installation: /etc/liota/. (note this will need to be copied from the system doc directory, typically /usr/lib/liota/)
+* Finally the default configuration file location for every installation: /etc/liota/. (note this will need to be copied from the system doc directory, typically /usr/lib/liota/config)
 
 Here is the default liota.conf file:
 
@@ -136,14 +153,14 @@ log_path = /var/log/liota
 uuid_path = /etc/liota/uuid.ini
 
 [IOTCC_PATH]
-dev_file_path = /etc/liota/devs
-entity_file_path = /etc/liota/entity
-iotcc_path = /etc/liota/iotcc.json
+dev_file_path = /etc/liota/conf/devs
+entity_file_path = /etc/liota/conf/entity
+iotcc_path = /etc/liota/conf/iotcc.json
 
 [PKG_CFG]
-pkg_path = /usr/share/liota/packages
+pkg_path = /usr/lib/liota/packages
 pkg_msg_pipe = /var/tmp/liota/package_messenger.fifo
-pkg_list = /usr/share/liota/packages/packages_auto.txt
+pkg_list = /usr/lib/liota/packages/packages_auto.txt
 ```
 Feel free to modify [liota.conf](https://github.com/vmware/liota/blob/master/config/liota.conf) and [logging.json](https://github.com/vmware/liota/blob/master/config/logging.json) as appropriate for your testing.
 
@@ -151,7 +168,8 @@ Feel free to modify [liota.conf](https://github.com/vmware/liota/blob/master/con
 ## Examples
 Post-installation the sample codes for publishing the data to DCC can be found at following location:
 ```bash
-  /usr/share/doc/liota-&lt;version&gt;/examples
+  /usr/lib/liota/examples
+  /usr/lib/liota/packages
 ```
 
 Please look through the example code noting especially the files sampleProp.conf and dk300_edge_system_iotcc.py
@@ -185,6 +203,14 @@ The default location for log files generated during Liota operation can be found
   /var/log/liota
 ```
 If the above directory is not available or is not writeable then modify the log location in the file logging.json (find it as described above in the section on liota.conf)
+
+## Uninstall Liota
+
+Liota can be uninstalled easily as per the steps below:
+```bash
+   $ pip uninstall liota
+   $ rm -rf /usr/lib/liota/ /etc/liota/ /var/log/liota/
+```
 
 ## Contributing to Liota
 

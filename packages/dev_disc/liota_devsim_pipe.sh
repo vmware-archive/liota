@@ -31,7 +31,7 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-liota_config="/etc/liota/conf/liota.conf"
+liota_config="/etc/liota/liota.conf"
 discovery_messenger_pipe=""
 
 if [ ! -f "$liota_config" ]; then
