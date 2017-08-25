@@ -69,7 +69,7 @@ Liota requires a Python 2.7.9+ environment already installed.
 
 In general, liota can be installed:
 ```bash
-  $ sudo pip install liota
+  $ pip install liota
 ```
 
 Post liota-installation either you can manually copy the config files from "/usr/lib/liota/config/" to "/etc/liota" and create "/var/log/liota" directory.
