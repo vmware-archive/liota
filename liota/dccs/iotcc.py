@@ -43,7 +43,7 @@ from threading import Lock
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
-from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir, read_liota_config, store_edge_system_uuid
+from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir, read_liota_config
 from liota.lib.utilities.si_unit import parse_unit
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
@@ -138,8 +138,6 @@ class IotControlCenter(DataCenterComponent):
             if entity_obj.entity_type == "HelixGateway":
                 self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
                                               entity_obj.entity_id)
-                store_edge_system_uuid(entity_name=entity_obj.name, entity_id=entity_obj.entity_id,
-                                       reg_entity_id=self.reg_entity_id)
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
                                                      self.reg_entity_id, None, None)

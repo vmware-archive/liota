@@ -35,7 +35,7 @@ import Queue
 
 from liota.dcc_comms.dcc_comms import DCCComms
 from liota.lib.transports.mqtt import Mqtt, MqttMessagingAttributes
-from liota.lib.utilities.utility import store_edge_system_uuid, systemUUID
+from liota.lib.utilities.utility import systemUUID
 
 log = logging.getLogger(__name__)
 
@@ -84,10 +84,6 @@ class MqttDccComms(DCCComms):
                 log.info("generated local uuid will be the client ID")
             else:
                 log.info("Client ID is provided by user")
-            # Storing edge_system name and generated local_uuid which will be used in auto-generation of pub-sub topic
-            store_edge_system_uuid(entity_name=edge_system_name,
-                                   entity_id=self.client_id,
-                                   reg_entity_id=None)
         elif isinstance(mqtt_msg_attr, MqttMessagingAttributes):
             log.info("User configured pub-topic and sub-topic")
             self.msg_attr = mqtt_msg_attr
