@@ -140,7 +140,7 @@ liota.conf provides path to find out various configuration & log files. When ini
 * A LIOTA_CONF environment variable
 * Finally the default configuration file location for every installation: /etc/liota/. (note this will need to be copied from the system doc directory, typically /usr/lib/liota/config)
 
-Here is the default liota.conf file:
+Here is the snapshot of liota.conf file:
 
 ```bash
 [LOG_CFG]
@@ -149,18 +149,10 @@ json_path = /etc/liota/logging.json
 [LOG_PATH]
 log_path = /var/log/liota
 
-[UUID_PATH]
-uuid_path = /etc/liota/uuid.ini
-
 [IOTCC_PATH]
-dev_file_path = /etc/liota/conf/devs
-entity_file_path = /etc/liota/conf/entity
-iotcc_path = /etc/liota/conf/iotcc.json
-
-[PKG_CFG]
-pkg_path = /usr/lib/liota/packages
-pkg_msg_pipe = /var/tmp/liota/package_messenger.fifo
-pkg_list = /usr/lib/liota/packages/packages_auto.txt
+dev_file_path = /usr/lib/liota/devs
+entity_file_path = /usr/lib/liota/entity
+iotcc_path = /usr/lib/liota/iotcc.json
 ```
 Feel free to modify [liota.conf](https://github.com/vmware/liota/blob/master/config/liota.conf) and [logging.json](https://github.com/vmware/liota/blob/master/config/logging.json) as appropriate for your testing.
 
