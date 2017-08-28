@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env sh
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
 #  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
@@ -34,7 +34,8 @@
 liota_config="/etc/liota/liota.conf"
 package_messenger_pipe=""
 
-if [ ! -f "$liota_config" ]; then
+if [ ! -f "$liota_config" ]
+then
     echo "ERROR: Configuration file not found" >&2
     echo "You made need to copy the distributed configuration file from /usr/lib/liota/config/liota.conf to /etc/liota/liota.conf" >&2
     exit -1
@@ -42,22 +43,23 @@ fi
 
 while read line # Read configurations from file
 do
-    if echo $line | grep -F = &>/dev/null
+    varname=$(echo "$line" | sed "s/^\(..*\)\s*\=\s*..*$/\1/")
+    if [ "$varname" = "pkg_msg_pipe " ]
     then
-        varname=$(echo "$line" | sed "s/^\(..*\)\s*\=\s*..*$/\1/")
-        if [ $varname == "pkg_msg_pipe" ]; then
-            value=$(echo "$line" | sed "s/^..*\s*\=\s*\(..*\)$/\1/")
-            package_messenger_pipe=$value
-        fi
+        value=$(echo "$line" | sed "s/^..*\s*\=\s*\(..*\)$/\1/")
+        package_messenger_pipe=$value
+        break
     fi
 done < $liota_config
 
-if [ "$package_messenger_pipe" == "" ]; then
+if [ "$package_messenger_pipe" = "" ]
+then
     echo "ERROR: Pipe path not found in configuration file" >&2
     exit -2
 fi
 
-if [ ! -p "$package_messenger_pipe" ]; then
+if [ ! -p "$package_messenger_pipe" ]
+then
     echo "ERROR: Pipe path is not a named pipe" >&2
     exit -3
 fi
