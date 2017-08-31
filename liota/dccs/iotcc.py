@@ -73,6 +73,7 @@ class IotControlCenter(DataCenterComponent):
         time.sleep(0.5)
         self.proto = HelixProtocol(self.comms, self.comms.identity.username, self.comms.identity.password)
         self._iotcc_json = self._create_iotcc_json()
+        self._iotcc_json_load_retry = int(read_liota_config('IOTCC', 'iotcc_load_retry'))
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
@@ -332,16 +333,33 @@ class IotControlCenter(DataCenterComponent):
         return iotcc_path
 
     def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id, entity_local_uuid):
-        msg = ''
         if self._iotcc_json == '':
             log.warn('iotcc.json file missing')
             return
         try:
-            with open(self._iotcc_json, 'r') as f:
-                msg = json.load(f)
-            f.close()
+            f = open(self._iotcc_json, 'r')
         except IOError, err:
-            log.error('Could not open {0} file '.format(self._iotcc_json) + str(err))
+            log.exception('Could not open {0} file '.format(self._iotcc_json) + str(err))
+            return
+
+        def load_json_record(f):
+            record = ''
+            try:
+                record = json.load(f)
+            except:
+                log.exception('Could not load json record from {0} '.format(self._iotcc_json))
+            return record
+
+        local_cnt = 1
+        msg = load_json_record(f)
+        while ((msg == '') and (local_cnt <= self._iotcc_json_load_retry)):
+            local_cnt += 1
+            msg = load_json_record(f)
+        f.close()
+        if msg == '':
+            log.error('Tried {0} times, while failed to load record from {0}'.format(local_cnt, self._iotcc_json))
+            return
+
         log.debug('{0}:{1}'.format(entity_name, reg_entity_id))
         if entity_type == "HelixGateway":
             msg["iotcc"]["EdgeSystem"]["SystemName"] = entity_name
