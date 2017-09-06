@@ -161,32 +161,6 @@ def mkdir(path):
             else:
                 raise
 
-
-def store_edge_system_uuid(entity_name, entity_id, reg_entity_id):
-    """
-    Utility function to store EdgeSystem's Name, local-uuid and registered-uuid in the
-    specified file.
-    :param entity_name: EdgeSystem's Name
-    :param entity_id: Local uuid of the EdgeSystem
-    :param reg_entity_id: Registered uuid of the EdgeSystem
-    :return: None
-    """
-    try:
-        uuid_path = read_liota_config('UUID_PATH', 'uuid_path')
-        uuid_config = ConfigParser.RawConfigParser()
-        uuid_config.optionxform = str
-        uuid_config.add_section('GATEWAY')
-        uuid_config.set('GATEWAY', 'name', entity_name)
-        if entity_id:
-            uuid_config.set('GATEWAY', 'local-uuid', entity_id)
-        if reg_entity_id:
-            uuid_config.set('GATEWAY', 'registered-uuid', reg_entity_id)
-        with open(uuid_path, 'w') as configfile:
-            uuid_config.write(configfile)
-    except ConfigParser.ParsingError, err:
-        log.error('Could not open config file ' + str(err))
-
-
 def sha1sum(path_file):
     """
     This method calculates SHA-1 checksum of file.
@@ -206,7 +180,7 @@ def sha1sum(path_file):
 
 class LiotaConfigPath:
     path_liota_config = ''
-    syswide_path = '/etc/liota/conf/'
+    syswide_path = '/etc/liota/'
 
     def __init__(self):
         if LiotaConfigPath.path_liota_config == '':
@@ -217,8 +191,8 @@ class LiotaConfigPath:
         1. Current working directory. ./liota.conf.
         2. User's home directory (~user/liota.conf)
         3. A place named by an environment variable (LIOTA_CONF)
-        4. A standard system-wide directory (such as /etc/liota/conf/liota.conf)
-        # assert: every install will have a default liota.conf in /etc/liota/conf
+        4. A standard system-wide directory (such as /etc/liota/liota.conf)
+        # assert: every install will have a default liota.conf in /etc/liota/
         """
 
         for loc in os.curdir, os.path.expanduser("~"), os.environ.get(
