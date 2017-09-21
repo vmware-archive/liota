@@ -32,10 +32,9 @@
 
 from linux_metrics import cpu_stat, disk_stat, net_stat
 
-
 from liota.core.package_manager import LiotaPackage
-from liota.lib.utilities.utility import get_default_network_interface, get_disk_name, read_user_config
-
+from liota.lib.utilities.utility import get_default_network_interface, get_disk_name
+from linux_metrics import mem_stat
 
 dependencies = ["iotcc_mqtt"]
 
@@ -48,6 +47,7 @@ network_interface = get_default_network_interface()
 # If edge_system has multiple disks, only first disk will be returned.
 # Such cases should be handled manually.
 disk_name = get_disk_name()
+
 
 # ---------------------------------------------------------------------------
 # This is a sample application package to publish edge system stats data to
@@ -72,6 +72,13 @@ def read_network_bytes_received():
     return round(net_stat.rx_tx_bytes(network_interface)[0], 2)
 
 
+def read_mem_free():
+    total_mem = round(mem_stat.mem_stats()[1], 4)
+    free_mem = round(mem_stat.mem_stats()[3], 4)
+    mem_free_percent = ((total_mem - free_mem) / total_mem) * 100
+    return round(mem_free_percent, 2)
+
+
 class PackageClass(LiotaPackage):
     def run(self, registry):
         import copy
@@ -80,10 +87,6 @@ class PackageClass(LiotaPackage):
         # Acquire resources from registry
         iotcc_edge_system = copy.copy(registry.get("iotcc_mqtt_edge_system"))
         iotcc = registry.get("iotcc_mqtt")
-
-        # Get values from configuration file
-        config_path = registry.get("package_conf")
-        config = read_user_config(config_path + '/sampleProp.conf')
 
         # Create metrics
         self.metrics = []
@@ -130,6 +133,17 @@ class PackageClass(LiotaPackage):
         iotcc.create_relationship(iotcc_edge_system, reg_metric_network_bytes_received)
         reg_metric_network_bytes_received.start_collecting()
         self.metrics.append(reg_metric_network_bytes_received)
+
+        metric_name = "Memory Free"
+        mem_free_metric = Metric(name=metric_name,
+                                 unit=None, interval=10,
+                                 aggregation_size=1,
+                                 sampling_function=read_mem_free
+                                 )
+        reg_mem_free_metric = iotcc.register(mem_free_metric)
+        iotcc.create_relationship(iotcc_edge_system, reg_mem_free_metric)
+        reg_mem_free_metric.start_collecting()
+        self.metrics.append(reg_mem_free_metric)
 
     def clean_up(self):
         for metric in self.metrics:

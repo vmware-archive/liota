@@ -201,6 +201,7 @@ class IotControlCenter(DataCenterComponent):
             self.comms.send(json.dumps(self._relationship(self.next_id(),
                                                           reg_entity_parent.reg_entity_id,
                                                           reg_entity_child.reg_entity_id)))
+            self.set_system_properties(self, reg_entity_child, reg_entity_parent.sys_properties)
 
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
@@ -266,12 +267,18 @@ class IotControlCenter(DataCenterComponent):
             }]
         })
 
-    def set_organization_group_properties(self, reg_entity_name, reg_entity_id, reg_entity_type, entity_local_uuid,
-                                          properties):
-        log.info("Organization Group Properties defined for resource {0}".format(reg_entity_name))
+    def set_system_properties(self, reg_entity_obj, system_properties):
+        if isinstance(reg_entity_obj, RegisteredMetric):
+            reg_entity_obj.parent.sys_properties = system_properties
+            entity = reg_entity_obj.parent.ref_entity
+        else:
+            reg_entity_obj.sys_properties = system_properties
+            entity = reg_entity_obj.ref_entity
+
+        log.info("System Properties defined for resource {0}".format(entity.name))
         self.comms.send(json.dumps(
-            self._properties(self.next_id(), reg_entity_type, entity_local_uuid, reg_entity_name,
-                             getUTCmillis(), properties)))
+            self._properties(self.next_id(), entity.entity_type, entity.entity_id, entity.name,
+                             getUTCmillis(), system_properties)))
 
     def set_properties(self, reg_entity_obj, properties):
         # RegisteredMetric get parent's resid; RegisteredEntity gets own resid
