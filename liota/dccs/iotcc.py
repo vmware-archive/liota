@@ -169,11 +169,11 @@ class IotControlCenter(DataCenterComponent):
 
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
         on_response(self.recv_msg_queue.get(True, 20))
-        self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
         if entity_obj.ref_entity.entity_type != "HelixGateway":
             self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name,
                                    entity_obj.ref_entity.entity_type, None, True)
         else:
+            self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
             self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
 
         log.info("Unregistration of resource {0} with IoTCC complete".format(entity_obj.ref_entity.name))
