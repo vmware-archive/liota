@@ -66,7 +66,7 @@ class PackageClass(LiotaPackage):
         # Initialize DCC object with MQTT transport
         mqtt_msg_attr = MqttMessagingAttributes(pub_topic="liota/"+registry.get("broker_username")+"/request",sub_topic="liota/"+registry.get("broker_username")+"/response")
         self.iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
-                                              url=registry.get["broker_ip"], port=registry.get["broker_port"], identity=identity,
+                                              url=registry.get("broker_ip"), port=registry.get("broker_port"), identity=identity,
                                               tls_conf=tls_conf,client_id=registry.get("broker_username"),
                                               enable_authentication=True, mqtt_msg_attr=mqtt_msg_attr))
 
