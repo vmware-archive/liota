@@ -73,6 +73,7 @@ class IotControlCenter(DataCenterComponent):
         time.sleep(0.5)
         self.proto = HelixProtocol(self.comms, self.comms.identity.username, self.comms.identity.password)
         self._iotcc_json = self._create_iotcc_json()
+        self._iotcc_json_load_retry = int(read_liota_config('IOTCC', 'iotcc_load_retry'))
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
@@ -136,14 +137,12 @@ class IotControlCenter(DataCenterComponent):
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
             if entity_obj.entity_type == "HelixGateway":
-                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
-                                              entity_obj.entity_id)
                 with self.file_ops_lock:
+                    self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
+                                              entity_obj.entity_id)
                     self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
                                                      self.reg_entity_id, None, None)
             else:
-                self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
-                                              entity_obj.entity_id)
                 # get dev_type, and prop_dict if possible
                 with self.file_ops_lock:
                     self.store_reg_entity_attributes("Devices", entity_obj.name, self.reg_entity_id,
@@ -170,11 +169,11 @@ class IotControlCenter(DataCenterComponent):
 
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
         on_response(self.recv_msg_queue.get(True, 20))
-        self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
         if entity_obj.ref_entity.entity_type != "HelixGateway":
             self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name,
                                    entity_obj.ref_entity.entity_type, None, True)
         else:
+            self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
             self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
 
         log.info("Unregistration of resource {0} with IoTCC complete".format(entity_obj.ref_entity.name))
@@ -332,16 +331,33 @@ class IotControlCenter(DataCenterComponent):
         return iotcc_path
 
     def store_reg_entity_details(self, entity_type, entity_name, reg_entity_id, entity_local_uuid):
-        msg = ''
         if self._iotcc_json == '':
             log.warn('iotcc.json file missing')
             return
         try:
-            with open(self._iotcc_json, 'r') as f:
-                msg = json.load(f)
-            f.close()
+            f = open(self._iotcc_json, 'r')
         except IOError, err:
-            log.error('Could not open {0} file '.format(self._iotcc_json) + str(err))
+            log.exception('Could not open {0} file '.format(self._iotcc_json) + str(err))
+            return
+
+        def load_json_record(f):
+            record = ''
+            try:
+                record = json.load(f)
+            except:
+                log.exception('Could not load json record from {0} '.format(self._iotcc_json))
+            return record
+
+        local_cnt = 1
+        msg = load_json_record(f)
+        while ((msg == '') and (local_cnt <= self._iotcc_json_load_retry)):
+            local_cnt += 1
+            msg = load_json_record(f)
+        f.close()
+        if msg == '':
+            log.error('Tried {0} times, while failed to load record from {0}'.format(local_cnt, self._iotcc_json))
+            return
+
         log.debug('{0}:{1}'.format(entity_name, reg_entity_id))
         if entity_type == "HelixGateway":
             msg["iotcc"]["EdgeSystem"]["SystemName"] = entity_name
