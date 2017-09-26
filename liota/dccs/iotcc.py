@@ -73,7 +73,7 @@ class IotControlCenter(DataCenterComponent):
         time.sleep(0.5)
         self.proto = HelixProtocol(self.comms, self.comms.identity.username, self.comms.identity.password)
         self._iotcc_json = self._create_iotcc_json()
-        self._iotcc_json_load_retry = int(read_liota_config('IOTCC', 'iotcc_load_retry'))
+        self._iotcc_json_load_retry = int(read_liota_config('IOTCC_PATH', 'iotcc_load_retry'))
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
