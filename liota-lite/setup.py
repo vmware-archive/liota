@@ -94,7 +94,7 @@ def get_data_files():
     data_files = [
         (datadir, ['BSD_LICENSE.txt', 'BSD_NOTICE.txt', 'post-install-setup.sh']),
         ]
-    for docs in ['config', ]:
+    for docs in ['config', 'packages/dev_disc','packages/liotad', ]:
         file_list = get_tree_walk(docs)
         if len(file_list):
             for dirpath,files in file_list:
