@@ -74,16 +74,17 @@ class MqttDccComms(DCCComms):
 
         self.client_id = client_id
 
+        if self.client_id is None or self.client_id == "":
+            #  local_uuid generated will be the client ID
+            self.client_id = systemUUID().get_uuid(edge_system_name)
+            log.info("generated local uuid will be the client ID")
+        else:
+            log.info("Client ID is provided by user")
+
         if mqtt_msg_attr is None:
             #  pub-topic and sub-topic will be auto-generated
             log.info("pub-topic and sub-topic is auto-generated")
             self.msg_attr = MqttMessagingAttributes(edge_system_name)
-            if self.client_id is None or self.client_id == "":
-                #  local_uuid generated will be the client ID
-                self.client_id = systemUUID().get_uuid(edge_system_name)
-                log.info("generated local uuid will be the client ID")
-            else:
-                log.info("Client ID is provided by user")
         elif isinstance(mqtt_msg_attr, MqttMessagingAttributes):
             log.info("User configured pub-topic and sub-topic")
             self.msg_attr = mqtt_msg_attr

@@ -51,20 +51,6 @@ class Mqtt():
     MQTT Transport implementation for LIOTA. It internally uses Python Paho library.
     """
 
-    def on_connect(self, client, userdata, flags, rc):
-        """
-        Invoked on successful connection to a broker after connection request
-
-        :param client: The client instance for this callback
-        :param userdata: The private user data as set in Client() or userdata_set()
-        :param flags: Response flags sent by the broker
-        :param rc: The connection result
-        :return:
-        """
-        self._connect_result_code = rc
-        self._disconnect_result_code = sys.maxsize
-        log.info("Connected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
-
     def on_disconnect(self, client, userdata, rc):
         """
         Invoked when disconnected from broker.  Two scenarios are possible:
@@ -167,15 +153,13 @@ class Mqtt():
         if self.clean_session:
             # If user passes client_id, it'll be used.  Otherwise, it is left to the underlying paho
             # to generate random client_id
-            self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
-                                            protocol=getattr(paho, self.protocol), transport=self.transport)
             log.info("clean_session is set to True")
         else:
             #  client_id is either auto-generated or provided by user
-            self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
-                                            protocol=getattr(paho, self.protocol), transport=self.transport)
             log.info("clean_session is set to False")
 
+        self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
+                                        protocol=getattr(paho, self.protocol), transport=self.transport)
         self._connect_result_code = sys.maxsize
         self._disconnect_result_code = sys.maxsize
         self._paho_client.on_message = self.on_message
@@ -183,7 +167,26 @@ class Mqtt():
         self._paho_client.on_subscribe = self.on_subscribe
         self._paho_client.on_connect = self.on_connect
         self._paho_client.on_disconnect = self.on_disconnect
+        self.sub_list = []
         self.connect_soc()
+
+    def on_connect(self, client, userdata, flags, rc):
+        """
+        Invoked on successful connection to a broker after connection request
+
+        :param client: The client instance for this callback
+        :param userdata: The private user data as set in Client() or userdata_set()
+        :param flags: Response flags sent by the broker
+        :param rc: The connection result
+        :return:
+        """
+        self._connect_result_code = rc
+        self._disconnect_result_code = sys.maxsize
+        log.info("Connected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
+        if self.sub_list:
+            for sub_values in self.sub_list:
+                self.subscribe(sub_values[0],sub_values[1],sub_values[2])
+                log.info("Re-Subscribed to topic : {0} after re-connection".format(sub_values[0]))
 
     def connect_soc(self):
         """
@@ -348,7 +351,7 @@ class Mqtt():
         # TODO: Retry logic to be designed
         try:
             mess_info = self._paho_client.publish(topic, message, qos, retain)
-            log.info("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
+            log.debug("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
             log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
         except Exception:
             log.exception("MQTT Publish exception traceback..")
@@ -363,11 +366,25 @@ class Mqtt():
         :return:
         """
         try:
+            self.sub_list.append([topic,qos,callback])
             subscribe_response = self._paho_client.subscribe(topic, qos)
             self._paho_client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
         except Exception:
             log.exception("MQTT subscribe exception traceback..")
+
+    def unsubscribe(self, topic):
+        """
+        Unsubscribes to a topic
+
+        :param topic: Unsubscribe topic
+        :return:
+        """
+        try:
+            unsubscribe_response = self._paho_client.unsubscribe(topic)
+            log.info("Topic unsubscribed with information: " + str(unsubscribe_response))
+        except Exception:
+            log.exception("MQTT unsubscribe exception traceback..")
 
     def disconnect(self):
         """
