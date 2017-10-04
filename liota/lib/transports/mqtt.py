@@ -366,7 +366,8 @@ class Mqtt():
         :return:
         """
         try:
-            self.sub_list.append([topic,qos,callback])
+            if [topic,qos,callback] not in self.sub_list:
+                self.sub_list.append([topic,qos,callback])
             subscribe_response = self._paho_client.subscribe(topic, qos)
             self._paho_client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
