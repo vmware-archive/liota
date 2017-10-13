@@ -209,7 +209,7 @@ class Mqtt():
                 log.error("Error : CA certificate path is missing")
                 raise ValueError("Error : CA certificate path is missing")
             else:
-                if not (os.path.exists(self.identity.root_ca_cert)):
+                if self.identity.root_ca_cert and not (os.path.exists(self.identity.root_ca_cert)):
                     log.error("Error : Wrong CA certificate path")
                     raise ValueError("Error : Wrong CA certificate path")
 
