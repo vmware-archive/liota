@@ -40,7 +40,7 @@ class TLSConf:
     This class encapsulates TLS config related parameters.
     """
 
-    def __init__(self, cert_required, tls_version, cipher):
+    def __init__(self, cert_required, tls_version, cipher, crl_path=None):
         """
         :param cert_required: Defines the certificate requirements
         :param tls_version: Version of SSL/TLS protocol to be used
@@ -50,4 +50,5 @@ class TLSConf:
         self.cert_required = cert_required
         self.tls_version = tls_version
         self.cipher = cipher
+        self.crl_path = crl_path
         log.debug("Created TLSConf.")

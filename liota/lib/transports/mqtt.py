@@ -191,22 +191,41 @@ class Mqtt():
         # Set up TLS support
         if self.tls_conf:
 
+            # Creating the tls context
+            if ssl is None:
+                log.error("This platform has no SSL/TLS")
+                raise ValueError("This platform has no SSL/TLS")
+
+            if not hasattr(ssl, 'SSLContext'):
+                # Require Python version that has SSL context support in standard library
+                log.error("Python 2.7.9 and 3.2 are the minimum supported versions for TLS")
+                raise ValueError("Python 2.7.9 and 3.2 are the minimum supported versions for TLS")
+
             # Validate CA certificate path
-            if self.identity.root_ca_cert:
-                if not(os.path.exists(self.identity.root_ca_cert)):
-                    log.error("Error : Wrong CA certificate path.")
-                    raise ValueError("Error : Wrong CA certificate path.")
-            else:
+            if self.identity.root_ca_cert is None and not hasattr(ssl.SSLContext, 'load_default_certs'):
                 log.error("Error : CA certificate path is missing")
                 raise ValueError("Error : CA certificate path is missing")
+            else:
+                if not(os.path.exists(self.identity.root_ca_cert)):
+                    log.error("Error : Wrong CA certificate path")
+                    raise ValueError("Error : Wrong CA certificate path")
+
+            if self.tls_conf.tls_version is None:
+                tls_version = ssl.PROTOCOL_TLSv1
+                # If the python version supports it, use highest TLS version automatically
+                if hasattr(ssl, "PROTOCOL_TLS"):
+                    tls_version = ssl.PROTOCOL_TLS
+            else:
+                tls_version = getattr(ssl, self.tls_conf.tls_version)
+            context = ssl.SSLContext(tls_version)
 
             # Validate client certificate path
             if self.identity.cert_file:
                 if os.path.exists(self.identity.cert_file):
                     client_cert_available = True
                 else:
-                    log.error("Error : Wrong client certificate path.")
-                    raise ValueError("Error : Wrong client certificate path.")
+                    log.error("Error : Wrong client certificate path")
+                    raise ValueError("Error : Wrong client certificate path")
             else:
                 client_cert_available = False
 
@@ -223,31 +242,58 @@ class Mqtt():
             '''
                 Multiple conditions for certificate validations
                 # 1. Both Client certificate and key file should be present
-                # 2. If both are not there proceed without client certificate and key
-                # 3. If client certificate is not there throw an error
-                # 4. If client key is not there throw an error
+                # 2. If client certificate is not there throw an error
+                # 3. If client key is not there throw an error
+                # 4. If both are not there proceed without client certificate and key
             '''
-
             if client_cert_available and client_key_available:
-                log.debug("Certificates : ", self.identity.root_ca_cert, self.identity.cert_file,
-                          self.identity.key_file)
-
-                self._paho_client.tls_set(self.identity.root_ca_cert, self.identity.cert_file,
-                                          self.identity.key_file,
-                                          cert_reqs=getattr(ssl, self.tls_conf.cert_required),
-                                          tls_version=getattr(ssl, self.tls_conf.tls_version),
-                                          ciphers=self.tls_conf.cipher)
-            elif not client_cert_available and not client_key_available:
-                self._paho_client.tls_set(self.identity.root_ca_cert,
-                                          cert_reqs=getattr(ssl, self.tls_conf.cert_required),
-                                          tls_version=getattr(ssl, self.tls_conf.tls_version),
-                                          ciphers=self.tls_conf.cipher)
+                context.load_cert_chain(self.identity.cert_file, self.identity.key_file)
             elif not client_cert_available and client_key_available:
                 log.error("Error : Client key found, but client certificate not found")
                 raise ValueError("Error : Client key found, but client certificate not found")
+            elif client_cert_available and not client_key_available:
+                 log.error("Error : Client certificate found, but client key not found")
+                 raise ValueError("Error : Client certificate found, but client key not found")
             else:
-                log.error("Error : Client key found, but client certificate not found")
-                raise ValueError("Error : Client certificate found, but client key not found")
+                log.info("Client Certificate and Client Key are not provided")
+
+            if getattr(ssl, self.tls_conf.cert_required) == ssl.CERT_NONE and hasattr(context, 'check_hostname'):
+                context.check_hostname = False
+
+            context.verify_mode = ssl.CERT_REQUIRED if self.tls_conf.cert_required is None else getattr(ssl, self.tls_conf.cert_required)
+
+            if self.identity.root_ca_cert is not None:
+                context.load_verify_locations(self.identity.root_ca_cert)
+            else:
+                context.load_default_certs()
+
+            if self.tls_conf.ciphers is not None:
+                context.set_ciphers(self.tls_conf.ciphers)
+
+            # Setting the verify_flags to VERIFY_CRL_CHECK_CHAIN in this mode
+            # certificate revocation lists (CRLs) of all certificates in the
+            # peer cert chain are checked if the path of CRLs in PEM or DER format
+            # is specified
+
+            if self.tls_conf.crl_path is not None:
+                if os.path.exists(self.tls_conf.crl_path):
+                    context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
+                    context.load_verify_locations(cafile=self.tls_conf.crl_path)
+                else:
+                    log.error("Error : Wrong Client CRL path")
+                    raise ValueError("Error : Wrong Client CRL path")
+
+            # Setting the tls context
+            self._paho_client.tls_set_context(context)
+
+            if self.tls_conf.cert_reqs != ssl.CERT_NONE:
+                # Default to secure, sets context.check_hostname attribute
+                # if available
+                self._paho_client.tls_insecure_set(False)
+            else:
+                # But with ssl.CERT_NONE, we can not check_hostname
+                self._paho_client.tls_insecure_set(True)
+
             log.info("TLS support is set up.")
 
         # Set up username-password
