@@ -290,7 +290,7 @@ class Mqtt():
             # Setting the tls context
             self._paho_client.tls_set_context(context)
 
-            if self.tls_conf.cert_reqs != ssl.CERT_NONE:
+            if getattr(ssl, self.tls_conf.cert_required) != ssl.CERT_NONE:
                 # Default to secure, sets context.check_hostname attribute
                 # if available
                 self._paho_client.tls_insecure_set(False)
