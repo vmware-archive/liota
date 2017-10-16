@@ -298,8 +298,6 @@ class Mqtt():
                 # But with ssl.CERT_NONE, we can not check_hostname
                 self._paho_client.tls_insecure_set(True)
 
-            log.info("TLS support is set up.")
-
         # Set up username-password
         if self.enable_authentication:
             if self.identity is None:
