@@ -297,22 +297,26 @@ class Mqtt():
             else:
                 # But with ssl.CERT_NONE, we can not check_hostname
                 self._paho_client.tls_insecure_set(True)
+        else:
+            log.info("TLS configuration is not set")
+
 
         # Set up username-password
         if self.enable_authentication:
             if self.identity is None:
                 log.error("Identity required to be set")
                 raise ValueError("Identity required to be set")
-
-            if self.identity.username is None:
-                log.error("Username not found")
-                raise ValueError("Username not found")
-
-            elif not self.identity.password:
-                log.error("Password not found")
-                raise ValueError("Password not found")
             else:
-                self._paho_client.username_pw_set(self.identity.username, self.identity.password)
+                if self.identity.username is None:
+                    log.error("Username not found")
+                    raise ValueError("Username not found")
+                elif self.identity.password is None:
+                    log.error("Password not found")
+                    raise ValueError("Password not found")
+                else:
+                    self._paho_client.username_pw_set(self.identity.username, self.identity.password)
+        else:
+            log.info("Authentication is disabled")
 
         if self.qos_details:
             # Set QoS parameters
