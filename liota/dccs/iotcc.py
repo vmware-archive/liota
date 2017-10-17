@@ -41,7 +41,6 @@ from time import gmtime, strftime
 from threading import Lock
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
-from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
 from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir, read_liota_config
 from liota.lib.utilities.si_unit import parse_unit
@@ -71,7 +70,6 @@ class IotControlCenter(DataCenterComponent):
         thread.start()
         # Wait for Subscription to be complete and then proceed to publish message
         time.sleep(0.5)
-        self.proto = HelixProtocol(self.comms, self.comms.identity.username, self.comms.identity.password)
         self._iotcc_json = self._create_iotcc_json()
         self._iotcc_json_load_retry = int(read_liota_config('IOTCC_PATH', 'iotcc_load_retry'))
         self.counter = 0
@@ -80,26 +78,6 @@ class IotControlCenter(DataCenterComponent):
         # Liota internal entity file system path special for iotcc
         self.entity_file_path = self._get_file_storage_path("entity_file_path")
         self.file_ops_lock = Lock()
-        try:
-            def on_response(msg):
-                log.debug("Received msg: {0}".format(msg))
-                json_msg = json.loads(msg)
-                self.proto.on_receive(json_msg)
-                if json_msg["type"] == "connection_response":
-                    if json_msg["body"]["result"] == "succeeded":
-                        log.info("Connection verified")
-                    else:
-                        raise Exception("Helix Protocol Version mismatch")
-                else:
-                    log.debug("Processed msg: {0}".format(json_msg["type"]))
-                    on_response(self.recv_msg_queue.get(True, 300))
-
-            # Block on Queue for not more then 300 seconds else it will raise an exception
-            on_response(self.recv_msg_queue.get(True, 300))
-        except Exception as error:
-            self.comms.client.disconnect()
-            log.error("HelixProtocolException: " + repr(error))
-            raise Exception("HelixProtocolException")
 
     def register(self, entity_obj):
         """ Register the objects
@@ -118,6 +96,8 @@ class IotControlCenter(DataCenterComponent):
                     log.debug("Received msg: {0}".format(msg))
                     json_msg = json.loads(msg)
                     log.debug("Processed msg: {0}".format(json_msg["type"]))
+                    if json_msg["type"] == "UNSUPPORTED_VERSION":
+                         raise Exception("Exception in registering resource, version mismatch. Response received from server:" + json_msg["body"])
                     if json_msg["type"] == "create_or_find_resource_response" and json_msg["body"]["uuid"] != "null" and \
                                     json_msg["body"]["id"] == entity_obj.entity_id:
                         log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
@@ -125,8 +105,9 @@ class IotControlCenter(DataCenterComponent):
                     else:
                         log.info("Waiting for resource creation")
                         on_response(self.recv_msg_queue.get(True, 300))
-                except:
-                    raise Exception("Exception while registering resource")
+                except Exception as err:
+                    log.exception("Exception while registering resource")
+                    raise err
 
             if entity_obj.entity_type == "EdgeSystem":
                 entity_obj.entity_type = "HelixGateway"
@@ -206,6 +187,7 @@ class IotControlCenter(DataCenterComponent):
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
             "transactionID": msg_id,
+            "version": "1.0",
             "type": "create_or_find_resource_request",
             "body": {
                 "kind": res_kind,
@@ -217,6 +199,7 @@ class IotControlCenter(DataCenterComponent):
     def _relationship(self, msg_id, parent_res_uuid, child_res_uuid):
         return {
             "transactionID": msg_id,
+            "version": "1.0",
             "type": "create_relationship_request",
             "body": {
                 "parent": parent_res_uuid,
@@ -227,6 +210,7 @@ class IotControlCenter(DataCenterComponent):
     def _properties(self, msg_id, entity_type, entity_id, entity_name, timestamp, properties):
         msg = {
             "transationID": msg_id,
+            "version": "1.0",
             "type": "add_properties",
             "body": {
                 "kind": entity_type,
@@ -255,6 +239,7 @@ class IotControlCenter(DataCenterComponent):
             return
         return json.dumps({
             "type": "add_stats",
+            "version": "1.0",
             "body": {
                 "kind": reg_metric.parent.ref_entity.entity_type,
                 "id": reg_metric.parent.ref_entity.entity_id,
@@ -606,6 +591,7 @@ class IotControlCenter(DataCenterComponent):
     def _unregistration(self, msg_id, ref_entity):
         return {
             "transactionID": msg_id,
+            "version": "1.0",
             "type": "remove_resource_request",
             "body": {
                 "kind": ref_entity.entity_type,
