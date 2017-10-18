@@ -57,6 +57,7 @@ class IotControlCenter(DataCenterComponent):
 
     def __init__(self, con):
         log.info("Logging into DCC")
+        self._version = "1.0"
         self.comms = con
         if not self.comms.identity.username:
             log.error("Username not found")
@@ -95,7 +96,8 @@ class IotControlCenter(DataCenterComponent):
                 try:
                     log.debug("Received msg: {0}".format(msg))
                     json_msg = json.loads(msg)
-                    log.debug("Processed msg: {0}".format(json_msg["type"]))
+                    log.debug("Processing msg: {0}".format(json_msg["type"]))
+                    self._check_version(json_msg)
                     if json_msg["type"] == "UNSUPPORTED_VERSION":
                          raise Exception("Exception in registering resource, version mismatch. Response received from server:" + json_msg["body"])
                     if json_msg["type"] == "create_or_find_resource_response" and json_msg["body"]["uuid"] != "null" and \
@@ -131,6 +133,10 @@ class IotControlCenter(DataCenterComponent):
 
             return RegisteredEntity(entity_obj, self, self.reg_entity_id)
 
+    def _check_version(self, json_msg):
+	if json_msg["version"] != self._version:
+            raise Exception("CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS:" + self._version + ". SERVER VERSION IS:" + json_msg["version"])
+
     def unregister(self, entity_obj):
         """ Unregister the objects
         """
@@ -140,7 +146,8 @@ class IotControlCenter(DataCenterComponent):
             try:
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
-                log.debug("Processed msg: {0}".format(json_msg["type"]))
+                log.debug("Processing msg: {0}".format(json_msg["type"]))
+                self._check_version(json_msg)
                 if json_msg["type"] == "remove_resource_response" and json_msg["body"]["result"] == "succeeded":
                     log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
                 else:
@@ -187,7 +194,7 @@ class IotControlCenter(DataCenterComponent):
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
             "transactionID": msg_id,
-            "version": "1.0",
+            "version": self._version,
             "type": "create_or_find_resource_request",
             "body": {
                 "kind": res_kind,
@@ -199,7 +206,7 @@ class IotControlCenter(DataCenterComponent):
     def _relationship(self, msg_id, parent_res_uuid, child_res_uuid):
         return {
             "transactionID": msg_id,
-            "version": "1.0",
+            "version": self._version,
             "type": "create_relationship_request",
             "body": {
                 "parent": parent_res_uuid,
@@ -210,7 +217,7 @@ class IotControlCenter(DataCenterComponent):
     def _properties(self, msg_id, entity_type, entity_id, entity_name, timestamp, properties):
         msg = {
             "transationID": msg_id,
-            "version": "1.0",
+            "version": self._version,
             "type": "add_properties",
             "body": {
                 "kind": entity_type,
@@ -239,7 +246,7 @@ class IotControlCenter(DataCenterComponent):
             return
         return json.dumps({
             "type": "add_stats",
-            "version": "1.0",
+            "version": self._version,
             "body": {
                 "kind": reg_metric.parent.ref_entity.entity_type,
                 "id": reg_metric.parent.ref_entity.entity_id,
@@ -591,7 +598,7 @@ class IotControlCenter(DataCenterComponent):
     def _unregistration(self, msg_id, ref_entity):
         return {
             "transactionID": msg_id,
-            "version": "1.0",
+            "version": self._version,
             "type": "remove_resource_request",
             "body": {
                 "kind": ref_entity.entity_type,
