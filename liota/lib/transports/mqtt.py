@@ -32,7 +32,10 @@
 
 import logging
 import os
-import ssl
+try:
+    import ssl
+except ImportError:
+    ssl = None
 import sys
 import time
 
@@ -199,11 +202,6 @@ class Mqtt():
                 log.error("This platform has no SSL/TLS")
                 raise ValueError("This platform has no SSL/TLS")
 
-            if not hasattr(ssl, 'SSLContext'):
-                # Require Python version that has SSL context support in standard library
-                log.error("Python 2.7.9 and 3.2 are the minimum supported versions for TLS")
-                raise ValueError("Python 2.7.9 and 3.2 are the minimum supported versions for TLS")
-
             # Validate CA certificate path
             if self.identity.root_ca_cert is None and not hasattr(ssl.SSLContext, 'load_default_certs'):
                 log.error("Error : CA certificate path is missing")
@@ -214,7 +212,7 @@ class Mqtt():
                     raise ValueError("Error : Wrong CA certificate path")
 
             if self.tls_conf.tls_version is None:
-                tls_version = ssl.PROTOCOL_TLSv1
+                tls_version = ssl.PROTOCOL_TLSv1_2
                 # If the python version supports it, use highest TLS version automatically
                 if hasattr(ssl, "PROTOCOL_TLS"):
                     tls_version = ssl.PROTOCOL_TLS

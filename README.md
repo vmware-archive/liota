@@ -37,6 +37,7 @@ Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols
 * TLSConf class encapsulates parameters related to TLS configuration.
 * CRLs(Certificate Revocation Lists) check has been implemented: [VRIFY_CRL_CHECK_CHAIN](https://docs.python.org/2/library/ssl.html#ssl.VERIFY_CRL_CHECK_CHAIN) in this mode CRLs of all certificates in the peer cert chain are checked.
  In order to enable the CRLs check pass the parameter 'crl_path' during TLSConf initialization, it requires a valid path to CRL in PEM format.
+ Please refer the example [AWS IoT](https://github.com/vmware/liota/blob/master/packages/aws_iot.py) for more details.
 
 
 ## Package Manager
