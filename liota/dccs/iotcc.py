@@ -568,6 +568,7 @@ class IotControlCenter(DataCenterComponent):
                 last_dtime = datetime.datetime.strptime(tmp_dict["Entity_Timestamp"], "%Y-%m-%dT%H:%M:%S")
                 if (last_dtime <= self.boottime):
                     list_prop = self.get_properties(reg_entity_id)
+                    # merge property info from get_properties() into our local entity record
                     tmp_dict = self.merge_prop_dict_list(tmp_dict, list_prop)
             if ((('entity type' in tmp_dict) and (tmp_dict["entity type"] == entity_type)) and
                 (('name' in tmp_dict) and (tmp_dict["name"] == entity_name)) and
@@ -661,15 +662,15 @@ class IotControlCenter(DataCenterComponent):
                 log.debug("Processed msg: {0}".format(json_msg["type"]))
                 if json_msg["type"] == "get_properties_response" and json_msg["body"]["uuid"] != "null" and \
                                 json_msg["body"]["uuid"] == resource_uuid:
-                    log.info("FOUND PROPERTIE LIST: {0}".format(json_msg["body"]["propertyList"]))
+                    log.info("FOUND PROPERTY LIST: {0}".format(json_msg["body"]["propertyList"]))
                     self.prop_list = json_msg["body"]["propertyList"]
-                    log.info("prop_list:{0}".format(self.prop_list))
                 else:
                     log.info("Waiting for getting properties")
-                    on_response(self.recv_msg_queue.get(True,30))
+                    on_response(self.recv_msg_queue.get(True,300))
             except:
-                raise Exception("Exception while getting properties")
+                log.exception("Exception while getting properties")
+                return None
 
         self.comms.send(json.dumps(self._get_properties(self.next_id(), resource_uuid)))
-        on_response(self.recv_msg_queue.get(True,30))
+        on_response(self.recv_msg_queue.get(True,300))
         return self.prop_list
