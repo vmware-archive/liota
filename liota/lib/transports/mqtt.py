@@ -194,21 +194,17 @@ class Mqtt():
         if self.tls_conf:
 
             if self.identity is None:
-                log.error("Identity required to be set")
                 raise ValueError("Identity required to be set")
 
             # Creating the tls context
             if ssl is None:
-                log.error("This platform has no SSL/TLS")
                 raise ValueError("This platform has no SSL/TLS")
 
             # Validate CA certificate path
             if self.identity.root_ca_cert is None and not hasattr(ssl.SSLContext, 'load_default_certs'):
-                log.error("Error : CA certificate path is missing")
                 raise ValueError("Error : CA certificate path is missing")
             else:
                 if self.identity.root_ca_cert and not (os.path.exists(self.identity.root_ca_cert)):
-                    log.error("Error : Wrong CA certificate path")
                     raise ValueError("Error : Wrong CA certificate path")
 
             if self.tls_conf.tls_version is None:
@@ -225,7 +221,6 @@ class Mqtt():
                 if os.path.exists(self.identity.cert_file):
                     client_cert_available = True
                 else:
-                    log.error("Error : Wrong client certificate path")
                     raise ValueError("Error : Wrong client certificate path")
             else:
                 client_cert_available = False
@@ -235,7 +230,6 @@ class Mqtt():
                 if os.path.exists(self.identity.key_file):
                     client_key_available = True
                 else:
-                    log.error("Error : Wrong client key path.")
                     raise ValueError("Error : Wrong client key path.")
             else:
                 client_key_available = False
@@ -250,10 +244,8 @@ class Mqtt():
             if client_cert_available and client_key_available:
                 context.load_cert_chain(self.identity.cert_file, self.identity.key_file)
             elif not client_cert_available and client_key_available:
-                log.error("Error : Client key found, but client certificate not found")
                 raise ValueError("Error : Client key found, but client certificate not found")
             elif client_cert_available and not client_key_available:
-                log.error("Error : Client certificate found, but client key not found")
                 raise ValueError("Error : Client certificate found, but client key not found")
             else:
                 log.info("Client Certificate and Client Key are not provided")
@@ -282,7 +274,6 @@ class Mqtt():
                     context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
                     context.load_verify_locations(cafile=self.tls_conf.crl_path)
                 else:
-                    log.error("Error : Wrong Client CRL path")
                     raise ValueError("Error : Wrong Client CRL path")
 
             # Setting the tls context
@@ -302,14 +293,11 @@ class Mqtt():
         # Set up username-password
         if self.enable_authentication:
             if self.identity is None:
-                log.error("Identity required to be set")
                 raise ValueError("Identity required to be set")
             else:
                 if self.identity.username is None:
-                    log.error("Username not found")
                     raise ValueError("Username not found")
                 elif self.identity.password is None:
-                    log.error("Password not found")
                     raise ValueError("Password not found")
                 else:
                     self._paho_client.username_pw_set(self.identity.username, self.identity.password)
@@ -392,7 +380,6 @@ class Mqtt():
             ten_ms_count += 1
             time.sleep(0.01)
         if self._disconnect_result_code == sys.maxsize:
-            log.error("Disconnect timeout.")
             raise Exception("Disconnection Timeout")
         elif self._disconnect_result_code == 0:
             log.info("Disconnected from MQTT Broker.")
@@ -400,8 +387,6 @@ class Mqtt():
             #  Disconnect is successful.  Stopping background network loop.
             self._paho_client.loop_stop()
         else:
-            log.error("Disconnect error with result code : {0} : {1} ".
-                      format(str(self._disconnect_result_code), paho.connack_string(self._disconnect_result_code)))
             raise Exception("Disconnect error with result code : {0} : {1} ".
                             format(str(self._disconnect_result_code),
                                    paho.connack_string(self._disconnect_result_code)))
@@ -476,14 +461,11 @@ class MqttMessagingAttributes:
 
         # General validation
         if pub_qos not in range(0, 3) or sub_qos not in range(0, 3):
-            log.error("QoS should either be 0 or 1 or 2")
             raise ValueError("QoS should either be 0 or 1 or 2")
         if not isinstance(pub_retain, bool):
-            log.error("pub_retain must be a boolean")
             raise ValueError("pub_retain must be a boolean")
         if sub_callback is not None:
             if not callable(sub_callback):
-                log.error("sub_callback should either be None or callable")
                 raise ValueError("sub_callback should either be None or callable")
 
         log.info("Pub Topic is:{0}".format(self.pub_topic))
