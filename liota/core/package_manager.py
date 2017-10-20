@@ -252,15 +252,13 @@ class PackageThread(Thread):
 
     def _cmd_handler_list(self, parameter):
         if parameter == "packages" or parameter == "pkg":
-            log.warning("List of packages - \n\t%s"
-                        % "\n\t".join(sorted(
-                            self._packages_loaded.keys()
-                        ))
-                        )
+            loaded_list = sorted(self._packages_loaded.keys())
+            log.warning("List of packages - \t%s" % "\t".join(loaded_list))
+            print "loaded packages:", ",".join(loaded_list)
             return
         if parameter == "resources" or parameter == "res":
-            log.warning("List of resources - \n\t%s"
-                        % "\n\t".join(sorted(
+            log.warning("List of resources - \t%s"
+                        % "\t".join(sorted(
                             self._resource_registry._registry.keys()
                         ))
                         )
@@ -268,8 +266,8 @@ class PackageThread(Thread):
         if parameter == "threads" or parameter == "th":
             import threading
 
-            log.warning("Active threads - \n\t%s"
-                        % "\n\t".join(map(
+            log.warning("Active threads - \t%s"
+                        % "\t".join(map(
                             lambda tref: "%s: %016x %s %s" % (
                                 tref.name,
                                 tref.ident,
@@ -289,7 +287,19 @@ class PackageThread(Thread):
     # This method is used to handle statistical commands
 
     def _cmd_handler_stat(self, parameter):
-        if parameter == "metrics" or parameter == "met":
+        if parameter[0] == "package" or parameter[0] == "pkg":
+            if (len(parameter) != 2):
+                log.warning("package name is not specified")
+                return
+            query_pkg = parameter[1]
+            if query_pkg in self._packages_loaded.keys():
+                log.info("packages {0} is loaded".format(query_pkg))
+                print "package " + query_pkg + " is loaded"
+            else:
+                log.info("packages {0} is not loaded".format(query_pkg))
+                print "package " + query_pkg + " is not loaded"
+            return
+        if parameter[0] == "metrics" or parameter[0] == "met":
             from liota.core.metric_handler \
                 import event_ds, collect_queue, send_queue, \
                 CollectionThreadPool, collect_thread_pool
@@ -303,14 +313,14 @@ class PackageThread(Thread):
                 stats[2] = str(collect_queue.qsize())
             if isinstance(collect_thread_pool, CollectionThreadPool):
                 stats[3] = collect_thread_pool.get_stats_working()[0]
-            log.warning(("Number of metrics in - \n\t"
-                         + "Waiting queue: %s\n\t"
-                         + "Sending queue: %s\n\t"
-                         + "Collecting queue: %s\n\t"
+            log.warning(("Number of metrics in - \t"
+                         + "Waiting queue: %s\t"
+                         + "Sending queue: %s\t"
+                         + "Collecting queue: %s\t"
                          + "Collecting threads: %s"
                          ) % tuple(stats))
             return
-        if parameter == "collection_threads" or parameter == "col":
+        if parameter[0] == "collection_threads" or parameter[0] == "col":
             from liota.core.metric_handler \
                 import CollectionThreadPool, collect_thread_pool
 
@@ -320,14 +330,14 @@ class PackageThread(Thread):
                     lambda n: str(n),
                     collect_thread_pool.get_stats_working()
                 )
-            log.warning(("Status of collection threads - \n\t"
-                         + "Collecting: %s\n\t"
-                         + "Alive: %s\n\t"
-                         + "Pool: %s\n\t"
+            log.warning(("Status of collection threads - \t"
+                         + "Collecting: %s\t"
+                         + "Alive: %s\t"
+                         + "Pool: %s\t"
                          + "Capacity: %s"
                          ) % tuple(stats))
             return
-        if parameter == "threads" or parameter == "th":
+        if parameter[0] == "threads" or parameter[0] == "th":
             import threading
 
             log.warning("Count of active threads: %d"
@@ -385,7 +395,10 @@ class PackageThread(Thread):
                             list_packages.append({list_arg[i]: list_arg[i+1]})
                             i += 2
                         if command == "load":
-                            self._package_load_list(list_packages, autoload_flag)
+                            load_success, list_failed, list_succeeded = \
+                                self._package_load_list(list_packages, autoload_flag)
+                            print "succeeded to load: [%s]" % ', '.join(list_succeeded)
+                            print "failed to load: [%s]" % ', '.join(list_failed)
                         elif command == "update":
                             self._package_update_list(list_packages, autoload_flag)
                         else:
@@ -399,11 +412,20 @@ class PackageThread(Thread):
                         continue
                     checksum = msg[2 + offset]
                     if command == "load":
-                        self._package_load(file_name, checksum, autoload_flag)
+                        if self._package_load(file_name, checksum, autoload_flag) is None:
+                            print "failed to load:", file_name
+                        else:
+                            print "succeeded to load:", file_name
                     elif command == "reload":
-                        self._package_reload(file_name, checksum, autoload_flag)
+                        if self._package_reload(file_name, checksum, autoload_flag) is None:
+                            print "failed to reload:", file_name
+                        else:
+                            print "succeeded to reload:", file_name
                     elif command == "update":
-                        self._package_update(file_name, checksum, autoload_flag)
+                        if self._package_update(file_name, checksum, autoload_flag) is None:
+                            print "failed to update:", file_name
+                        else:
+                            print "succeeded to update:", file_name
                     else:  # should not happen
                         raise RuntimeError("Command category error")
             elif command in ["unload", "delete"]:
@@ -426,9 +448,15 @@ class PackageThread(Thread):
                         continue
                     file_name = msg[1]
                     if command == "unload":
-                        self._package_unload(file_name)
+                        if (self._package_unload(file_name) == True):
+                            print "succeeded to unload:", file_name
+                        else:
+                            print "failed to unload:", file_name
                     elif command == "delete":
-                        self._package_delete(file_name)
+                        if (self._package_delete(file_name) == True):
+                            print "succeeded to delete:", file_name
+                        else:
+                            print "failed to delete:", file_name
                     else:  # should not happen
                         raise RuntimeError("Command category error")
             elif command == "list":
@@ -439,10 +467,10 @@ class PackageThread(Thread):
                     self._cmd_handler_list(msg[1])
             elif command == "stat":
                 with package_lock:
-                    if len(msg) != 2:
+                    if len(msg) < 2:
                         log.warning("Invalid format of command: %s" % command)
                         continue
-                    self._cmd_handler_stat(msg[1])
+                    self._cmd_handler_stat(msg[1:])
             elif command == "load_auto":
                 with package_lock:
                     self._package_load_auto()
@@ -694,8 +722,12 @@ class PackageThread(Thread):
 
         klass = getattr(module_loaded, "PackageClass")
         package_record = PackageRecord(file_name)
-        if not package_record.set_instance(klass()):
-            log.error("Unexpected failure initializing package")
+        try:  # Create instance
+            if not package_record.set_instance(klass()):
+                log.error("Unexpected failure initializing package")
+                return None
+        except:
+            log.exception("Exception in PackageClass instance creation")
             return None
         try:  # Run created instance
             package_record.get_instance().run(
@@ -822,7 +854,7 @@ class PackageThread(Thread):
         if file_name not in self._packages_loaded:
             log.warning("Could not reload package - not loaded: %s"
                         % file_name)
-            return False
+            return None
 
         # Logic of reload
         track_list = []
@@ -857,10 +889,10 @@ class PackageThread(Thread):
                     self._write_package_into_autoload(file_name, package_record.get_sha1().hexdigest())
                 return package_record
             else:
-                return False
+                return None
         else:
             log.warning("Could not unload package: %s" % file_name)
-        return False
+        return None
 
     #-----------------------------------------------------------------------
     # This method is called to update package.
@@ -911,14 +943,13 @@ class PackageThread(Thread):
                 # if needed, guarantee package name in automatically load file
                 if (autoload_flag == True):
                     self._write_package_into_autoload(file_name, package_record.get_sha1().hexdigest())
+                log.info("Reloaded and updated package: %s" % file_name)
                 return package_record
             else:
-                return False
+                return None
         else:
             log.warning("Could not unload package: %s" % file_name)
-        return False
-
-        log.info("Reloaded and updated package: %s" % file_name)
+            return None
 
     #-----------------------------------------------------------------------
     # This method is called to load a list of packages.
@@ -929,22 +960,27 @@ class PackageThread(Thread):
 
     def _package_load_list(self, package_list, autoload_flag=False):
         list_failed = []
+        list_succeeded = []
         for file_string in package_list:
             log.debug("Attempting to load packages:{0}".format(file_string))
             try:
                 for file_name, checksum in file_string.items():
                     if file_name in self._packages_loaded:
+                        list_succeeded.append(file_name)
                         continue
                     if not self._package_load(file_name, checksum, autoload_flag):
                         list_failed.append(file_name)
+                    else:
+                        list_succeeded.append(file_name)
             except:
                 log.exception("_package_load_list exception")
+
         if len(list_failed) > 0:
             log.warning("Some packages specified in list failed to load: %s"
                         % " ".join(list_failed))
         else:
             log.info("Batch load successful")
-        return len(list_failed) < 1
+        return (len(list_failed) < 1), list_failed, list_succeeded
 
     #-----------------------------------------------------------------------
     # This method is called to unload a list of packages.
@@ -1035,7 +1071,9 @@ class PackageThread(Thread):
 
         # Load packages in a batch
         if len(package_startup_list) > 0:
-            self._package_load_list(package_startup_list)
+            return self._package_load_list(package_startup_list)
+        log.info("No package is needed to be loaded")
+        return True, [], []
 
     #-----------------------------------------------------------------------
     # This method is called to delete package. All source files and compiled

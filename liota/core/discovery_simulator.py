@@ -276,13 +276,13 @@ class SimulatorThread(Thread):
 
             stats[5] = str(self._config['package_path']) + '\n\t'
             stats[6] = str(self._config['dev_file_path']) + '\n\t'
-            log.warning(("List of configurations - \n\t"
-                        + "cmd_msg_pipe: %s\n\t"
-                        + "endpoint_list: %s\n\t"
-                        + "type_dcc_map: %s\n\t"
-                        + "type_key_map: %s\n\t"
-                        + "type_tuple_key_dcc_pkg: %s\n\t"
-                        + "dev_file_path: %s\n\t"
+            log.warning(("List of configurations - \t"
+                        + "cmd_msg_pipe: %s\t"
+                        + "endpoint_list: %s\t"
+                        + "type_dcc_map: %s\t"
+                        + "type_key_map: %s\t"
+                        + "type_tuple_key_dcc_pkg: %s\t"
+                        + "dev_file_path: %s\t"
                         + "package_path: %s"
                         ) % tuple(stats))
             return
@@ -290,8 +290,8 @@ class SimulatorThread(Thread):
         if parameter == "threads" or parameter == "th":
             import threading
 
-            log.warning("Active threads - \n\t%s"
-                        % "\n\t".join(map(
+            log.warning("Active threads - \t%s"
+                        % "\t".join(map(
                             lambda tref: "%s: %016x %s %s" % (
                                 tref.name,
                                 tref.ident,
