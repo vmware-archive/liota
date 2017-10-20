@@ -351,7 +351,7 @@ class Mqtt():
         # TODO: Retry logic to be designed
         try:
             mess_info = self._paho_client.publish(topic, message, qos, retain)
-            log.debug("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
+            log.info("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
             log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
         except Exception:
             log.exception("MQTT Publish exception traceback..")

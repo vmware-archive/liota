@@ -189,8 +189,7 @@ class IotControlCenter(DataCenterComponent):
             self.comms.send(json.dumps(self._relationship(self.next_id(),
                                                           reg_entity_parent.reg_entity_id,
                                                           reg_entity_child.reg_entity_id)))
-            if hasattr(reg_entity_parent, 'sys_properties') and reg_entity_parent.sys_properties:
-                self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
+            self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
 
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {

@@ -1,6 +1,7 @@
 # Liota User Packages
 
-Basic user packages which we believe should exist on the edge system to publish the basic health stats to Pulse IoT Control Center
+Basic user packages which we believe should exist on the edge system to publish the basic health stats to Pulse IoT Control Center.
+These packages should be placed at path "/usr/lib/liota/packages".
 
 * general_edge_system.py
 
