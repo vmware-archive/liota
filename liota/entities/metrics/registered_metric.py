@@ -121,7 +121,10 @@ class RegisteredMetric(RegisteredEntity):
         if not self.values:
             # No values measured since last report_data
             return True
-        self.ref_dcc.publish(self)
+        try:
+            self.ref_dcc.publish(self)
+        except Exception:
+            log.error("Exception while publishing message", exc_info=True)
 
     def __str__(self, *args, **kwargs):
         return str(self.ref_entity.name) + ":" + str(self._next_run_time)

@@ -342,10 +342,13 @@ class Mqtt():
         # TODO: Retry logic to be designed
         try:
             mess_info = self._paho_client.publish(topic, message, qos, retain)
-            log.info("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
-            log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
+            log.debug("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
+            if mess_info.rc == 0:
+                log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
+            else:
+                raise Exception("MQTT Publish exception:{0} result code".format(mess_info.rc))
         except Exception:
-            log.exception("MQTT Publish exception traceback..")
+            raise Exception("MQTT Publish exception")
 
     def subscribe(self, topic, qos, callback):
         """
