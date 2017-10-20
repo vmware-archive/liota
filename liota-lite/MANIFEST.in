@@ -2,3 +2,5 @@ include *.md
 include *.txt
 
 recursive-include config *
+recursive-include packages/dev_disc *
+recursive-include packages/liotad *
