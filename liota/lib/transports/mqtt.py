@@ -41,7 +41,7 @@ import time
 
 import paho.mqtt.client as paho
 
-from liota.lib.utilities.utility import systemUUID
+from liota.lib.utilities.utility import systemUUID, read_liota_config
 
 log = logging.getLogger(__name__)
 
@@ -268,11 +268,11 @@ class Mqtt():
             # certificate revocation lists (CRLs) of all certificates in the
             # peer cert chain are checked if the path of CRLs in PEM or DER format
             # is specified
-
-            if self.tls_conf.crl_path is not None:
-                if os.path.exists(self.tls_conf.crl_path):
+            crl_path = read_liota_config('CRL_PATH', 'crl_path')
+            if crl_path is not None:
+                if os.path.exists(crl_path):
                     context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
-                    context.load_verify_locations(cafile=self.tls_conf.crl_path)
+                    context.load_verify_locations(cafile=crl_path)
                 else:
                     raise ValueError("Error : Wrong Client CRL path")
 

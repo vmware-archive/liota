@@ -36,9 +36,7 @@ Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols
 * Identity class encapsulates certificates or credentials related to a connection used at both DCC and Device side.
 * TLSConf class encapsulates parameters related to TLS configuration.
 * CRLs(Certificate Revocation Lists) check has been implemented: [VRIFY_CRL_CHECK_CHAIN](https://docs.python.org/2/library/ssl.html#ssl.VERIFY_CRL_CHECK_CHAIN) in this mode CRLs of all certificates in the peer cert chain are checked.
- In order to enable the CRLs check pass the parameter 'crl_path' during TLSConf initialization, it requires a valid path to CRL in PEM format.
- Please refer the example [AWS IoT](https://github.com/vmware/liota/blob/master/packages/aws_iot.py) for more details.
-
+ In order to enable the CRLs set the 'crl_path' in '/etc/liota/liota.conf', it requires a valid path to CRL in PEM format (preferable directory '/usr/lib/liota').
 
 ## Package Manager
 Liota applications can be broken into small pieces that can be loaded and unloaded into a running liota process. We recommend putting the EdgeSystems, Devices, Metrics and DCC(s) in separate packages. Then each construct can be loaded and unloaded at will. See the README in the package directory for complete details.

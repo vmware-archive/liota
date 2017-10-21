@@ -61,9 +61,7 @@ class PackageClass(LiotaPackage):
         identity = Identity(root_ca_cert=config['broker_root_ca_cert'], username=None, password=None,
                             cert_file=config['edge_system_cert_file'], key_file=config['edge_system_key_file'])
         # Encapsulate TLS parameters
-        # User can pass the CRL_Path in order to check if all the certificates
-        # in the peer cert chain are in CRL`s or not
-        tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'], config['crl_path'])
+        tls_conf = TLSConf(config['cert_required'], config['tls_version'], config['cipher'])
         # Encapsulate QoS related parameters
         qos_details = QoSDetails(config['in_flight'], config['queue_size'], config['retry'])
 
