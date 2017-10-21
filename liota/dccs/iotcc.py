@@ -157,7 +157,8 @@ class IotControlCenter(DataCenterComponent):
                         self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
                         self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
                 else:
-                    log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
+                    log.info("Waiting for unregistration response")
+                    on_response(self.recv_msg_queue.get(True, 20))
             except:
                 raise Exception("Exception while unregistering resource")
 
