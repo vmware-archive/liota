@@ -82,8 +82,10 @@ class Mqtt():
         if self._disconnect_result_code == 0:
             log.info("Clean disconnection")
         else:
-            wait_time = round(random.uniform(1.0, 10.0), 1)
-            log.info("Unexpected disconnection! Reconnecting in {0} seconds".format(str(wait_time)))
+            # Added a random sleep so that every client tries out reconnection to broker at different
+            # time to reduce load
+            wait_time = random.randint(1, 5)
+            log.info("Unexpected disconnection! Reconnecting in {0:d} seconds".format(wait_time))
             time.sleep(wait_time)
 
     def on_message(self, client, userdata, msg):
