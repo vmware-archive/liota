@@ -112,7 +112,7 @@ class Mqtt():
         """
         log.debug("Unsubscribed: {0}".format(str(mid)))
 
-    def __init__(self, url, port, identity=None, tls_conf=None, qos_details=None, client_id="",
+    def __init__(self, url, port, identity=None, tls_conf=None, qos_details=None, client_id=None,
                  clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
                  enable_authentication=False, conn_disconn_timeout=10):
 
@@ -150,14 +150,6 @@ class Mqtt():
         self.keep_alive = keep_alive
         self.enable_authentication = enable_authentication
         self._conn_disconn_timeout = conn_disconn_timeout
-        if self.clean_session:
-            # If user passes client_id, it'll be used.  Otherwise, it is left to the underlying paho
-            # to generate random client_id
-            log.info("clean_session is set to True")
-        else:
-            #  client_id is either auto-generated or provided by user
-            log.info("clean_session is set to False")
-
         self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
                                         protocol=getattr(paho, self.protocol), transport=self.transport)
         self._connect_result_code = sys.maxsize
@@ -183,10 +175,9 @@ class Mqtt():
         self._connect_result_code = rc
         self._disconnect_result_code = sys.maxsize
         log.info("Connected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
-        if self.sub_list:
-            for sub_values in self.sub_list:
-                self.subscribe(sub_values[0],sub_values[1],sub_values[2])
-                log.info("Re-Subscribed to topic : {0} after re-connection".format(sub_values[0]))
+        for [topic, qos, callback] in self.sub_list:
+            self.subscribe(topic, qos, callback)
+            log.info("Re-Subscribed to topic : {0} after re-connection".format(topic))
 
     def connect_soc(self):
         """

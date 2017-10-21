@@ -46,7 +46,7 @@ class MqttDccComms(DCCComms):
     """
 
     def __init__(self, edge_system_name, url, port, identity=None, tls_conf=None, qos_details=None,
-                 client_id="", clean_session=False, protocol="MQTTv311", transport="tcp", keep_alive=60,
+                 client_id=None, clean_session=False, protocol="MQTTv311", transport="tcp", keep_alive=60,
                  mqtt_msg_attr=None, enable_authentication=False, conn_disconn_timeout=10):
 
         """
@@ -74,19 +74,19 @@ class MqttDccComms(DCCComms):
 
         self.client_id = client_id
 
-        if self.client_id is None or self.client_id == "":
+        if self.client_id is None:
             #  local_uuid generated will be the client ID
             self.client_id = systemUUID().get_uuid(edge_system_name)
-            log.info("generated local uuid will be the client ID")
+            log.debug("Auto-Generated local uuid will be the client ID")
         else:
-            log.info("Client ID is provided by user")
+            log.debug("Client ID is provided by user")
 
         if mqtt_msg_attr is None:
             #  pub-topic and sub-topic will be auto-generated
-            log.info("pub-topic and sub-topic is auto-generated")
+            log.debug("Pub-topic and Sub-topic are auto-generated")
             self.msg_attr = MqttMessagingAttributes(edge_system_name)
         elif isinstance(mqtt_msg_attr, MqttMessagingAttributes):
-            log.info("User configured pub-topic and sub-topic")
+            log.debug("User configured pub-topic and sub-topic")
             self.msg_attr = mqtt_msg_attr
         else:
             log.error("mqtt_mess_attr should either be None or of type MqttMessagingAttributes")
