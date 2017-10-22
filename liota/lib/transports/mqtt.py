@@ -339,16 +339,12 @@ class Mqtt():
         :param retain: Message to be retained or not
         :return:
         """
-        # TODO: Retry logic to be designed
-        try:
-            mess_info = self._paho_client.publish(topic, message, qos, retain)
-            log.debug("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
-            if mess_info.rc == 0:
-                log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
-            else:
-                raise PublishFailure("MQTT Publish exception:{0} result code".format(mess_info.rc))
-        except Exception:
-            raise Exception("MQTT Publish exception")
+        mess_info = self._paho_client.publish(topic, message, qos, retain)
+        log.debug("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
+        if mess_info.rc == 0:
+            log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
+        else:
+            raise Exception("MQTT Publish exception:{0} result code".format(mess_info.rc))
 
     def subscribe(self, topic, qos, callback):
         """
@@ -487,6 +483,3 @@ class MqttMessagingAttributes:
         self.sub_qos = sub_qos
         self.pub_retain = pub_retain
         self.sub_callback = sub_callback
-
-class PublishFailure(Exception):
-    pass

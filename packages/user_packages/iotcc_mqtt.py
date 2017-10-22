@@ -47,7 +47,7 @@ class PackageClass(LiotaPackage):
         from liota.lib.utilities.identity import Identity
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
-        from liota.lib.transports.mqtt import MqttMessagingAttributes,PublishFailure
+        from liota.lib.transports.mqtt import MqttMessagingAttributes, PublishFailure
         from liota.dccs.dcc import RegistrationFailure
         from liota.lib.utilities.tls_conf import TLSConf
 
