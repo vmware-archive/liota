@@ -57,7 +57,7 @@ class IotControlCenter(DataCenterComponent):
 
     def __init__(self, con):
         log.info("Logging into DCC")
-        self._version = "1.0"
+        self._version = 20171023
         self.comms = con
         if not self.comms.identity.username:
             log.error("Username not found")
@@ -218,7 +218,7 @@ class IotControlCenter(DataCenterComponent):
         msg = {
             "transationID": msg_id,
             "version": self._version,
-            "type": "add_properties",
+            "type": "add_properties_request",
             "body": {
                 "kind": entity_type,
                 "id": entity_id,
@@ -250,13 +250,14 @@ class IotControlCenter(DataCenterComponent):
             "body": {
                 "kind": reg_metric.parent.ref_entity.entity_type,
                 "id": reg_metric.parent.ref_entity.entity_id,
-                "name": reg_metric.parent.ref_entity.name
-            },
-            "metric_data": [{
-                "statKey": reg_metric.ref_entity.name,
-                "timestamps": _timestamps,
-                "data": _values
-            }]
+                "name": reg_metric.parent.ref_entity.name,
+                "metric_data": [{
+                    "statKey": reg_metric.ref_entity.name,
+                    "timestamps": _timestamps,
+                    "data": _values
+                }]
+
+            }
         })
 
     def set_system_properties(self, reg_entity_obj, system_properties):
