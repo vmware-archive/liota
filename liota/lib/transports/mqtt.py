@@ -346,7 +346,7 @@ class Mqtt():
             if mess_info.rc == 0:
                 log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
             else:
-                raise Exception("MQTT Publish exception:{0} result code".format(mess_info.rc))
+                raise PublishFailure("MQTT Publish exception:{0} result code".format(mess_info.rc))
         except Exception:
             raise Exception("MQTT Publish exception")
 
@@ -487,3 +487,6 @@ class MqttMessagingAttributes:
         self.sub_qos = sub_qos
         self.pub_retain = pub_retain
         self.sub_callback = sub_callback
+
+class PublishFailure(Exception):
+    pass

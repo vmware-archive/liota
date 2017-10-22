@@ -43,10 +43,11 @@ class PackageClass(LiotaPackage):
 
     def run(self, registry):
         import copy
+        import time
         from liota.lib.utilities.identity import Identity
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
-        from liota.lib.transports.mqtt import MqttMessagingAttributes
+        from liota.lib.transports.mqtt import MqttMessagingAttributes,PublishFailure
         from liota.dccs.dcc import RegistrationFailure
         from liota.lib.utilities.tls_conf import TLSConf
 
@@ -79,7 +80,17 @@ class PackageClass(LiotaPackage):
             self.iotcc.set_system_properties(self.iotcc_edge_system, registry.get("system_properties"))
             # Set the properties for edge system as key:value pair, you can also set the location
             # by passing the latitude and longitude as a property in the user package
-            self.iotcc.set_properties(self.iotcc_edge_system,{"key1": "value1", "key2": "value2"})
+            # If the set_properties or register call fails due to DCC_Comms PublishFailure exception
+            # the optional retry mechanism can be implemented in the following way
+            attempts = 0
+            while attempts < 3:
+                try:
+                    # Register edge system (gateway)
+                    self.iotcc.set_properties(self.iotcc_edge_system, {"key1": "value1", "key2": "value2"})
+                except PublishFailure:
+                    attempts += 1
+                    # The sleep time before re-trying depends on broker restart
+                    time.sleep(5)
             registry.register("iotcc_mqtt", self.iotcc)
             # Store the registered edge system object in liota package manager registry after the
             # system properties are set for it
