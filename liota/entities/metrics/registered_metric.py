@@ -135,4 +135,3 @@ class RegisteredMetric(RegisteredEntity):
         if not isinstance(other, RegisteredMetric):
             return -1
         return cmp(self._next_run_time, other._next_run_time)
-

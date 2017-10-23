@@ -80,7 +80,7 @@ class PackageClass(LiotaPackage):
             self.iotcc.set_system_properties(self.iotcc_edge_system, registry.get("system_properties"))
             # Set the properties for edge system as key:value pair, you can also set the location
             # by passing the latitude and longitude as a property in the user package
-            # If the set_properties or register call fails due to DCC_Comms PublishFailure exception
+            # If the set_properties or register call fails due to DCC_Comms Publish exception
             # the optional retry mechanism can be implemented in the following way
             attempts = 0
             while attempts < 3:
