@@ -123,7 +123,7 @@ class RegisteredMetric(RegisteredEntity):
             return True
         try:
             self.ref_dcc.publish(self)
-        except PublishFailure:
+        except Exception:
             log.error("Exception while publishing message", exc_info=True)
 
     def __str__(self, *args, **kwargs):
@@ -136,5 +136,3 @@ class RegisteredMetric(RegisteredEntity):
             return -1
         return cmp(self._next_run_time, other._next_run_time)
 
-class PublishFailure(Exception):
-    pass

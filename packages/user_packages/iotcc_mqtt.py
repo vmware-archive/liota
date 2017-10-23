@@ -47,7 +47,7 @@ class PackageClass(LiotaPackage):
         from liota.lib.utilities.identity import Identity
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
-        from liota.lib.transports.mqtt import MqttMessagingAttributes, PublishFailure
+        from liota.lib.transports.mqtt import MqttMessagingAttributes
         from liota.dccs.dcc import RegistrationFailure
         from liota.lib.utilities.tls_conf import TLSConf
 
@@ -87,7 +87,7 @@ class PackageClass(LiotaPackage):
                 try:
                     # Register edge system (gateway)
                     self.iotcc.set_properties(self.iotcc_edge_system, {"key1": "value1", "key2": "value2"})
-                except PublishFailure:
+                except Exception:
                     attempts += 1
                     # The sleep time before re-trying depends on broker restart
                     time.sleep(5)
