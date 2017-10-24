@@ -252,9 +252,11 @@ class PackageThread(Thread):
 
     def _cmd_handler_list(self, parameter):
         if parameter == "packages" or parameter == "pkg":
-            loaded_list = sorted(self._packages_loaded.keys())
-            log.warning("List of packages - \t%s" % "\t".join(loaded_list))
-            print "loaded packages:", ",".join(loaded_list)
+            log.warning("List of packages - \t%s"
+                        % "\t".join(sorted(
+                            self._packages_loaded.keys()
+                        ))
+                        )
             return
         if parameter == "resources" or parameter == "res":
             log.warning("List of resources - \t%s"
@@ -290,18 +292,14 @@ class PackageThread(Thread):
         if parameters[0] == "package" or parameters[0] == "pkg":
             if (len(parameters) < 2):
                 log.warning("package name is not specified")
-                print "package name is not specified"
                 return
             if (len(parameters) > 2):
                 log.warning("Only 1 package name will be taken and processed")
-                print "Only 1 package name will be taken and processed"
             query_pkg = parameters[1]
             if query_pkg in self._packages_loaded.keys():
                 log.info("packages {0} is loaded".format(query_pkg))
-                print "package " + query_pkg + " is loaded"
             else:
                 log.info("packages {0} is not loaded".format(query_pkg))
-                print "package " + query_pkg + " is not loaded"
             return
         if parameters[0] == "metrics" or parameters[0] == "met":
             from liota.core.metric_handler \
@@ -399,10 +397,7 @@ class PackageThread(Thread):
                             list_packages.append({list_arg[i]: list_arg[i+1]})
                             i += 2
                         if command == "load":
-                            load_success, list_failed, list_succeeded = \
-                                self._package_load_list(list_packages, autoload_flag)
-                            print "succeeded to load: [%s]" % ', '.join(list_succeeded)
-                            print "failed to load: [%s]" % ', '.join(list_failed)
+                            self._package_load_list(list_packages, autoload_flag)
                         elif command == "update":
                             self._package_update_list(list_packages, autoload_flag)
                         else:
@@ -416,20 +411,11 @@ class PackageThread(Thread):
                         continue
                     checksum = msg[2 + offset]
                     if command == "load":
-                        if self._package_load(file_name, checksum, autoload_flag) is None:
-                            print "failed to load:", file_name
-                        else:
-                            print "succeeded to load:", file_name
+                        self._package_load(file_name, checksum, autoload_flag)
                     elif command == "reload":
-                        if self._package_reload(file_name, checksum, autoload_flag) is None:
-                            print "failed to reload:", file_name
-                        else:
-                            print "succeeded to reload:", file_name
+                        self._package_reload(file_name, checksum, autoload_flag)
                     elif command == "update":
-                        if self._package_update(file_name, checksum, autoload_flag) is None:
-                            print "failed to update:", file_name
-                        else:
-                            print "succeeded to update:", file_name
+                        self._package_update(file_name, checksum, autoload_flag)
                     else:  # should not happen
                         raise RuntimeError("Command category error")
             elif command in ["unload", "delete"]:
@@ -452,15 +438,9 @@ class PackageThread(Thread):
                         continue
                     file_name = msg[1]
                     if command == "unload":
-                        if (self._package_unload(file_name) == True):
-                            print "succeeded to unload:", file_name
-                        else:
-                            print "failed to unload:", file_name
+                        self._package_unload(file_name)
                     elif command == "delete":
-                        if (self._package_delete(file_name) == True):
-                            print "succeeded to delete:", file_name
-                        else:
-                            print "failed to delete:", file_name
+                        self._package_delete(file_name)
                     else:  # should not happen
                         raise RuntimeError("Command category error")
             elif command == "list":
@@ -964,18 +944,14 @@ class PackageThread(Thread):
 
     def _package_load_list(self, package_list, autoload_flag=False):
         list_failed = []
-        list_succeeded = []
         for file_string in package_list:
             log.debug("Attempting to load packages:{0}".format(file_string))
             try:
                 for file_name, checksum in file_string.items():
                     if file_name in self._packages_loaded:
-                        list_succeeded.append(file_name)
                         continue
                     if not self._package_load(file_name, checksum, autoload_flag):
                         list_failed.append(file_name)
-                    else:
-                        list_succeeded.append(file_name)
             except:
                 log.exception("_package_load_list exception")
 
@@ -984,7 +960,7 @@ class PackageThread(Thread):
                         % " ".join(list_failed))
         else:
             log.info("Batch load successful")
-        return (len(list_failed) < 1), list_failed, list_succeeded
+        return len(list_failed) < 1
 
     #-----------------------------------------------------------------------
     # This method is called to unload a list of packages.
@@ -1075,9 +1051,7 @@ class PackageThread(Thread):
 
         # Load packages in a batch
         if len(package_startup_list) > 0:
-            return self._package_load_list(package_startup_list)
-        log.info("No package is needed to be loaded")
-        return True, [], []
+            self._package_load_list(package_startup_list)
 
     #-----------------------------------------------------------------------
     # This method is called to delete package. All source files and compiled
