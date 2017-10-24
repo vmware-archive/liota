@@ -286,12 +286,16 @@ class PackageThread(Thread):
     #-----------------------------------------------------------------------
     # This method is used to handle statistical commands
 
-    def _cmd_handler_stat(self, parameter):
-        if parameter[0] == "package" or parameter[0] == "pkg":
-            if (len(parameter) != 2):
+    def _cmd_handler_stat(self, parameters):
+        if parameters[0] == "package" or parameters[0] == "pkg":
+            if (len(parameters) < 2):
                 log.warning("package name is not specified")
+                print "package name is not specified"
                 return
-            query_pkg = parameter[1]
+            if (len(parameters) > 2):
+                log.warning("Only 1 package name will be taken and processed")
+                print "Only 1 package name will be taken and processed"
+            query_pkg = parameters[1]
             if query_pkg in self._packages_loaded.keys():
                 log.info("packages {0} is loaded".format(query_pkg))
                 print "package " + query_pkg + " is loaded"
@@ -299,7 +303,7 @@ class PackageThread(Thread):
                 log.info("packages {0} is not loaded".format(query_pkg))
                 print "package " + query_pkg + " is not loaded"
             return
-        if parameter[0] == "metrics" or parameter[0] == "met":
+        if parameters[0] == "metrics" or parameters[0] == "met":
             from liota.core.metric_handler \
                 import event_ds, collect_queue, send_queue, \
                 CollectionThreadPool, collect_thread_pool
@@ -320,7 +324,7 @@ class PackageThread(Thread):
                          + "Collecting threads: %s"
                          ) % tuple(stats))
             return
-        if parameter[0] == "collection_threads" or parameter[0] == "col":
+        if parameters[0] == "collection_threads" or parameters[0] == "col":
             from liota.core.metric_handler \
                 import CollectionThreadPool, collect_thread_pool
 
@@ -337,7 +341,7 @@ class PackageThread(Thread):
                          + "Capacity: %s"
                          ) % tuple(stats))
             return
-        if parameter[0] == "threads" or parameter[0] == "th":
+        if parameters[0] == "threads" or parameters[0] == "th":
             import threading
 
             log.warning("Count of active threads: %d"
