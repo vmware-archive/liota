@@ -301,6 +301,9 @@ class PackageThread(Thread):
             else:
                 log.info("packages {0} is not loaded".format(query_pkg))
             return
+        if len(parameters) != 1:
+            log.warning("Invalid format of stat command: %s" % parameters[0])
+            continue
         if parameters[0] == "metrics" or parameters[0] == "met":
             from liota.core.metric_handler \
                 import event_ds, collect_queue, send_queue, \

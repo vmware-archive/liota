@@ -63,6 +63,10 @@ To be reminded, unload command will remove it from pkg_list file.
 
 Print statistical data in Liota log about metrics, collectors and Python threads respectively.
 
+* **stat** pkg package_name
+
+Print the status of a package (loaded or not)
+
 * **list** pkg|res|th
 
 Print a list of package, resources (shared objects) and threads respectively.
