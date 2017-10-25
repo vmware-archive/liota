@@ -65,4 +65,5 @@ then
 fi
 
 # Echo to named pipe
+echo "Pipe file: $package_messenger_pipe" >&2
 echo "$@" > $package_messenger_pipe
