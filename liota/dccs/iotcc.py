@@ -238,8 +238,11 @@ class IotControlCenter(DataCenterComponent):
     def _get_properties(self, msg_id, res_uuid):
         return {
             "transactionID": msg_id,
-            "type": "get_properties",
-            "uuid": res_uuid
+            "version": self._version,
+            "type": "get_properties_request",
+            "body": {
+                "uuid": res_uuid
+            }
         }
 
     def _format_data(self, reg_metric):
@@ -524,9 +527,7 @@ class IotControlCenter(DataCenterComponent):
         if (prop_dict is None):
             prop_dict = {}
         for item in prop_list:
-            for key in item:
-                if key.find("System Properties|") == -1:
-                    prop_dict.update(item)
+            prop_dict.update(item)
         # get updated dict
         return prop_dict
 
@@ -652,7 +653,8 @@ class IotControlCenter(DataCenterComponent):
             try:
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
-                log.debug("Processed msg: {0}".format(json_msg["type"]))
+                log.debug("Processing msg: {0}".format(json_msg["type"]))
+                self._check_version(json_msg)
                 if json_msg["type"] == "get_properties_response" and json_msg["body"]["uuid"] != "null" and \
                                 json_msg["body"]["uuid"] == resource_uuid:
                     log.info("FOUND PROPERTY LIST: {0}".format(json_msg["body"]["propertyList"]))
