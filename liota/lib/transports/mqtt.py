@@ -159,7 +159,7 @@ class Mqtt():
         self._paho_client.on_subscribe = self.on_subscribe
         self._paho_client.on_connect = self.on_connect
         self._paho_client.on_disconnect = self.on_disconnect
-        self.sub_list = []
+        self.sub_dict = {}
         self.connect_soc()
 
     def on_connect(self, client, userdata, flags, rc):
@@ -175,8 +175,8 @@ class Mqtt():
         self._connect_result_code = rc
         self._disconnect_result_code = sys.maxsize
         log.info("Connected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
-        for [topic, qos, callback] in self.sub_list:
-            self.subscribe(topic, qos, callback)
+        for topic in self.sub_dict:
+            self.subscribe(topic, self.sub_dict.get(topic)[0], self.sub_dict.get(topic)[1])
             log.info("Re-Subscribed to topic : {0} after re-connection".format(topic))
 
     def connect_soc(self):
@@ -357,8 +357,8 @@ class Mqtt():
         :return:
         """
         try:
-            if [topic,qos,callback] not in self.sub_list:
-                self.sub_list.append([topic,qos,callback])
+            if topic not in self.sub_dict:
+                self.sub_dict.setdefault(topic, [qos, callback])
             subscribe_response = self._paho_client.subscribe(topic, qos)
             self._paho_client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
@@ -373,6 +373,8 @@ class Mqtt():
         :return:
         """
         try:
+            if topic in self.sub_dict:
+                self.sub_dict.pop(topic)
             unsubscribe_response = self._paho_client.unsubscribe(topic)
             log.info("Topic unsubscribed with information: " + str(unsubscribe_response))
         except Exception:
