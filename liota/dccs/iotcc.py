@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import json
+import sys
 import logging
 import time
 import threading
@@ -159,8 +160,8 @@ class IotControlCenter(DataCenterComponent):
                 else:
                     log.info("Waiting for unregistration response")
                     on_response(self.recv_msg_queue.get(True, 20))
-            except:
-                raise Exception("Exception while unregistering resource")
+            except Exception as e:
+                    raise Exception("Exception while unregistering resource: %s" % e, sys.exc_info()[2])
 
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
         on_response(self.recv_msg_queue.get(True, 20))
