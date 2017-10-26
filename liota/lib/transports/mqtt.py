@@ -278,9 +278,6 @@ class Mqtt():
 
         # Connect with MQTT Broker
         self._paho_client.connect(host=self.url, port=self.port, keepalive=self.keep_alive)
-
-        # Start network loop to handle auto-reconnect
-        self._paho_client.reconnect_delay_set(random.randint(1, 15), random.randint(150, 250))
         self._paho_client.loop_start()
         ten_ms_count = 0
         while (ten_ms_count != self._conn_disconn_timeout * 100) and (self._connect_result_code == sys.maxsize):
