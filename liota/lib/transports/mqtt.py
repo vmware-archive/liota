@@ -357,8 +357,7 @@ class Mqtt():
         :return:
         """
         try:
-            if topic not in self.sub_dict:
-                self.sub_dict.setdefault(topic, [qos, callback])
+            self.sub_dict.setdefault(topic, [qos, callback])
             subscribe_response = self._paho_client.subscribe(topic, qos)
             self._paho_client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
@@ -373,9 +372,9 @@ class Mqtt():
         :return:
         """
         try:
-            if topic in self.sub_dict:
-                self.sub_dict.pop(topic)
+            self.sub_dict.pop(topic, None)
             unsubscribe_response = self._paho_client.unsubscribe(topic)
+            self._paho_client.message_callback_remove(topic)
             log.info("Topic unsubscribed with information: " + str(unsubscribe_response))
         except Exception:
             log.exception("MQTT unsubscribe exception traceback..")
