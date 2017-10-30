@@ -34,8 +34,7 @@
 liota_config="/etc/liota/liota.conf"
 package_messenger_pipe=""
 
-PROCESS_NUM=$(ps -ef | grep "liotad.py" | grep -v "grep" | wc -l)
-if [ $PROCESS_NUM -eq 1 ];
+if ! [ `ps -ef | grep "liotad.py" | grep -v grep | wc -l` -gt 1 ]
 then
         echo "Liota package manager is not running. Please run it first!"
         exit -1
