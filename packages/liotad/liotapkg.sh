@@ -34,11 +34,18 @@
 liota_config="/etc/liota/liota.conf"
 package_messenger_pipe=""
 
+PROCESS_NUM=$(ps -ef | grep "liotad.py" | grep -v "grep" | wc -l)
+if [ $PROCESS_NUM -eq 1 ];
+then
+        echo "Liota package manager is not running. Please run it first!"
+        exit -1
+fi
+
 if [ ! -f "$liota_config" ]
 then
     echo "ERROR: Configuration file not found" >&2
     echo "You made need to copy the distributed configuration file from /usr/lib/liota/config/liota.conf to /etc/liota/liota.conf" >&2
-    exit -1
+    exit -2
 fi
 
 while read line # Read configurations from file
@@ -55,13 +62,13 @@ done < $liota_config
 if [ "$package_messenger_pipe" = "" ]
 then
     echo "ERROR: Pipe path not found in configuration file" >&2
-    exit -2
+    exit -3
 fi
 
 if [ ! -p "$package_messenger_pipe" ]
 then
     echo "ERROR: Pipe path is not a named pipe" >&2
-    exit -3
+    exit -4
 fi
 
 # Echo to named pipe

@@ -252,15 +252,15 @@ class PackageThread(Thread):
 
     def _cmd_handler_list(self, parameter):
         if parameter == "packages" or parameter == "pkg":
-            log.warning("List of packages - \n\t%s"
-                        % "\n\t".join(sorted(
+            log.warning("List of packages - \t%s"
+                        % "\t".join(sorted(
                             self._packages_loaded.keys()
                         ))
                         )
             return
         if parameter == "resources" or parameter == "res":
-            log.warning("List of resources - \n\t%s"
-                        % "\n\t".join(sorted(
+            log.warning("List of resources - \t%s"
+                        % "\t".join(sorted(
                             self._resource_registry._registry.keys()
                         ))
                         )
@@ -268,8 +268,8 @@ class PackageThread(Thread):
         if parameter == "threads" or parameter == "th":
             import threading
 
-            log.warning("Active threads - \n\t%s"
-                        % "\n\t".join(map(
+            log.warning("Active threads - \t%s"
+                        % "\t".join(map(
                             lambda tref: "%s: %016x %s %s" % (
                                 tref.name,
                                 tref.ident,
@@ -288,8 +288,23 @@ class PackageThread(Thread):
     #-----------------------------------------------------------------------
     # This method is used to handle statistical commands
 
-    def _cmd_handler_stat(self, parameter):
-        if parameter == "metrics" or parameter == "met":
+    def _cmd_handler_stat(self, parameters):
+        if parameters[0] == "package" or parameters[0] == "pkg":
+            if (len(parameters) < 2):
+                log.warning("package name is not specified")
+                return
+            if (len(parameters) > 2):
+                log.warning("Only 1 package name will be taken and processed")
+            query_pkg = parameters[1]
+            if query_pkg in self._packages_loaded.keys():
+                log.info("packages {0} is loaded".format(query_pkg))
+            else:
+                log.info("packages {0} is not loaded".format(query_pkg))
+            return
+        if len(parameters) != 1:
+            log.warning("Invalid format of stat command: %s" % parameters[0])
+            return
+        if parameters[0] == "metrics" or parameters[0] == "met":
             from liota.core.metric_handler \
                 import event_ds, collect_queue, send_queue, \
                 CollectionThreadPool, collect_thread_pool
@@ -303,14 +318,14 @@ class PackageThread(Thread):
                 stats[2] = str(collect_queue.qsize())
             if isinstance(collect_thread_pool, CollectionThreadPool):
                 stats[3] = collect_thread_pool.get_stats_working()[0]
-            log.warning(("Number of metrics in - \n\t"
-                         + "Waiting queue: %s\n\t"
-                         + "Sending queue: %s\n\t"
-                         + "Collecting queue: %s\n\t"
+            log.warning(("Number of metrics in - \t"
+                         + "Waiting queue: %s\t"
+                         + "Sending queue: %s\t"
+                         + "Collecting queue: %s\t"
                          + "Collecting threads: %s"
                          ) % tuple(stats))
             return
-        if parameter == "collection_threads" or parameter == "col":
+        if parameters[0] == "collection_threads" or parameters[0] == "col":
             from liota.core.metric_handler \
                 import CollectionThreadPool, collect_thread_pool
 
@@ -320,14 +335,14 @@ class PackageThread(Thread):
                     lambda n: str(n),
                     collect_thread_pool.get_stats_working()
                 )
-            log.warning(("Status of collection threads - \n\t"
-                         + "Collecting: %s\n\t"
-                         + "Alive: %s\n\t"
-                         + "Pool: %s\n\t"
+            log.warning(("Status of collection threads - \t"
+                         + "Collecting: %s\t"
+                         + "Alive: %s\t"
+                         + "Pool: %s\t"
                          + "Capacity: %s"
                          ) % tuple(stats))
             return
-        if parameter == "threads" or parameter == "th":
+        if parameters[0] == "threads" or parameters[0] == "th":
             import threading
 
             log.warning("Count of active threads: %d"
@@ -439,10 +454,10 @@ class PackageThread(Thread):
                     self._cmd_handler_list(msg[1])
             elif command == "stat":
                 with package_lock:
-                    if len(msg) != 2:
+                    if len(msg) < 2:
                         log.warning("Invalid format of command: %s" % command)
                         continue
-                    self._cmd_handler_stat(msg[1])
+                    self._cmd_handler_stat(msg[1:])
             elif command == "load_auto":
                 with package_lock:
                     self._package_load_auto()
@@ -694,8 +709,12 @@ class PackageThread(Thread):
 
         klass = getattr(module_loaded, "PackageClass")
         package_record = PackageRecord(file_name)
-        if not package_record.set_instance(klass()):
-            log.error("Unexpected failure initializing package")
+        try:  # Create instance
+            if not package_record.set_instance(klass()):
+                log.error("Unexpected failure initializing package")
+                return None
+        except:
+            log.exception("Exception in PackageClass instance creation")
             return None
         try:  # Run created instance
             package_record.get_instance().run(
@@ -822,7 +841,7 @@ class PackageThread(Thread):
         if file_name not in self._packages_loaded:
             log.warning("Could not reload package - not loaded: %s"
                         % file_name)
-            return False
+            return None
 
         # Logic of reload
         track_list = []
@@ -857,10 +876,10 @@ class PackageThread(Thread):
                     self._write_package_into_autoload(file_name, package_record.get_sha1().hexdigest())
                 return package_record
             else:
-                return False
+                return None
         else:
             log.warning("Could not unload package: %s" % file_name)
-        return False
+        return None
 
     #-----------------------------------------------------------------------
     # This method is called to update package.
@@ -911,14 +930,13 @@ class PackageThread(Thread):
                 # if needed, guarantee package name in automatically load file
                 if (autoload_flag == True):
                     self._write_package_into_autoload(file_name, package_record.get_sha1().hexdigest())
+                log.info("Reloaded and updated package: %s" % file_name)
                 return package_record
             else:
-                return False
+                return None
         else:
             log.warning("Could not unload package: %s" % file_name)
-        return False
-
-        log.info("Reloaded and updated package: %s" % file_name)
+            return None
 
     #-----------------------------------------------------------------------
     # This method is called to load a list of packages.
@@ -939,6 +957,7 @@ class PackageThread(Thread):
                         list_failed.append(file_name)
             except:
                 log.exception("_package_load_list exception")
+
         if len(list_failed) > 0:
             log.warning("Some packages specified in list failed to load: %s"
                         % " ".join(list_failed))
