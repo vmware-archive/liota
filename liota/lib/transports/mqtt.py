@@ -269,12 +269,12 @@ class Mqtt():
             # peer cert chain are checked if the path of CRLs in PEM or DER format
             # is specified
             crl_path = read_liota_config('CRL_PATH', 'crl_path')
-            if crl_path is not None:
+            if crl_path:
                 if os.path.exists(crl_path):
                     context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
                     context.load_verify_locations(cafile=crl_path)
                 else:
-                    raise ValueError("Error : Wrong Client CRL path")
+                    raise ValueError("Error : Wrong Client CRL path {0}".format(crl_path))
 
             # Setting the tls context
             self._paho_client.tls_set_context(context)
