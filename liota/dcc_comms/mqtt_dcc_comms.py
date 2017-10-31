@@ -77,9 +77,9 @@ class MqttDccComms(DCCComms):
         if self.client_id is None:
             #  local_uuid generated will be the client ID
             self.client_id = systemUUID().get_uuid(edge_system_name)
-            log.debug("Auto-Generated local uuid will be the client ID")
+            log.debug("Auto-Generated local uuid will be the client ID {0}".format(self.client_id))
         else:
-            log.debug("Client ID is provided by user")
+            log.debug("Client ID is provided by user {0}".format(self.client_id))
 
         if mqtt_msg_attr is None:
             #  pub-topic and sub-topic will be auto-generated
