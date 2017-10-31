@@ -1,6 +1,7 @@
 # Liota User Packages
 
-Basic user packages which we believe should exist on the edge system to publish the basic health stats to Pulse IoT Control Center
+Basic user packages which we believe should exist on the edge system to publish the basic health stats to Pulse IoT Control Center.
+These packages should be placed at path "/usr/lib/liota/packages".
 
 * general_edge_system.py
 
@@ -16,6 +17,7 @@ System Properties which are pre-loaded in the registry during installation are r
 all the devices will internally inherit the the system properties from the registered edge system.
 The properties for the edge system can be set as 'key:value' pair, you can also set the location by passing the
 'latitude:value' and 'longitude:value' as properties in the user package.
+Kindly include the unregister edge_system call in the clean up method required during the unload of the package.
 
 * iotcc_mqtt_edge_system_stats.py
 

@@ -73,6 +73,7 @@ along with the payload every-time when it is published.  This is because:
 **NOTE:** MqttMessagingAttributes for a RegisteredMetric object MUST always be passed via **msg_attr** attribute of that RegisteredMetric Object.
 
 Similarly, other DCCs can also use this approach to publish metric stats using MQTT.
+By default, the clean session (clear a session for a client) is set to False.
 
 Refer:
 * [aws_auto_gen](https://github.com/vmware/liota/blob/master/examples/mqtt/dcc_comms/aws_iot/simulated_home_auto_gen_topic.py) example to publish to AWSIoT using **Option (a)**.

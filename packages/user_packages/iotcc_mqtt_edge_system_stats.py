@@ -146,5 +146,6 @@ class PackageClass(LiotaPackage):
         self.metrics.append(reg_mem_free_metric)
 
     def clean_up(self):
+        # Kindly include this call to stop the metrics collection on package unload
         for metric in self.metrics:
             metric.stop_collecting()

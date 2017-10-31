@@ -89,6 +89,7 @@ class PackageClass(LiotaPackage):
             print "EdgeSystem registration to IOTCC failed"
 
     def clean_up(self):
-        # Unregister the edge system
+        # Unregister the edge system on package unload
+        # Kindly include the edge system un-register call on package unload
         self.iotcc.unregister(self.iotcc_edge_system)
         self.iotcc.comms.client.disconnect()
