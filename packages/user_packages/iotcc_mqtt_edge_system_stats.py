@@ -66,8 +66,9 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 def read_disk_usage_stats():
     # If the device raises an intermittent exception during metric collection process it will be required
-    # to be handled in the user code otherwise collection process will be stopped for that metric.
-    # If the None value is returned by UDM then metric value for that particular collector instance won't be published
+    # to be handled in the user code otherwise if an exception is thrown from user code
+    # the collection process will be stopped for that metric.
+    # If the None value is returned by UDM then metric value for that particular collector instance won't be published.
     try:
         disk_stat_value = round(disk_stat.disk_reads_writes(disk_name)[0], 2)
     except Exception:

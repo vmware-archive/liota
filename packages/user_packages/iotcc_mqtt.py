@@ -87,9 +87,11 @@ class PackageClass(LiotaPackage):
                 try:
                     # Register edge system (gateway)
                     self.iotcc.set_properties(self.iotcc_edge_system, {"key1": "value1", "key2": "value2"})
+                    break
                 except Exception:
                     attempts += 1
-                    # The sleep time before re-trying depends on broker restart
+                    # The sleep time before re-trying depends on the infrastructure requirement of broker to restart
+                    # It can be modified or removed as per the infrastructure requirement
                     time.sleep(5)
             registry.register("iotcc_mqtt", self.iotcc)
             # Store the registered edge system object in liota package manager registry after the
