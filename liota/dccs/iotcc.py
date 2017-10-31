@@ -79,26 +79,6 @@ class IotControlCenter(DataCenterComponent):
         # Liota internal entity file system path special for iotcc
         self.entity_file_path = self._get_file_storage_path("entity_file_path")
         self.file_ops_lock = Lock()
-        try:
-            def on_response(msg):
-                log.debug("Received msg: {0}".format(msg))
-                json_msg = json.loads(msg)
-                self.proto.on_receive(json_msg)
-                if json_msg["type"] == "connection_response":
-                    if json_msg["body"]["result"] == "succeeded":
-                        log.info("Connection verified")
-                    else:
-                        raise Exception("Helix Protocol Version mismatch")
-                else:
-                    on_response(self.recv_msg_queue.get(True, timeout))
-                    log.debug("Processed msg: {0}".format(json_msg["type"]))
-
-            # Block on Queue for not more then 300 seconds else it will raise an exception
-            on_response(self.recv_msg_queue.get(True, timeout))
-        except Exception as error:
-            self.comms.client.disconnect()
-            log.error("HelixProtocolException: " + repr(error))
-            raise Exception("HelixProtocolException")
 
     def register(self, entity_obj):
         """ Register the objects
@@ -127,8 +107,9 @@ class IotControlCenter(DataCenterComponent):
                     else:
                         log.info("Waiting for resource creation")
                         on_response(self.recv_msg_queue.get(True, timeout))
-                except:
-                    raise Exception("Exception while registering resource")
+                except Exception as err:
+                    log.exception("Exception while registering resource")
+                    raise err
 
             if entity_obj.entity_type == "EdgeSystem":
                 entity_obj.entity_type = "HelixGateway"
@@ -178,8 +159,9 @@ class IotControlCenter(DataCenterComponent):
                 else:
                     log.info("Waiting for unregistration response")
                     on_response(self.recv_msg_queue.get(True, timeout))
-            except Exception as e:
-                    raise Exception("Exception while unregistering resource: %s" % e, sys.exc_info()[2])
+            except Exception as err:
+                log.exception("Exception while unregistering resource")
+                raise err
 
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
         on_response(self.recv_msg_queue.get(True, timeout))
