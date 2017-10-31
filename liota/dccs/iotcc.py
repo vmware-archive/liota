@@ -90,8 +90,8 @@ class IotControlCenter(DataCenterComponent):
                     else:
                         raise Exception("Helix Protocol Version mismatch")
                 else:
-                    log.debug("Processed msg: {0}".format(json_msg["type"]))
                     on_response(self.recv_msg_queue.get(True, timeout))
+                    log.debug("Processed msg: {0}".format(json_msg["type"]))
 
             # Block on Queue for not more then 300 seconds else it will raise an exception
             on_response(self.recv_msg_queue.get(True, timeout))
