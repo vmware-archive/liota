@@ -159,8 +159,9 @@ class IotControlCenter(DataCenterComponent):
                 else:
                     log.info("Waiting for unregistration response")
                     on_response(self.recv_msg_queue.get(True, 20))
-            except:
-                raise Exception("Exception while unregistering resource")
+            except Exception as err:
+                log.exception("Exception while unregistering resource")
+                raise err
 
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
         on_response(self.recv_msg_queue.get(True, 20))
