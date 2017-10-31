@@ -49,8 +49,7 @@ from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
 
 log = logging.getLogger(__name__)
-
-
+timeout = 300
 class IotControlCenter(DataCenterComponent):
     """ The implementation of IoTCC cloud provider solution
 
@@ -80,6 +79,26 @@ class IotControlCenter(DataCenterComponent):
         # Liota internal entity file system path special for iotcc
         self.entity_file_path = self._get_file_storage_path("entity_file_path")
         self.file_ops_lock = Lock()
+        try:
+            def on_response(msg):
+                log.debug("Received msg: {0}".format(msg))
+                json_msg = json.loads(msg)
+                self.proto.on_receive(json_msg)
+                if json_msg["type"] == "connection_response":
+                    if json_msg["body"]["result"] == "succeeded":
+                        log.info("Connection verified")
+                    else:
+                        raise Exception("Helix Protocol Version mismatch")
+                else:
+                    log.debug("Processed msg: {0}".format(json_msg["type"]))
+                    on_response(self.recv_msg_queue.get(True, timeout))
+
+            # Block on Queue for not more then 300 seconds else it will raise an exception
+            on_response(self.recv_msg_queue.get(True, timeout))
+        except Exception as error:
+            self.comms.client.disconnect()
+            log.error("HelixProtocolException: " + repr(error))
+            raise Exception("HelixProtocolException")
 
     def register(self, entity_obj):
         """ Register the objects
@@ -107,16 +126,15 @@ class IotControlCenter(DataCenterComponent):
                         self.reg_entity_id = json_msg["body"]["uuid"]
                     else:
                         log.info("Waiting for resource creation")
-                        on_response(self.recv_msg_queue.get(True, 300))
-                except Exception as err:
-                    log.exception("Exception while registering resource")
-                    raise err
+                        on_response(self.recv_msg_queue.get(True, timeout))
+                except:
+                    raise Exception("Exception while registering resource")
 
             if entity_obj.entity_type == "EdgeSystem":
                 entity_obj.entity_type = "HelixGateway"
             self.comms.send(json.dumps(
                 self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
-            on_response(self.recv_msg_queue.get(True, 300))
+            on_response(self.recv_msg_queue.get(True, timeout))
             if not self.reg_entity_id:
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
@@ -159,12 +177,12 @@ class IotControlCenter(DataCenterComponent):
                         self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
                 else:
                     log.info("Waiting for unregistration response")
-                    on_response(self.recv_msg_queue.get(True, 20))
+                    on_response(self.recv_msg_queue.get(True, timeout))
             except Exception as e:
                     raise Exception("Exception while unregistering resource: %s" % e, sys.exc_info()[2])
 
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
-        on_response(self.recv_msg_queue.get(True, 20))
+        on_response(self.recv_msg_queue.get(True, timeout))
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """ This function initializes all relations between Registered Entities.
