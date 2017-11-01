@@ -664,11 +664,10 @@ class IotControlCenter(DataCenterComponent):
                     self.prop_list = json_msg["body"]["propertyList"]
                 else:
                     log.info("Waiting for getting properties")
-                    on_response(self.recv_msg_queue.get(True,300))
+                    on_response(self.recv_msg_queue.get(True, timeout))
             except:
                 log.exception("Exception while getting properties")
-                return None
 
         self.comms.send(json.dumps(self._get_properties(self.next_id(), resource_uuid)))
-        on_response(self.recv_msg_queue.get(True,300))
+        on_response(self.recv_msg_queue.get(True, timeout))
         return self.prop_list
