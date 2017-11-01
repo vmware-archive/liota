@@ -23,3 +23,6 @@ Kindly include the unregister edge_system call in the clean up method required d
 
 This is a sample user package to publish the basic edge system stats which we believe are required to
 monitor the health status of the edge system from Pulse IoT Control Center.
+Optional mechanism: If the device raises an intermittent exception during metric collection process it will be required to be handled in the user code
+otherwise if an exception is thrown from user code the collection process will be stopped for that metric.
+If the None value is returned by User Defined Method(UDM) then metric value for that particular collector instance won't be published.
