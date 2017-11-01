@@ -65,7 +65,15 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 
 def read_disk_usage_stats():
-    return round(disk_stat.disk_reads_writes(disk_name)[0], 2)
+    # If the device raises an intermittent exception during metric collection process it will be required
+    # to be handled in the user code otherwise if an exception is thrown from user code
+    # the collection process will be stopped for that metric.
+    # If the None value is returned by UDM then metric value for that particular collector instance won't be published.
+    try:
+        disk_stat_value = round(disk_stat.disk_reads_writes(disk_name)[0], 2)
+    except Exception:
+        return None
+    return disk_stat_value
 
 
 def read_network_bytes_received():
@@ -146,5 +154,6 @@ class PackageClass(LiotaPackage):
         self.metrics.append(reg_mem_free_metric)
 
     def clean_up(self):
+        # Kindly include this call to stop the metrics collection on package unload
         for metric in self.metrics:
             metric.stop_collecting()

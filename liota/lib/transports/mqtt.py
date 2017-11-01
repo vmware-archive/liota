@@ -32,14 +32,16 @@
 
 import logging
 import os
-import ssl
+try:
+    import ssl
+except ImportError:
+    ssl = None
 import sys
 import time
 
 import paho.mqtt.client as paho
 
-from liota.lib.utilities.utility import systemUUID
-
+from liota.lib.utilities.utility import systemUUID, read_liota_config
 
 log = logging.getLogger(__name__)
 
@@ -48,20 +50,6 @@ class Mqtt():
     """
     MQTT Transport implementation for LIOTA. It internally uses Python Paho library.
     """
-
-    def on_connect(self, client, userdata, flags, rc):
-        """
-        Invoked on successful connection to a broker after connection request
-
-        :param client: The client instance for this callback
-        :param userdata: The private user data as set in Client() or userdata_set()
-        :param flags: Response flags sent by the broker
-        :param rc: The connection result
-        :return:
-        """
-        self._connect_result_code = rc
-        self._disconnect_result_code = sys.maxsize
-        log.info("Connected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
 
     def on_disconnect(self, client, userdata, rc):
         """
@@ -124,7 +112,7 @@ class Mqtt():
         """
         log.debug("Unsubscribed: {0}".format(str(mid)))
 
-    def __init__(self, url, port, identity=None, tls_conf=None, qos_details=None, client_id="",
+    def __init__(self, url, port, identity=None, tls_conf=None, qos_details=None, client_id=None,
                  clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
                  enable_authentication=False, conn_disconn_timeout=10):
 
@@ -162,18 +150,8 @@ class Mqtt():
         self.keep_alive = keep_alive
         self.enable_authentication = enable_authentication
         self._conn_disconn_timeout = conn_disconn_timeout
-        if self.clean_session:
-            # If user passes client_id, it'll be used.  Otherwise, it is left to the underlying paho
-            # to generate random client_id
-            self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
-                                            protocol=getattr(paho, self.protocol), transport=self.transport)
-            log.info("clean_session is set to True")
-        else:
-            #  client_id is either auto-generated or provided by user
-            self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
-                                            protocol=getattr(paho, self.protocol), transport=self.transport)
-            log.info("clean_session is set to False")
-
+        self._paho_client = paho.Client(self.client_id, self.clean_session, self.userdata,
+                                        protocol=getattr(paho, self.protocol), transport=self.transport)
         self._connect_result_code = sys.maxsize
         self._disconnect_result_code = sys.maxsize
         self._paho_client.on_message = self.on_message
@@ -181,7 +159,25 @@ class Mqtt():
         self._paho_client.on_subscribe = self.on_subscribe
         self._paho_client.on_connect = self.on_connect
         self._paho_client.on_disconnect = self.on_disconnect
+        self.sub_dict = {}
         self.connect_soc()
+
+    def on_connect(self, client, userdata, flags, rc):
+        """
+        Invoked on successful connection to a broker after connection request
+
+        :param client: The client instance for this callback
+        :param userdata: The private user data as set in Client() or userdata_set()
+        :param flags: Response flags sent by the broker
+        :param rc: The connection result
+        :return:
+        """
+        self._connect_result_code = rc
+        self._disconnect_result_code = sys.maxsize
+        log.info("Connected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
+        for topic in self.sub_dict:
+            self.subscribe(topic, self.sub_dict.get(topic)[0], self.sub_dict.get(topic)[1])
+            log.info("Re-Subscribed to topic : {0} after re-connection".format(topic))
 
     def connect_soc(self):
         """
@@ -191,22 +187,35 @@ class Mqtt():
         # Set up TLS support
         if self.tls_conf:
 
+            if self.identity is None:
+                raise ValueError("Identity required to be set")
+
+            # Creating the tls context
+            if ssl is None:
+                raise ValueError("This platform has no SSL/TLS")
+
             # Validate CA certificate path
-            if self.identity.root_ca_cert:
-                if not(os.path.exists(self.identity.root_ca_cert)):
-                    log.error("Error : Wrong CA certificate path.")
-                    raise ValueError("Error : Wrong CA certificate path.")
-            else:
-                log.error("Error : CA certificate path is missing")
+            if self.identity.root_ca_cert is None and not hasattr(ssl.SSLContext, 'load_default_certs'):
                 raise ValueError("Error : CA certificate path is missing")
+            else:
+                if self.identity.root_ca_cert and not (os.path.exists(self.identity.root_ca_cert)):
+                    raise ValueError("Error : Wrong CA certificate path")
+
+            if self.tls_conf.tls_version is None:
+                tls_version = ssl.PROTOCOL_TLSv1_2
+                # If the python version supports it, use highest TLS version automatically
+                if hasattr(ssl, "PROTOCOL_TLS"):
+                    tls_version = ssl.PROTOCOL_TLS
+            else:
+                tls_version = getattr(ssl, self.tls_conf.tls_version)
+            context = ssl.SSLContext(tls_version)
 
             # Validate client certificate path
             if self.identity.cert_file:
                 if os.path.exists(self.identity.cert_file):
                     client_cert_available = True
                 else:
-                    log.error("Error : Wrong client certificate path.")
-                    raise ValueError("Error : Wrong client certificate path.")
+                    raise ValueError("Error : Wrong client certificate path")
             else:
                 client_cert_available = False
 
@@ -215,7 +224,6 @@ class Mqtt():
                 if os.path.exists(self.identity.key_file):
                     client_key_available = True
                 else:
-                    log.error("Error : Wrong client key path.")
                     raise ValueError("Error : Wrong client key path.")
             else:
                 client_key_available = False
@@ -223,43 +231,72 @@ class Mqtt():
             '''
                 Multiple conditions for certificate validations
                 # 1. Both Client certificate and key file should be present
-                # 2. If both are not there proceed without client certificate and key
-                # 3. If client certificate is not there throw an error
-                # 4. If client key is not there throw an error
+                # 2. If client certificate is not there throw an error
+                # 3. If client key is not there throw an error
+                # 4. If both are not there proceed without client certificate and key
             '''
-
             if client_cert_available and client_key_available:
-                log.debug("Certificates : ", self.identity.root_ca_cert, self.identity.cert_file,
-                          self.identity.key_file)
-
-                self._paho_client.tls_set(self.identity.root_ca_cert, self.identity.cert_file,
-                                          self.identity.key_file,
-                                          cert_reqs=getattr(ssl, self.tls_conf.cert_required),
-                                          tls_version=getattr(ssl, self.tls_conf.tls_version),
-                                          ciphers=self.tls_conf.cipher)
-            elif not client_cert_available and not client_key_available:
-                self._paho_client.tls_set(self.identity.root_ca_cert,
-                                          cert_reqs=getattr(ssl, self.tls_conf.cert_required),
-                                          tls_version=getattr(ssl, self.tls_conf.tls_version),
-                                          ciphers=self.tls_conf.cipher)
+                context.load_cert_chain(self.identity.cert_file, self.identity.key_file)
             elif not client_cert_available and client_key_available:
-                log.error("Error : Client key found, but client certificate not found")
                 raise ValueError("Error : Client key found, but client certificate not found")
-            else:
-                log.error("Error : Client key found, but client certificate not found")
+            elif client_cert_available and not client_key_available:
                 raise ValueError("Error : Client certificate found, but client key not found")
-            log.info("TLS support is set up.")
+            else:
+                log.info("Client Certificate and Client Key are not provided")
+
+            if getattr(ssl, self.tls_conf.cert_required) == ssl.CERT_NONE and hasattr(context, 'check_hostname'):
+                context.check_hostname = False
+
+            context.verify_mode = ssl.CERT_REQUIRED if self.tls_conf.cert_required is None else getattr(ssl,
+                                                                                                        self.tls_conf.cert_required)
+
+            if self.identity.root_ca_cert is not None:
+                context.load_verify_locations(self.identity.root_ca_cert)
+            else:
+                context.load_default_certs()
+
+            if self.tls_conf.cipher is not None:
+                context.set_ciphers(self.tls_conf.ciphers)
+
+            # Setting the verify_flags to VERIFY_CRL_CHECK_CHAIN in this mode
+            # certificate revocation lists (CRLs) of all certificates in the
+            # peer cert chain are checked if the path of CRLs in PEM or DER format
+            # is specified
+            crl_path = read_liota_config('CRL_PATH', 'crl_path')
+            if crl_path and crl_path != "None" and crl_path != "":
+                if os.path.exists(crl_path):
+                    context.verify_flags = ssl.VERIFY_CRL_CHECK_CHAIN
+                    context.load_verify_locations(cafile=crl_path)
+                else:
+                    raise ValueError("Error : Wrong Client CRL path {0}".format(crl_path))
+
+            # Setting the tls context
+            self._paho_client.tls_set_context(context)
+
+            if getattr(ssl, self.tls_conf.cert_required) != ssl.CERT_NONE:
+                # Default to secure, sets context.check_hostname attribute
+                # if available
+                self._paho_client.tls_insecure_set(False)
+            else:
+                # But with ssl.CERT_NONE, we can not check_hostname
+                self._paho_client.tls_insecure_set(True)
+        else:
+            log.info("TLS configuration is not set")
+
 
         # Set up username-password
         if self.enable_authentication:
-            if not self.identity.username:
-                log.error("Username not found")
-                raise ValueError("Username not found")
-            elif not self.identity.password:
-                log.error("Password not found")
-                raise ValueError("Password not found")
+            if self.identity is None:
+                raise ValueError("Identity required to be set")
             else:
-                self._paho_client.username_pw_set(self.identity.username, self.identity.password)
+                if self.identity.username is None:
+                    raise ValueError("Username not found")
+                elif self.identity.password is None:
+                    raise ValueError("Password not found")
+                else:
+                    self._paho_client.username_pw_set(self.identity.username, self.identity.password)
+        else:
+            log.info("Authentication is disabled")
 
         if self.qos_details:
             # Set QoS parameters
@@ -290,7 +327,7 @@ class Mqtt():
             #  Stopping background network loop as connection establishment failed.
             self._paho_client.loop_stop()
             raise Exception("Connection error with result code : {0} : {1} ".
-                      format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
+                            format(str(self._connect_result_code), paho.connack_string(self._connect_result_code)))
 
     def publish(self, topic, message, qos, retain=False):
         """
@@ -302,13 +339,11 @@ class Mqtt():
         :param retain: Message to be retained or not
         :return:
         """
-        # TODO: Retry logic to be designed
-        try:
-            mess_info = self._paho_client.publish(topic, message, qos, retain)
-            log.info("Publishing Message ID : {0} with result code : {1} ".format(mess_info.mid, mess_info.rc))
-            log.debug("Published Topic:{0}, Payload:{1}, QoS:{2}".format(topic, message, qos))
-        except Exception:
-            log.exception("MQTT Publish exception traceback..")
+        mess_info = self._paho_client.publish(topic, message, qos, retain)
+        if mess_info.rc == 0:
+            log.debug("Published Message ID:{0} with result code:{1}, Topic:{2}, Payload:{3}, QoS:{4}".format(mess_info.mid, mess_info.rc, topic, message, qos))
+        else:
+            raise Exception("MQTT Publish exception Message ID:{0} with result code:{1}, Topic:{2}, Payload:{3}, QoS:{4}".format(mess_info.mid, mess_info.rc, topic, message, qos))
 
     def subscribe(self, topic, qos, callback):
         """
@@ -320,11 +355,27 @@ class Mqtt():
         :return:
         """
         try:
+            self.sub_dict.setdefault(topic, [qos, callback])
             subscribe_response = self._paho_client.subscribe(topic, qos)
             self._paho_client.message_callback_add(topic, callback)
             log.info("Topic subscribed with information: " + str(subscribe_response))
         except Exception:
             log.exception("MQTT subscribe exception traceback..")
+
+    def unsubscribe(self, topic):
+        """
+        Unsubscribes to a topic
+
+        :param topic: Unsubscribe topic
+        :return:
+        """
+        try:
+            self.sub_dict.pop(topic, None)
+            unsubscribe_response = self._paho_client.unsubscribe(topic)
+            self._paho_client.message_callback_remove(topic)
+            log.info("Topic unsubscribed with information: " + str(unsubscribe_response))
+        except Exception:
+            log.exception("MQTT unsubscribe exception traceback..")
 
     def disconnect(self):
         """
@@ -337,7 +388,6 @@ class Mqtt():
             ten_ms_count += 1
             time.sleep(0.01)
         if self._disconnect_result_code == sys.maxsize:
-            log.error("Disconnect timeout.")
             raise Exception("Disconnection Timeout")
         elif self._disconnect_result_code == 0:
             log.info("Disconnected from MQTT Broker.")
@@ -345,10 +395,9 @@ class Mqtt():
             #  Disconnect is successful.  Stopping background network loop.
             self._paho_client.loop_stop()
         else:
-            log.error("Disconnect error with result code : {0} : {1} ".
-                      format(str(self._disconnect_result_code), paho.connack_string(self._disconnect_result_code)))
             raise Exception("Disconnect error with result code : {0} : {1} ".
-                      format(str(self._disconnect_result_code), paho.connack_string(self._disconnect_result_code)))
+                            format(str(self._disconnect_result_code),
+                                   paho.connack_string(self._disconnect_result_code)))
 
     def get_client_id(self):
         """
@@ -362,6 +411,7 @@ class QoSDetails:
     """
     Encapsulates config parameters related to Quality of Service
     """
+
     def __init__(self, in_flight, queue_size, retry):
         """
         :param in_flight: Set maximum no. of messages with QoS>0 that can be part way
@@ -396,6 +446,7 @@ class MqttMessagingAttributes:
      d) Use combination of (a) and (c) or (b) and (c).
 
     """
+
     def __init__(self, edge_system_name=None, pub_topic=None, sub_topic=None, pub_qos=1, sub_qos=1, pub_retain=False,
                  sub_callback=None):
         """
@@ -416,16 +467,13 @@ class MqttMessagingAttributes:
             self.pub_topic = pub_topic
             self.sub_topic = sub_topic
 
-        #  General validation
+        # General validation
         if pub_qos not in range(0, 3) or sub_qos not in range(0, 3):
-            log.error("QoS should either be 0 or 1 or 2")
             raise ValueError("QoS should either be 0 or 1 or 2")
         if not isinstance(pub_retain, bool):
-            log.error("pub_retain must be a boolean")
             raise ValueError("pub_retain must be a boolean")
         if sub_callback is not None:
             if not callable(sub_callback):
-                log.error("sub_callback should either be None or callable")
                 raise ValueError("sub_callback should either be None or callable")
 
         log.info("Pub Topic is:{0}".format(self.pub_topic))

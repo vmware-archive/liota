@@ -31,6 +31,7 @@
 # ----------------------------------------------------------------------------#
 
 import json
+import sys
 import logging
 import time
 import threading
@@ -50,8 +51,7 @@ from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
 
 log = logging.getLogger(__name__)
-
-
+timeout = 300
 class IotControlCenter(DataCenterComponent):
     """ The implementation of IoTCC cloud provider solution
 
@@ -110,7 +110,7 @@ class IotControlCenter(DataCenterComponent):
                         self.reg_entity_id = json_msg["body"]["uuid"]
                     else:
                         log.info("Waiting for resource creation")
-                        on_response(self.recv_msg_queue.get(True, 300))
+                        on_response(self.recv_msg_queue.get(True, timeout))
                 except Exception as err:
                     log.exception("Exception while registering resource")
                     raise err
@@ -119,7 +119,7 @@ class IotControlCenter(DataCenterComponent):
                 entity_obj.entity_type = "HelixGateway"
             self.comms.send(json.dumps(
                 self._registration(self.next_id(), entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
-            on_response(self.recv_msg_queue.get(True, 300))
+            on_response(self.recv_msg_queue.get(True, timeout))
             if not self.reg_entity_id:
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
@@ -154,21 +154,21 @@ class IotControlCenter(DataCenterComponent):
                 self._check_version(json_msg)
                 if json_msg["type"] == "remove_resource_response" and json_msg["body"]["result"] == "succeeded":
                     log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
+                    if entity_obj.ref_entity.entity_type != "HelixGateway":
+                        self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name,
+                                               entity_obj.ref_entity.entity_type, None, True)
+                    else:
+                        self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
+                        self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
                 else:
-                    log.info("Unregistration of resource {0} with IoTCC failed".format(entity_obj.ref_entity.name))
-            except:
-                raise Exception("Exception while unregistering resource")
+                    log.info("Waiting for unregistration response")
+                    on_response(self.recv_msg_queue.get(True, timeout))
+            except Exception as err:
+                log.exception("Exception while unregistering resource")
+                raise err
 
         self.comms.send(json.dumps(self._unregistration(self.next_id(), entity_obj.ref_entity)))
-        on_response(self.recv_msg_queue.get(True, 20))
-        if entity_obj.ref_entity.entity_type != "HelixGateway":
-            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name,
-                                   entity_obj.ref_entity.entity_type, None, True)
-        else:
-            self.remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
-            self.store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
-
-        log.info("Unregistration of resource {0} with IoTCC complete".format(entity_obj.ref_entity.name))
+        on_response(self.recv_msg_queue.get(True, timeout))
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """ This function initializes all relations between Registered Entities.
@@ -188,12 +188,15 @@ class IotControlCenter(DataCenterComponent):
             # should save parent's reg_entity_id
             reg_entity_child.reg_entity_id = reg_entity_parent.reg_entity_id
             entity_obj = reg_entity_child.ref_entity
-            self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
+            # If the units are passed from user code they`ll be set as unit properties
+            if entity_obj.unit is not None:
+                self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
             self.comms.send(json.dumps(self._relationship(self.next_id(),
                                                           reg_entity_parent.reg_entity_id,
                                                           reg_entity_child.reg_entity_id)))
-            self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
+            if hasattr(reg_entity_parent, 'sys_properties') and reg_entity_parent.sys_properties:
+                self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
 
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
