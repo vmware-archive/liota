@@ -75,6 +75,7 @@ class IotControlCenter(DataCenterComponent):
         time.sleep(0.5)
         self._iotcc_json = self._create_iotcc_json()
         self._iotcc_json_load_retry = int(read_liota_config('IOTCC_PATH', 'iotcc_load_retry'))
+        self.enable_reboot_getprop = read_liota_config('IOTCC_PATH', 'enable_reboot_getprop')
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
         self.boottime = boottime()
@@ -138,7 +139,7 @@ class IotControlCenter(DataCenterComponent):
             return RegisteredEntity(entity_obj, self, self.reg_entity_id)
 
     def _check_version(self, json_msg):
-	if json_msg["version"] != self._version:
+        if json_msg["version"] != self._version:
             raise Exception("CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS:" + self._version + ". SERVER VERSION IS:" + json_msg["version"])
 
     def unregister(self, entity_obj):
@@ -536,7 +537,7 @@ class IotControlCenter(DataCenterComponent):
 
     def store_reg_entity_attributes(self, entity_type, entity_name, reg_entity_id,
                                     dev_type, prop_dict):
-        log.debug('store_reg_entity_attributes\n {0}:{1}:{2}:{3}'.format(entity_type,
+        log.debug('store_reg_entity_attributes {0}:{1}:{2}:{3}'.format(entity_type,
             entity_name, reg_entity_id, prop_dict))
 
         ### Update IOTCC local entity file first
