@@ -1,22 +1,32 @@
-#Liota Package Manager
-Liota package manager consists of two parts: (1) A PackageThread that actually loads files, maintain global data structures and run package initialization/clean-up codes and (2) A PackageMessengerThread which listens on one or more specific communication channels, which is a named pipe for now, to provide with an interface for users and automated agents to send commands to package manager.
+# Liota Package Manager
+Liota package manager consists of two parts:
+
+(1) A PackageThread that actually loads files, maintain global data structures and run package initialization/clean-up codes
+
+(2) A PackageMessengerThread which listens on one or more specific communication channels, which is a named pipe for now, to provide with an interface for users and automated agents to send commands to package manager.
 
 Package manager will initialize the data structures and threads when its own module (`package_manager.py`) is imported. Once imported, PackageMessengerThread will start listening on the pipe and PackageThread will load all packages specified in the auto list in a batch.
 
-##PackageThread
+## PackageThread
 
 Currently, supported commands include package action commands and statistical commands.
 
-###Package action commands
+### Package action commands
 
 * **load** package_name sha1_checksum [package_name sha1_checksum] ...
 
-Load a package with the specified name and its sha1 checksum. For example, linux os user can first use "sha1sum filename" cmd to get checksum, and then load package by
-"./liotapkg.sh load filename sha1_checksum".
+Load a package with the specified name and its sha1 checksum. The package should be placed in '/usr/lib/liota/packages' directory. For example, linux os user can first use "sha1sum filename" cmd to get checksum, and then load package by
+
+```bash
+$ "./liotad/liotapkg.sh load filename <sha1_checksum>".
+```
 
 A python file of cal_sha1sum.py is also provided to help you calculate checksum for a file:
-python cal_sha1sum.py file_name (could be relative or absolute file name). For example, under /usr/lib/liota/packages,
-python cal_sha1sum.py iotcc_mqtt.py
+
+```bash
+$ python cal_sha1sum.py file_name (could be relative or absolute file name). For example, under /usr/lib/liota/packages/liotad,
+$ python cal_sha1sum.py iotcc_mqtt.py
+```
 
 If the specified package provides with a list of dependencies, recursively load all its dependencies. If more than one package names are specified, load them (as well as their dependencies) in a batch and no package will be loaded twice or reloaded.
 
@@ -29,6 +39,7 @@ If dependency lists of specified packages and their dependencies contain loops, 
 Unload a package with the specified name. If the specified package has dependents loaded, recursively unload all its dependents. If more than one package names are specified, unload them (as well as their dependents) in a batch.
 
 To `unregister` an entity while unloading set the following flag in `packages/sampleProp.conf` to `True`:
+
 ```bash
 ShouldUnregisterOnUnload = "True"
 ```
@@ -45,19 +56,27 @@ Unload a package with the specified name and attempt to reload the same package.
 
 Remove a package with the specified name. By default, the removed package will be stashed into a separate folder in the package path, so package manager will not find it. However, if package manager fails to create the folder, or fails to move the file, the package file will be deleted from the file system.
 
-###Package Load Automation
+### Package Load Automation
 
-Load Liota Packages automatically when Package Manager starts by listing package names and checksums in the file specified by pkg_list in [PKG_CFG] of liota.conf, e.g., by default /usr/lib/liota/packages/packages_auto.txt (Should NOT have " " around ":"):
-package_name:sha1_checksum
-[package_name:sha1_checksum]
+Load Liota Packages automatically when Package Manager starts by listing package names and checksums in the file specified by pkg_list in [PKG_CFG] of liota.conf, e.g., by default '/usr/lib/liota/packages/liotad/packages_auto.txt' (Should NOT have " " around ":"):
+
+```bash
+package_name:<sha1_checksum>
+```
 
 There are 2 options to add liota package names and checksum:
+
 1. manually write into pkg_list file;
+
 2. add at run time through command [load, reload, update] by specifiying option of "-r", e.g.,
-"./liotapkg.sh load -r filename sha1_checksum".
+
+```bash
+$ cd /usr/lib/liota/packages
+$ ./liotad/liotapkg.sh load -r filename sha1_checksum
+```
 To be reminded, unload command will remove it from pkg_list file.
 
-###Statistical commands
+### Statistical commands
 
 * **stat** met|col|th
 
@@ -73,15 +92,16 @@ Print a list of package, resources (shared objects) and threads respectively.
 
 **Note:** PackageThread is just a single thread. If your package contains time-costly or blocking lines in its `run()` or `clean_up()` methods, it will cause PackageThread to wait/block and stop accepting coming commands.
 
-##PackageMessengerThread
+## PackageMessengerThread
 
 PackageMessengerThread listens on a named pipe whose location is defined in `liota.conf`. It then parses texts received from the pipe into commands and arguments and sends them to PackageThread.
 
 Different techniques can be supported in PackageMessengerThread in the future.
 
-##LiotaPackage
+## LiotaPackage
 
 There is a LiotaPackage class defined in `package_manager.py` which looks like
+
 ```python
 class LiotaPackage:
     """
