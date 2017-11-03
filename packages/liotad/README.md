@@ -13,18 +13,19 @@ Currently, supported commands include package action commands and statistical co
 
 ### Package action commands
 
-* **load** package_name sha1_checksum [package_name sha1_checksum] ...
+* **load** package_name <sha1_checksum> ...
 
-Load a package with the specified name and its sha1 checksum. The package should be placed in '/usr/lib/liota/packages' directory. For example, linux os user can first use "sha1sum filename" cmd to get checksum, and then load package by
+Load a package with the specified name and its sha1 checksum. The package should be placed in `/usr/lib/liota/packages` directory. For example, linux os user can first use "sha1sum filename" cmd to get checksum, and then load package:
 
 ```bash
-$ "./liotad/liotapkg.sh load filename <sha1_checksum>".
+$ ./liotad/liotapkg.sh load filename <sha1_checksum>
 ```
 
 A python file of cal_sha1sum.py is also provided to help you calculate checksum for a file:
 
 ```bash
-$ python cal_sha1sum.py file_name (could be relative or absolute file name). For example, under /usr/lib/liota/packages/liotad,
+$ python cal_sha1sum.py file_name
+(could be relative or absolute file name). For example, under /usr/lib/liota/packages/liotad,
 $ python cal_sha1sum.py iotcc_mqtt.py
 ```
 
@@ -48,7 +49,7 @@ ShouldUnregisterOnUnload = "True"
 
 Unload a package with the specified name and attempt to reload the same package **using the same file name**. Batch operation is not supported for reloading. If the specified package is not loaded when this command is invoked, the command will fail.
 
-* **update** package_name sha1_checksum [package_name sha1_checksum] ...
+* **update** package_name sha1_checksum ...
 
 Unload a package with the specified name and attempt to reload the same package. If the specified package has dependents loaded, attempt to recursively update all these dependents. If the specified package is not loaded when this command is invoked, skip unloading and load the specified package directly.
 
@@ -58,7 +59,7 @@ Remove a package with the specified name. By default, the removed package will b
 
 ### Package Load Automation
 
-Load Liota Packages automatically when Package Manager starts by listing package names and checksums in the file specified by pkg_list in [PKG_CFG] of liota.conf, e.g., by default '/usr/lib/liota/packages/liotad/packages_auto.txt' (Should NOT have " " around ":"):
+Load Liota Packages automatically when Package Manager starts by listing package names and checksums in the file specified by pkg_list in [PKG_CFG] of liota.conf, e.g., by default `/usr/lib/liota/packages/liotad/packages_auto.txt` (Should NOT have " " around ":"):
 
 ```bash
 package_name:<sha1_checksum>
