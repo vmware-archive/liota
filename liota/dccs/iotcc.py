@@ -40,7 +40,7 @@ import os
 import Queue
 import datetime
 from time import gmtime, strftime
-from uptime import boottime
+
 from threading import Lock
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
@@ -78,8 +78,14 @@ class IotControlCenter(DataCenterComponent):
         self.enable_reboot_getprop = read_liota_config('IOTCC_PATH', 'enable_reboot_getprop')
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
-        self.boottime = boottime()
-
+        try:
+            # TODO: For Windows system the alternate code should be provided
+            with open('/proc/uptime', 'r') as f:
+                uptime_seconds = float(f.readline().split()[0])
+                self.boottime = (datetime.datetime.now() - datetime.timedelta(seconds=uptime_seconds)).replace(microsecond=0)
+        except Exception as err:
+            log.exception("Exception while retrieving the boot time of the system")
+            raise err
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
         self.entity_file_path = self._get_file_storage_path("entity_file_path")
