@@ -58,11 +58,11 @@ class EtherNetIP:
 		
 
 	def connect(self):
-		self.conn = client.connector(host=self.host)
-		if(self.conn):
-			print("Connected to the server")
+		with client.connector(host=self.host) as self.conn:
+			if(self.conn):
+				print("Connected to the server")
 		 
-		log.info("Connected to Server")
+			log.info("Connected to Server")
 
 
 	def write(self,tag,elements,data,tag_type):
