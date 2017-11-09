@@ -61,7 +61,11 @@ class EtherNetIP:
 		with client.connector(host=self.host) as self.conn:
 			if(self.conn):
 				print("Connected to the server")
-		 
+		 		while(1):
+                			req = self.conn.read("Scada[0]")
+                			assert self.conn.readable( timeout=1.0 ), "Failed to receive reply"
+                			rpy = next( self.conn )
+                			print rpy['enip']['CIP']['send_data']['CPF']['item'][1]['unconnected_send']['request']['read_frag']['data'][0]
 			log.info("Connected to Server")
 
 
