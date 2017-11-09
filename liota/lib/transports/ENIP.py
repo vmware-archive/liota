@@ -86,7 +86,7 @@ class EtherNetIP:
         		req = self.conn.read("Scada[0]")
                 	assert self.conn.readable( timeout=1.0 ), "Failed to receive reply"
                 	rpy = next( self.conn )
-                	print rpy['enip']['CIP']['send_data']['CPF']['item'][1]['unconnected_send']['request']['read_frag']['data'][0]
+                	data = rpy['enip']['CIP']['send_data']['CPF']['item'][1]['unconnected_send']['request']['read_frag']['data'][0]
         		print(data)
         	return data
         	
