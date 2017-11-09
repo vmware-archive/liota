@@ -87,6 +87,8 @@ class EtherNetIP:
 		assert self.conn.readable(), "Failed to receive reply"
 		rpy = next(self.conn)
 	 	data = rpy['enip']['CIP']['send_data']['CPF']['item'][1]['unconnected_send']['request']['read_frag']['data'][0]
+		print(data)
+		log.info("Connected to Server")
         	return data
         	
 	
