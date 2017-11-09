@@ -61,8 +61,7 @@ class EtherNetIP:
 		with client.connector(host=self.host) as self.conn:
 			if(self.conn):
 				print("Connected to the server")
-				self.read()
-		 		log.info("Connected to Server")
+		 	log.info("Connected to Server")
 
 
 	def write(self,tag,elements,data,tag_type):
@@ -83,12 +82,12 @@ class EtherNetIP:
 
  
     	def read(self):
-        	req = self.conn.read("Scada[0]")
-		assert self.conn.readable(), "Failed to receive reply"
-		rpy = next(self.conn)
-	 	data = rpy['enip']['CIP']['send_data']['CPF']['item'][1]['unconnected_send']['request']['read_frag']['data'][0]
-		print(data)
-		log.info("Connected to Server")
+		with client.connector(host=HOST) as self.conn:
+        		req = self.conn.read("Scada[0]")
+                	assert self.conn.readable( timeout=1.0 ), "Failed to receive reply"
+                	rpy = next( self.conn )
+                	print rpy['enip']['CIP']['send_data']['CPF']['item'][1]['unconnected_send']['request']['read_frag']['data'][0]
+        		print(data)
         	return data
         	
 	
