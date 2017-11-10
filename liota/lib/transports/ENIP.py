@@ -82,7 +82,7 @@ class EtherNetIP:
 
  
     	def read(self):
-		with client.connector(host=self.host) as self.conn:
+		with self.conn:
         		req = self.conn.read("Scada[0]")
                 	assert self.conn.readable( timeout=1.0 ), "Failed to receive reply"
                 	rpy = next( self.conn )
