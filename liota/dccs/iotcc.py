@@ -89,6 +89,9 @@ class IotControlCenter(DataCenterComponent):
         """ Register the objects
 
         """
+        if not self._validate_input(entity_obj.name):
+            raise Exception("Name of the resource contains unacceptable character : " + entity_obj.name)
+
         if isinstance(entity_obj, Metric):
             # reg_entity_id should be parent's one: not known here yet
             # will add in creat_relationship(); publish_unit should be done inside
@@ -236,6 +239,12 @@ class IotControlCenter(DataCenterComponent):
             }
         }
         for key, value in properties.items():
+            if not self._validate_input(key):
+                log.error("Property key {0} contains unacceptable character for resource {1}".format(key, entity_name))
+                continue
+            if not self._validate_input(value):
+                log.error("Property value {0} of key {1} contains unacceptable character for resource {2}".format(value, key, entity_name))
+                continue
             msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
         return msg
 
@@ -672,3 +681,10 @@ class IotControlCenter(DataCenterComponent):
         self.comms.send(json.dumps(self._get_properties(self.next_id(), resource_uuid)))
         on_response(self.recv_msg_queue.get(True, timeout))
         return self.prop_list
+
+    def _validate_input(self, input):
+        """ validates if the input string contains only the whitelisted characters """
+        import re
+        if not re.match('^[A-Za-z0-9\s\._-]+$', input):
+            return False
+        return True
