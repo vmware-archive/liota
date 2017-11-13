@@ -42,6 +42,7 @@ import datetime
 from time import gmtime, strftime
 from uptime import boottime
 from threading import Lock
+from re import match
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.entities.metrics.metric import Metric
@@ -91,6 +92,8 @@ class IotControlCenter(DataCenterComponent):
         """
         if not self._validate_input(entity_obj.name):
             raise Exception("Name of the resource contains unacceptable character : " + entity_obj.name)
+        if not self._validate_input(entity_obj.entity_type):
+            raise Exception("Type of the resource contains unacceptable character : " + entity_obj.entity_type)
 
         if isinstance(entity_obj, Metric):
             # reg_entity_id should be parent's one: not known here yet
@@ -684,7 +687,6 @@ class IotControlCenter(DataCenterComponent):
 
     def _validate_input(self, input):
         """ validates if the input string contains only the whitelisted characters """
-        import re
-        if not re.match('^[A-Za-z0-9\s\._-]+$', input):
+        if not match('^[A-Za-z0-9\s\._-]+$', input):
             return False
         return True
