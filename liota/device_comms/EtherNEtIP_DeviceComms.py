@@ -41,19 +41,11 @@ log = logging.getLogger(__name__)
 
 class EtherNetDeviceComms(DeviceComms):
 	"""
-	DeviceComms for Can bus protocol
+	DeviceComms for EtherNetIP protocol
 	"""
 
 	def __init__(self, host=None, port=None, timeout=None, dialect=None, profiler=None, udp=False, broadcast=False, source_address=None):
-		"""
-		:param channel: The can interface identifier. Expected type is backend dependent.
-		:param can_filters:A list of dictionaries each containing a "can_id" and a "can_mask".
-			>>> [{"can_id": 0x11, "can_mask": 0x21}]
-			A filter matches, when ``<received_can_id> & can_mask == can_id & can_mask``
-		:param bustype: The ref:`bus` to listen too.
-		:param listeners: An iterable of class:`can.Listeners`
-		:param userdata: userdata is used to store messages coming from the receive channel.
-		"""
+		
 		self.host = host
 		self.port = port
 		self.timeout = timeout
