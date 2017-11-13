@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 
 class EtherNetIP:
 	'''
-		CAN implementation for LIOTA. It uses python-can internally.
+		EtherNetIP implementation for LIOTA. It uses python-cpppo internally.
 	'''
 	def __init__(self, host=None, port=None, timeout=None, dialect=None, profiler=None, udp=False, broadcast=False, source_address=None):
 		
