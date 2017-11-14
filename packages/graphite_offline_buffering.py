@@ -30,53 +30,45 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import logging
-from liota.dccs.dcc import DataCenterComponent
-from liota.entities.metrics.registered_metric import RegisteredMetric
-from liota.entities.metrics.metric import Metric
-from liota.entities.registered_entity import RegisteredEntity
+from liota.core.package_manager import LiotaPackage
+from liota.lib.utilities.utility import read_user_config
 
-log = logging.getLogger(__name__)
+dependencies = ["edge_systems/dell5k/edge_system"]
 
-class Graphite(DataCenterComponent):
-    def __init__(self, comms, buffering_params=None):
-        '''
-        :param buffering_params: BufferingParams object, for offline_storage of data
-        '''
-        super(Graphite, self).__init__(
-            comms=comms,buffering_params=buffering_params
+
+class PackageClass(LiotaPackage):
+    """
+    This package creates a Graphite DCC object and registers system on
+    Graphite to acquire "registered edge system", i.e. graphite_edge_system.
+    """
+
+    def run(self, registry):
+        import copy
+        from liota.dccs.graphite import Graphite
+        from liota.dcc_comms.socket_comms import SocketDccComms
+        from liota.lib.utilities.offline_buffering import BufferingParams
+            
+        # Acquire resources from registry
+        # Creating a copy of system object to keep original object "clean"
+        edge_system = copy.copy(registry.get("edge_system"))
+
+        # Get values from configuration file
+        config_path = registry.get("package_conf")
+        config = read_user_config(config_path + '/sampleProp.conf')
+
+        # This is for persistent storage.
+        offline_buffering = BufferingParams(persistent_storage=True, data_drain_size=10, draining_frequency=1) 
+        # Initialize DCC object with transport
+        self.graphite = Graphite(
+            SocketDccComms(ip=config['GraphiteIP'],
+                   port=config['GraphitePort']), buffering_params=offline_buffering
         )
 
-    def register(self, entity_obj):
-        log.info("Registering resource with Graphite DCC {0}".format(entity_obj.name))
-        if isinstance(entity_obj, Metric):
-            return RegisteredMetric(entity_obj, self, None)
-        else:
-            return RegisteredEntity(entity_obj, self, None)
+        # Register gateway system
+        graphite_edge_system = self.graphite.register(edge_system)
 
-    def create_relationship(self, reg_entity_parent, reg_entity_child):
-        reg_entity_child.parent = reg_entity_parent
+        registry.register("graphite", self.graphite)
+        registry.register("graphite_edge_system", graphite_edge_system)
 
-    def _format_data(self, reg_metric):
-        met_cnt = reg_metric.values.qsize()
-        message = ''
-        if met_cnt == 0:
-            return
-        for _ in range(met_cnt):
-            v = reg_metric.values.get(block=True)
-            if v is not None:
-                # Graphite expects time in seconds, not milliseconds. Hence,
-                # dividing by 1000
-                message += '%s %s %d\n' % (reg_metric.ref_entity.name,
-                                           v[1], v[0] / 1000)
-        if message == '':
-            return
-        log.info ("Publishing values to Graphite DCC")
-        log.debug("Formatted message: {0}".format(message))
-        return message
-
-    def set_properties(self, reg_entity, properties):
-        raise NotImplementedError
-
-    def unregister(self, entity_obj):
-        raise NotImplementedError
+    def clean_up(self):
+        self.graphite.comms.client.close()

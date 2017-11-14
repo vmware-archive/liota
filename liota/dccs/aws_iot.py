@@ -49,13 +49,14 @@ class AWSIoT(DataCenterComponent):
     """
     DCC for AWSIoT Platform.
     """
-    def __init__(self, con, enclose_metadata=False):
+    def __init__(self, con, enclose_metadata=False, buffering_params=None):
         """
         :param con: DccComms Object
         :param enclose_metadata: Include Gateway, Device and Metric names as part of payload or not
+        :param buffering_params: BufferingParams object, for offline_storage of data
         """
         super(AWSIoT, self).__init__(
-            comms=con
+            comms=con, buffering_params=buffering_params
         )
         self.enclose_metadata = enclose_metadata
 
