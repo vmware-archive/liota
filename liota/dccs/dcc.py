@@ -96,3 +96,7 @@ class DataCenterComponent:
             raise TypeError
 
 class RegistrationFailure(Exception): pass
+
+class SetPropertiesFailure(Exception): pass
+
+class CreateRelationshipFailure(Exception): pass
