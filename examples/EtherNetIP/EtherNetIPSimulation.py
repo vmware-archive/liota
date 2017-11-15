@@ -36,7 +36,7 @@ from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.lib.utilities.utility import read_user_config
-from liota.device_comms.EtherNetIP_DeviceComms import EtherNetIPDeviceComms 
+from liota.device_comms.EtherNetIP_DeviceComms import CipEtherNetIpDeviceComms 
 from liota.entities.devices.simulated_device import SimulatedDevice
 
 
@@ -59,7 +59,7 @@ class PackageClass(LiotaPackage):
         self.config = read_user_config(config_path + '/sampleProp.conf')
 
 
-        ethernetIP_conn = EtherNetIPDeviceComms(host=self.config['EtherNetIP'],port=None,timeout=None, dialect=None,
+        ethernetIP_conn = CipEtherNetIpDeviceComms(host=self.config['EtherNetIP'],port=None,timeout=None, dialect=None,
                                          profiler=None, udp=False, broadcast=False, source_address=None)
 
         ethernet_device = SimulatedDevice(self.config['DeviceName'], "Test")
