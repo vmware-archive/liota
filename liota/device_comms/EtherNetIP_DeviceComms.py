@@ -40,7 +40,7 @@ import random
 log = logging.getLogger(__name__)
 
 
-class EtherNetIPDeviceComms(DeviceComms):
+class CipEtherNetIpDeviceComms(DeviceComms):
 	"""
 	DeviceComms for EtherNet/IP protocol
 	"""
