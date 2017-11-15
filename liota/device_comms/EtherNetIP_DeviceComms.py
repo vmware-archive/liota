@@ -18,6 +18,7 @@
 #      documentation and/or other materials provided with the distribution.   #
 #                                                                             #
 #  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"#
+
 #  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE  #
 #  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE #
 #  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE  #
@@ -33,63 +34,62 @@
 import logging
 
 from liota.device_comms.device_comms import DeviceComms
-from liota.lib.transports.ENIP import EtherNetIP
+from liota.lib.transports.EtherNetIP import EtherNetIP
 import random
 
 log = logging.getLogger(__name__)
 
 
-class EtherNetDeviceComms(DeviceComms):
+class EtherNetIPDeviceComms(DeviceComms):
 	"""
-	DeviceComms for EtherNetIP protocol
+	DeviceComms for EtherNet/IP protocol
 	"""
 
-	def __init__(self, host=None, port=None, timeout=None, dialect=None, profiler=None, udp=False, broadcast=False, source_address=None):
+	def __init__(self, host, port=None, timeout=None, dialect=None, profiler=None, udp=False, broadcast=False, source_address=None):
 		
-		self.host = host
-		self.port = port
-		self.timeout = timeout
-		self.dialect = dialect
-		self.profiler = profiler
-		self.udp = udp
-		self.broadcast =broadcast
-		self.source_address = source_address   
+	"""
+        :param host: CIP EtherNet/IP IP
+        :param port: CIP EtherNet/IP Port
+        :param timeout: Connection timeout
+        :param dialect: An EtherNet/IP CIP dialect, if not logix.Logix
+        :param profiler: If using a Python profiler, provide it to disable around I/O code
+        :param udp: Establishes a UDP/IP socket to use for request (eg. List Identity)
+        :param broadcast: Avoids connecting UDP/IP sockets; may receive many replies
+        :param source_address: Bind to a specific local interface (Default: 0.0.0.0:0)
 
+        """
 
-		if host is None:
-			log.error("Host can't be none")
-			raise TypeError("Host can't be None")
+	self.host = host
+	self.port = port
+	self.timeout = timeout
+	self.dialect = dialect
+	self.profiler = profiler
+	self.udp = udp
+	self.broadcast = broadcast
+	self.source_address = source_address   
 
-		self._connect()
+	if host is None:
+		raise TypeError("Host can't be None")
 
+	self._connect()
 
 
 	def _connect(self):
 		self.client = EtherNetIP(self.host,self.port,self.timeout,self.dialect,self.profiler,self.udp,self.broadcast,self.source_address) 
 		self.client.connect()
 
+
 	def _disconnect(self):
-		raise NotImplementedError
+		self.client.disconnect()
 
 
-	def write(self,tag,elements,data,tag_type):
-
+	def send(self, tag,elements,data,tagType):
 		if data is None:
 			raise TypeError("Data can't be none")
 		else:
-			self.client.write(tag,elements,data,tag_type)
-		
+			self.client.send(tag,elements,data,tagType)
 
-	def read(self):
-		data = self.client.read()
-		return data
-
-	def send(self, message):
-        	raise NotImplementedError
 
     	def receive(self):
-        	raise NotImplementedError
-
-	def shutdown():
-		self.client.shutdown()
-		
+        	data = self.client.receive()
+		return data	
