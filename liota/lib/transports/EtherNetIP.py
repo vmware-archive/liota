@@ -18,6 +18,7 @@
 #      documentation and/or other materials provided with the distribution.   #
 #                                                                             #
 #  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"#
+
 #  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE  #
 #  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE #
 #  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE  #
@@ -31,73 +32,66 @@
 # ----------------------------------------------------------------------------#
 
 import logging
-import os
-import sys
-import time
-import cpppo
-from random import randint
-from cpppo.server.enip import client
-from cpppo.server.enip.getattr import attribute_operations
+
+from liota.device_comms.device_comms import DeviceComms
+from liota.lib.transports.EtherNetIP import EtherNetIP
+import random
 
 log = logging.getLogger(__name__)
 
-class EtherNetIP:
-	'''
-		EtherNetIP implementation for LIOTA. It uses python-cpppo internally.
-	'''
-	def __init__(self, host=None, port=None, timeout=None, dialect=None, profiler=None, udp=False, broadcast=False, source_address=None):
+
+class EtherNetIPDeviceComms(DeviceComms):
+	"""
+	DeviceComms for EtherNet/IP protocol
+	"""
+
+	def __init__(self, host, port=None, timeout=None, dialect=None, profiler=None, udp=False, broadcast=False, source_address=None):
 		
-		self.host = host
-		self.port = port
-		self.timeout = timeout
-		self.dialect = dialect
-		self.profiler = profiler
-		self.udp = udp
-		self.broadcast =broadcast
-		self.source_address = source_address                                                                               
-		
+		"""
+        :param host: CIP EtherNet/IP IP
+        :param port: CIP EtherNet/IP Port
+        :param timeout: Connection timeout
+        :param dialect: An EtherNet/IP CIP dialect, if not logix.Logix
+        :param profiler: If using a Python profiler, provide it to disable around I/O code
+        :param udp: Establishes a UDP/IP socket to use for request (eg. List Identity)
+        :param broadcast: Avoids connecting UDP/IP sockets; may receive many replies
+        :param source_address: Bind to a specific local interface (Default: 0.0.0.0:0)
 
-	def connect(self):
-		with client.connector(host=self.host) as self.conn:
-			if(self.conn):
-				print("Connected to the server")
-		 	log.info("Connected to Server")
+        """
+
+	self.host = host
+	self.port = port
+	self.timeout = timeout
+	self.dialect = dialect
+	self.profiler = profiler
+	self.udp = udp
+	self.broadcast = broadcast
+	self.source_address = source_address   
+
+	if host is None:
+		raise TypeError("Host can't be None")
+
+	self._connect()
 
 
-	def write(self,tag,elements,data,tag_type):
-		self.tag = tag
-		self.elements = elements
-		self.data = data
-		self.tag_type = tag_type
+	def _connect(self):
+		self.client = EtherNetIP(self.host,self.port,self.timeout,self.dialect,self.profiler,self.udp,self.broadcast,self.source_address) 
+		self.client.connect()
 
-		try:
-			req = self.conn.write( self.tag, elements=self.elements, data=self.data,
-                              tag_type=self.tag_type)
-		except AssertionError:
-            		print "Response timed out!! Tearing Connection and Reconnecting!!!!!"
-        	except AttributeError:
-            		print "Tag J1_pos not written:::Will try again::"
-        	except socket.error as exc:
-            		print "Couldn't send command: %s" % ( exc )
 
- 
-    	def read(self):
-		with self.conn:
-        		req = self.conn.read("Scada[0]")
-                	assert self.conn.readable( timeout=1.0 ), "Failed to receive reply"
-                	rpy = next( self.conn )
-                	data = rpy['enip']['CIP']['send_data']['CPF']['item'][1]['unconnected_send']['request']['read_frag']['data'][0]
-        		print(data)
-        	return data
-        	
-	
-	
+	def _disconnect(self):
+		self.client.disconnect()
 
-	def shutdown( self ):
-        	if not self.udp:
-            		try:
-                		self.conn.shutdown( socket.SHUT_WR )
-            		except:
-                		pass
+
+	def send(self, tag,elements,data,tagType):
+		if data is None:
+			raise TypeError("Data can't be none")
+		else:
+			self.client.send(tag,elements,data,tagType)
+
+
+    	def receive(self):
+        	data = self.client.receive()
+		return data	
 
 	
