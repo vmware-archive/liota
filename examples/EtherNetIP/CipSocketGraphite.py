@@ -59,8 +59,8 @@ class PackageClass(LiotaPackage):
         self.config = read_user_config(config_path + '/sampleProp.conf')
 
 
-        ethernetIP_conn = CipEtherNetIpDeviceComms(host=self.config['EtherNetIP'],port=None,timeout=None, dialect=None,
-                                         profiler=None, udp=False, broadcast=False, source_address=None)
+        self.ethernetIP_conn = CipEtherNetIpDeviceComms(host=self.config['EtherNetIP'],port,timeout, dialect,
+                                         profiler, udp=False, broadcast=False, source_address)
 
         ethernet_device = SimulatedDevice(self.config['DeviceName'], "Test")
         reg_ethernet_device = graphite.register(ethernet_device)
@@ -75,7 +75,7 @@ class PackageClass(LiotaPackage):
             name=ethernet_device_metric_name,
             unit=None,
             interval=5,
-            sampling_function=lambda: read_value(ethernetIP_conn)
+            sampling_function=lambda: read_value(self.ethernetIP_conn)
         )
 
         reg_ethernet_device_metric = graphite.register(ethernet_device_metric)
@@ -88,4 +88,5 @@ class PackageClass(LiotaPackage):
     def clean_up(self):
         for metric in self.metrics:
             metric.stop_collecting()
+        self.ethernetIP_conn._disconnect()
 
