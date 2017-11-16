@@ -34,17 +34,11 @@ import json
 import logging
 import time
 import threading
-import ConfigParser
-import os
 import Queue
-from time import gmtime, strftime
 from threading import Lock
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure, SetPropertiesFailure, CreateRelationshipFailure
-from liota.lib.protocols.helix_protocol import HelixProtocol
 from liota.entities.metrics.metric import Metric
-from liota.lib.utilities.utility import LiotaConfigPath, getUTCmillis, mkdir, read_liota_config
-from liota.lib.utilities.si_unit import parse_unit
 from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
 
@@ -85,13 +79,13 @@ class Iotcv2(DataCenterComponent):
         self.req_dict = {}
         thread = threading.Thread(target=self._dispatch_recvd_msg)
         thread.daemon = True
-        # This thread will continuously run in background to check received responses
+        # This thread will continuously run in background to check and dispatch received responses
         thread.start()
 
     def register(self, entity_obj):
         if isinstance(entity_obj, Metric):
             # reg_entity_id should be parent's one: not known here yet
-            # will add in creat_relationship();
+            # will add in create_relationship();
             log.info("Registering metric {0} locally".format(entity_obj.name))
             return RegisteredMetric(entity_obj, self, None)
         else:
