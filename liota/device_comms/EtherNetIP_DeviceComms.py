@@ -41,55 +41,66 @@ log = logging.getLogger(__name__)
 
 
 class CipEtherNetIpDeviceComms(DeviceComms):
-	"""
-	DeviceComms for EtherNet/IP protocol
-	"""
+    """
+    DeviceComms for EtherNet/IP protocol
+    """
 
-	def __init__(self, host, port=None, timeout=None, dialect=None, profiler=None, udp=False, broadcast=False, source_address=None):
-		
-	"""
-        :param host: CIP EtherNet/IP IP
-        :param port: CIP EtherNet/IP Port
-        :param timeout: Connection timeout
-        :param dialect: An EtherNet/IP CIP dialect, if not logix.Logix
-        :param profiler: If using a Python profiler, provide it to disable around I/O code
-        :param udp: Establishes a UDP/IP socket to use for request (eg. List Identity)
-        :param broadcast: Avoids connecting UDP/IP sockets; may receive many replies
-        :param source_address: Bind to a specific local interface (Default: 0.0.0.0:0)
-
+    def __init__(
+            self,
+            host,
+            port=None,
+            timeout=None,
+            dialect=None,
+            profiler=None,
+            udp=False,
+            broadcast=False,
+            source_address=None):
         """
+	:param host: CIP EtherNet/IP IP
+	:param port: CIP EtherNet/IP Port
+	:param timeout: Connection timeout
+	:param dialect: An EtherNet/IP CIP dialect, if not logix.Logix
+	:param profiler: If using a Python profiler, provide it to disable around I/O code
+	:param udp: Establishes a UDP/IP socket to use for request (eg. List Identity)
+	:param broadcast: Avoids connecting UDP/IP sockets; may receive many replies
+	:param source_address: Bind to a specific local interface (Default: 0.0.0.0:0)
+	"""
 
-	self.host = host
-	self.port = port
-	self.timeout = timeout
-	self.dialect = dialect
-	self.profiler = profiler
-	self.udp = udp
-	self.broadcast = broadcast
-	self.source_address = source_address   
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+        self.dialect = dialect
+        self.profiler = profiler
+        self.udp = udp
+        self.broadcast = broadcast
+        self.source_address = source_address
 
-	if host is None:
-		raise TypeError("Host can't be None")
+        if host is None:
+            raise TypeError("Host can't be None")
 
-	self._connect()
+        self._connect()
 
+    def _connect(self):
+        self.client = EtherNetIP(
+            self.host,
+            self.port,
+            self.timeout,
+            self.dialect,
+            self.profiler,
+            self.udp,
+            self.broadcast,
+            self.source_address)
+        self.client.connect()
 
-	def _connect(self):
-		self.client = EtherNetIP(self.host,self.port,self.timeout,self.dialect,self.profiler,self.udp,self.broadcast,self.source_address) 
-		self.client.connect()
+    def _disconnect(self):
+        self.client.disconnect()
 
+    def send(self, tag, elements, data, tagType):
+        if data is None:
+            raise TypeError("Data can't be none")
+        else:
+            self.client.send(tag, elements, data, tagType)
 
-	def _disconnect(self):
-		self.client.disconnect()
-
-
-	def send(self, tag,elements,data,tagType):
-		if data is None:
-			raise TypeError("Data can't be none")
-		else:
-			self.client.send(tag,elements,data,tagType)
-
-
-    	def receive(self):
-        	data = self.client.receive()
-		return data	
+    def receive(self):
+        data = self.client.receive()
+        return data
