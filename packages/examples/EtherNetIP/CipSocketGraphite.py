@@ -36,19 +36,20 @@ from liota.dccs.graphite import Graphite
 from liota.entities.metrics.metric import Metric
 from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 from liota.lib.utilities.utility import read_user_config
-from liota.device_comms.EtherNetIP_DeviceComms import CipEtherNetIpDeviceComms
+from liota.device_comms.EtherNetIP_DeviceComms import EtherNetIPDeviceComms
 from liota.entities.devices.simulated_device import SimulatedDevice
 
 
 dependencies = ["graphite"]
 
+
 def read_value(conn):
     value = conn.read()
     return value
 
+
 class PackageClass(LiotaPackage):
 
-    
     def run(self, registry):
 
         # Acquire resources from registry
@@ -58,18 +59,15 @@ class PackageClass(LiotaPackage):
 
         self.config = read_user_config(config_path + '/sampleProp.conf')
 
-
-        self.ethernetIP_conn = CipEtherNetIpDeviceComms(host=self.config['EtherNetIP'],port,timeout, dialect,
-                                         profiler, udp=False, broadcast=False, source_address)
+        self.ethernetIP_conn =  EtherNetIPDeviceComms(host=self.config['EtherNetIP'], port, timeout, dialect,
+                                                profiler, udp=False, broadcast=False, source_address)
 
         ethernet_device = SimulatedDevice(self.config['DeviceName'], "Test")
         reg_ethernet_device = graphite.register(ethernet_device)
 
-
         self.metrics = []
 
         ethernet_device_metric_name = "CIP.ethernetIP"
-
 
         ethernet_device_metric = Metric(
             name=ethernet_device_metric_name,
@@ -79,14 +77,13 @@ class PackageClass(LiotaPackage):
         )
 
         reg_ethernet_device_metric = graphite.register(ethernet_device_metric)
-        graphite.create_relationship(reg_ethernet_device, reg_ethernet_device_metric)
+        graphite.create_relationship(
+            reg_ethernet_device,
+            reg_ethernet_device_metric)
         reg_ethernet_device_metric.start_collecting()
         self.metrics.append(reg_ethernet_device_metric)
-
-
 
     def clean_up(self):
         for metric in self.metrics:
             metric.stop_collecting()
-        self.ethernetIP_conn._disconnect
-
+	self.ethernetIP_conn._disconnect()
