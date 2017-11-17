@@ -30,61 +30,30 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-from liota.core.package_manager import LiotaPackage
-from liota.dcc_comms.socket_comms import SocketDccComms
-from liota.dccs.graphite import Graphite
-from liota.entities.metrics.metric import Metric
-from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
-from liota.lib.utilities.utility import read_user_config
-from liota.device_comms.cipethernetip_device_comms import CipEtherNetIpDeviceComms
-from liota.entities.devices.simulated_device import SimulatedDevice
+import time
+from cpppo.server.enip import client
+from cpppo.server.enip.getattr import attribute_operations
+import json
+
+HOST = "127.0.0.1"
+
+with client.connector(host=HOST) as conn:
+        i =1 
+        while(1):
+        	try:
+                	data = [int(i) for c in range( 1 )]
+                        elements = len (data)
+		        tagType = client.enip.DINT.tag_type
+	     	        tag = "Scada"
+			req = conn.write( tag, elements=elements, data=data,
+                                   tag_type=tagType)
+
+          	except socket.error as exc:
+                	print "Couldn't send command: %s" 
+			
+		time.sleep(5)
+		i = i + 1
 
 
-dependencies = ["graphite"]
 
-
-def read_value(conn):
-    value = conn.receive()
-    return value
-
-
-class PackageClass(LiotaPackage):
-
-    def run(self, registry):
-
-        # Acquire resources from registry
-        graphite = registry.get("graphite")
-
-        config_path = registry.get("package_conf")
-
-        self.config = read_user_config(config_path + '/sampleProp.conf')
-
-        self.ethernetIP_conn =  CipEtherNetIpDeviceComms(host=self.config['CipEtherNetIp'], port, timeout, dialect,
-                                                profiler, udp=False, broadcast=False, source_address)
-
-        ethernet_device = SimulatedDevice(self.config['DeviceName'], "Test")
-        reg_ethernet_device = graphite.register(ethernet_device)
-
-        self.metrics = []
-
-        ethernet_device_metric_name = "CIP.ethernetIP"
-
-        ethernet_device_metric = Metric(
-            name=ethernet_device_metric_name,
-            unit=None,
-            interval=5,
-            sampling_function=lambda: read_value(self.ethernetIP_conn)
-        )
-
-        reg_ethernet_device_metric = graphite.register(ethernet_device_metric)
-        graphite.create_relationship(
-            reg_ethernet_device,
-            reg_ethernet_device_metric)
-        reg_ethernet_device_metric.start_collecting()
-        self.metrics.append(reg_ethernet_device_metric)
-
-    def clean_up(self):
-        for metric in self.metrics:
-            metric.stop_collecting()
-	self.ethernetIP_conn._disconnect()
 
