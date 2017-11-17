@@ -40,7 +40,6 @@ import os
 import Queue
 import datetime
 from time import gmtime, strftime
-
 from threading import Lock
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
@@ -59,6 +58,7 @@ class IotControlCenter(DataCenterComponent):
 
     def __init__(self, con):
         log.info("Logging into DCC")
+        self._dcc_load_time = datetime.datetime.now()
         self._version = 20171023
         self.comms = con
         if not self.comms.identity.username:
@@ -78,14 +78,6 @@ class IotControlCenter(DataCenterComponent):
         self.enable_reboot_getprop = read_liota_config('IOTCC_PATH', 'enable_reboot_getprop')
         self.counter = 0
         self.recv_msg_queue = self.comms.userdata
-        try:
-            # TODO: For Windows system the alternate code should be provided
-            with open('/proc/uptime', 'r') as f:
-                uptime_seconds = float(f.readline().split()[0])
-                self.boottime = (datetime.datetime.now() - datetime.timedelta(seconds=uptime_seconds)).replace(microsecond=0)
-        except Exception as err:
-            log.exception("Exception while retrieving the boot time of the system")
-            raise err
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
         self.entity_file_path = self._get_file_storage_path("entity_file_path")
@@ -569,7 +561,7 @@ class IotControlCenter(DataCenterComponent):
             # check Entity_Timestamp of entity_file: if < boottime, get properties from cloud
             if (self.enable_reboot_getprop == "True") and ('Entity_Timestamp' in tmp_dict):
                 last_dtime = datetime.datetime.strptime(tmp_dict["Entity_Timestamp"], "%Y-%m-%dT%H:%M:%S")
-                if (last_dtime <= self.boottime):
+                if (last_dtime <= self._dcc_load_time):
                     list_prop = self.get_properties(reg_entity_id)
                     # merge property info from get_properties() into our local entity record
                     tmp_dict = self.merge_prop_dict_list(tmp_dict, list_prop)
