@@ -59,7 +59,7 @@ class IotControlCenter(DataCenterComponent):
 
     def __init__(self, con):
         log.info("Logging into DCC")
-        self._version = 20171023
+        self._version = 20171118
         self.comms = con
         if not self.comms.identity.username:
             log.error("Username not found")
@@ -128,12 +128,12 @@ class IotControlCenter(DataCenterComponent):
                 with self.file_ops_lock:
                     self.store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
                                               entity_obj.entity_id)
-                    self.store_reg_entity_attributes("EdgeSystem", entity_obj.name,
+                    self.store_reg_entity_attributes("EdgeSystem", entity_obj,
                                                      self.reg_entity_id, None, None)
             else:
                 # get dev_type, and prop_dict if possible
                 with self.file_ops_lock:
-                    self.store_reg_entity_attributes("Devices", entity_obj.name, self.reg_entity_id,
+                    self.store_reg_entity_attributes("Devices", entity_obj, self.reg_entity_id,
                                                      entity_obj.entity_type, None)
 
             return RegisteredEntity(entity_obj, self, self.reg_entity_id)
@@ -177,9 +177,8 @@ class IotControlCenter(DataCenterComponent):
             Parameters:
             - obj: The object that has just obtained an UUID
         """
-        # sanity check: must be RegisteredEntity or RegisteredMetricRegisteredMetric
-        if (not isinstance(reg_entity_parent, RegisteredEntity) \
-                    and not isinstance(reg_entity_parent, RegisteredMetric)) \
+        # sanity check: must be RegisteredEntity or RegisteredMetric
+        if (not isinstance(reg_entity_parent, RegisteredEntity)) \
                 or (not isinstance(reg_entity_child, RegisteredEntity) \
                             and not isinstance(reg_entity_child, RegisteredMetric)):
             raise TypeError()
@@ -194,8 +193,8 @@ class IotControlCenter(DataCenterComponent):
                 self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
             self.comms.send(json.dumps(self._relationship(self.next_id(),
-                                                          reg_entity_parent.reg_entity_id,
-                                                          reg_entity_child.reg_entity_id)))
+                                                          reg_entity_parent.ref_entity,
+                                                          reg_entity_child.ref_entity)))
             if hasattr(reg_entity_parent, 'sys_properties') and reg_entity_parent.sys_properties:
                 self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
 
@@ -211,14 +210,22 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 
-    def _relationship(self, msg_id, parent_res_uuid, child_res_uuid):
+    def _relationship(self, msg_id, parent_entity, child_entity):
         return {
             "transactionID": msg_id,
             "version": self._version,
             "type": "create_relationship_request",
             "body": {
-                "parent": parent_res_uuid,
-                "child": child_res_uuid
+                "parent":  {
+                    "kind": parent_entity.entity_type,
+                    "id": parent_entity.entity_id,
+                    "name": parent_entity.name
+                },
+                "child":  {
+                    "kind": child_entity.entity_type,
+                    "id": child_entity.entity_id,
+                    "name": child_entity.name
+                }
             }
         }
 
@@ -239,13 +246,15 @@ class IotControlCenter(DataCenterComponent):
             msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
         return msg
 
-    def _get_properties(self, msg_id, res_uuid):
+    def _get_properties(self, msg_id, ref_entity):
         return {
             "transactionID": msg_id,
             "version": self._version,
             "type": "get_properties_request",
             "body": {
-                "uuid": res_uuid
+                "kind": ref_entity.entity_type,
+                "id": ref_entity.entity_id,
+                "name": ref_entity.name
             }
         }
 
@@ -306,12 +315,12 @@ class IotControlCenter(DataCenterComponent):
                              getUTCmillis(), properties)))
         if entity.entity_type == "HelixGateway":
             with self.file_ops_lock:
-                self.store_reg_entity_attributes("EdgeSystem", entity.name,
+                self.store_reg_entity_attributes("EdgeSystem", entity,
                                                  reg_entity_obj.reg_entity_id, None, properties)
         else:
             # get dev_type, and prop_dict if possible
             with self.file_ops_lock:
-                self.store_reg_entity_attributes("Devices", entity.name, reg_entity_obj.reg_entity_id,
+                self.store_reg_entity_attributes("Devices", entity, reg_entity_obj.reg_entity_id,
                                                  entity.entity_type, properties)
 
     def publish_unit(self, reg_entity_obj, metric_name, unit):
@@ -535,8 +544,9 @@ class IotControlCenter(DataCenterComponent):
         # get updated dict
         return prop_dict
 
-    def store_reg_entity_attributes(self, entity_type, entity_name, reg_entity_id,
+    def store_reg_entity_attributes(self, entity_type, entity, reg_entity_id,
                                     dev_type, prop_dict):
+        entity_name = entity.name
         log.debug('store_reg_entity_attributes {0}:{1}:{2}:{3}'.format(entity_type,
             entity_name, reg_entity_id, prop_dict))
 
@@ -564,7 +574,7 @@ class IotControlCenter(DataCenterComponent):
             if (self.enable_reboot_getprop == "True") and ('Entity_Timestamp' in tmp_dict):
                 last_dtime = datetime.datetime.strptime(tmp_dict["Entity_Timestamp"], "%Y-%m-%dT%H:%M:%S")
                 if (last_dtime <= self.boottime):
-                    list_prop = self.get_properties(reg_entity_id)
+                    list_prop = self.get_properties(entity)
                     # merge property info from get_properties() into our local entity record
                     tmp_dict = self.merge_prop_dict_list(tmp_dict, list_prop)
             if ((('entity type' in tmp_dict) and (tmp_dict["entity type"] == entity_type)) and
@@ -648,9 +658,9 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 
-    def get_properties(self, resource_uuid):
-        """ get list of properties with resource uuid """
-        log.info("Get properties defined with IoTCC for resource {0}".format(resource_uuid))
+    def get_properties(self, entity):
+        """ get list of properties """
+        log.info("Get properties defined with IoTCC for resource {0}".format(entity.entity_id))
         self.prop_list = None
 
         def on_response(msg):
@@ -659,8 +669,8 @@ class IotControlCenter(DataCenterComponent):
                 json_msg = json.loads(msg)
                 log.debug("Processing msg: {0}".format(json_msg["type"]))
                 self._check_version(json_msg)
-                if json_msg["type"] == "get_properties_response" and json_msg["body"]["uuid"] != "null" and \
-                                json_msg["body"]["uuid"] == resource_uuid:
+                if json_msg["type"] == "get_properties_response" and json_msg["body"]["id"] != "null" and \
+                                json_msg["body"]["id"] == entity.entity_id:
                     log.info("FOUND PROPERTY LIST: {0}".format(json_msg["body"]["propertyList"]))
                     self.prop_list = json_msg["body"]["propertyList"]
                 else:
@@ -669,6 +679,6 @@ class IotControlCenter(DataCenterComponent):
             except:
                 log.exception("Exception while getting properties")
 
-        self.comms.send(json.dumps(self._get_properties(self.next_id(), resource_uuid)))
+        self.comms.send(json.dumps(self._get_properties(self.next_id(), entity)))
         on_response(self.recv_msg_queue.get(True, timeout))
         return self.prop_list
