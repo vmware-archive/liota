@@ -1,7 +1,7 @@
 import yaml
 
 from liota.dccs.iotcv2 import Iotcv2
-from liota.dccs.dcc import RegistrationFailure
+from liota.dccs.dcc import RegistrationFailure, SetPropertiesFailure
 from liota.core.package_manager import LiotaPackage
 from liota.lib.utilities.identity import Identity
 from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
@@ -54,7 +54,10 @@ class PackageClass(LiotaPackage):
             registry.register("iotc_v2_mqtt_wssl_edge_system", self.iotcc_edge_system)
         except RegistrationFailure:
             print "EdgeSystem registration to IOTCV2 failed"
-        #self.iotcc.set_properties(self.iotcc_edge_system,{"key1": "value1", "key2": "value2"})
+        try:
+            self.iotcc.set_properties(self.iotcc_edge_system, self.config['EdgeSystemPropList'])
+        except SetPropertiesFailure:
+            print "EdgeSystem setting properties failed"
 
     def clean_up(self):
         #Unregister edge system

@@ -75,7 +75,8 @@ class PackageClass(LiotaPackage):
             for i in range(0, num_ecus):
                 # Register device
                 log.info("*****Registeration Started for ECU %s" %(i))
-                ecu = SimulatedDevice(self.config['ECUNameList'][i] + '-' + os.environ['VIN'], "Toyota-ECU")
+                ecu_name = self.config['ECUNameList'][i] + '-' + os.environ['VIN']
+                ecu = SimulatedDevice(ecu_name, "Toyota-ECU")
                 self.reg_ecu = self.iotcc.register(ecu)
                 self.reg_ecus.append(self.reg_ecu)
                 # create full ECU proplist
@@ -89,7 +90,7 @@ class PackageClass(LiotaPackage):
                 self.iotcc.set_properties(self.reg_ecu, prop_dict)
                 self.iotcc.create_relationship(self.iotcc_edge_system, self.reg_ecu)
         except Exception:
-            log.exception("Connected Device Registration and Metrics are Not Available")
+            log.exception("ECU {0} Registration/SetProperties/CreateRelationship failed".format(ecu_name))
 
     def clean_up(self):
         """

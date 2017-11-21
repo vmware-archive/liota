@@ -1,4 +1,5 @@
 EdgeSystemName : "EdgeSystem-Name"
+EdgeSystemPropList : {"City":"Palo Alto", "State":"California", "Country":"USA"}
 
 BrokerIP : "MQTT-Broker-IP"
 BrokerPort : MQTT-broker-Port
