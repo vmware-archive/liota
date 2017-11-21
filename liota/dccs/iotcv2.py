@@ -141,8 +141,6 @@ class Iotcv2(DataCenterComponent):
         if isinstance(reg_entity_child, RegisteredMetric):
             # should save parent's reg_entity_id
             reg_entity_child.reg_entity_id = reg_entity_parent.reg_entity_id
-            #entity_obj = reg_entity_child.ref_entity
-            #self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
             return
         else:
             log.info("Registering parent and child relationship with IoTCV2 for {0} {1}".\
