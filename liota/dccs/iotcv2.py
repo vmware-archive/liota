@@ -94,6 +94,7 @@ class Iotcv2(DataCenterComponent):
             reg_resp_q = Queue.Queue()
 
             def on_response(msg, reg_resp_q):
+                reg_entity_id = None
                 try:
                     log.debug("Received msg: {0}".format(msg))
                     json_msg = json.loads(msg)
@@ -102,12 +103,13 @@ class Iotcv2(DataCenterComponent):
                                     json_msg["guid"] == entity_obj.entity_id:
                         log.info("Received registration response for: {0}".format(json_msg["guid"]))
                         if json_msg["result"] == 'SUCCESS':
-                            self.reg_entity_id = json_msg["guid"]
+                            reg_entity_id = json_msg["guid"]
                     else:
                         log.info("Waiting for resource registration response")
-                        on_response(reg_resp_q.get(True, timeout), reg_resp_q)
+                        reg_entity_id = on_response(reg_resp_q.get(True, timeout), reg_resp_q)
                 except:
-                    raise Exception("Exception while registering resource")
+                    log.exception("Exception while registering resource")
+                return reg_entity_id
 
             # create and add register request into req_list (waiting list)
             operation_id = self.next_id()
@@ -119,16 +121,13 @@ class Iotcv2(DataCenterComponent):
             self.comms.send(json.dumps(
                 self._registration(operation_id, entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
             # block until there is an item available or timeout
-            try:
-                on_response(reg_resp_q.get(True, timeout), reg_resp_q)
-            except:
-                raise Exception("Exception while registering resource")
+            reg_entity_id = on_response(reg_resp_q.get(True, timeout), reg_resp_q)
 
-            if not self.reg_entity_id:
+            if reg_entity_id is None:
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
 
-            return RegisteredEntity(entity_obj, self, self.reg_entity_id)
+            return RegisteredEntity(entity_obj, self, reg_entity_id)
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         # sanity check: must be RegisteredEntity or RegisteredMetricRegisteredMetric
@@ -150,9 +149,9 @@ class Iotcv2(DataCenterComponent):
                      format(reg_entity_parent.ref_entity.name, reg_entity_child.ref_entity.name))
             # create relationship fun internal queue
             rel_resp_q = Queue.Queue()
-            self.set_relationship = False
 
             def on_response(msg, rel_resp_q):
+                set_relationship = False
                 try:
                     log.debug("Received msg: {0}".format(msg))
                     json_msg = json.loads(msg)
@@ -161,12 +160,13 @@ class Iotcv2(DataCenterComponent):
                         and json_msg["guid"] == reg_entity_parent.reg_entity_id:
                         log.info("Received createRelationship response")
                         if json_msg["result"] == 'SUCCESS':
-                            self.set_relationship = True
+                            set_relationship = True
                     else:
                         log.info("Waiting for create relationship response")
-                        on_response(rel_resp_q.get(True, timeout), rel_resp_q)
+                        set_relationship = on_response(rel_resp_q.get(True, timeout), rel_resp_q)
                 except:
-                    raise Exception("Exception while create relationship")
+                    log.exception("Exception while create relationship")
+                return set_relationship
 
             # create and add register request into req_list (waiting list)
             operation_id = self.next_id()
@@ -178,12 +178,9 @@ class Iotcv2(DataCenterComponent):
             self.comms.send(json.dumps(self._relationship(operation_id,
                             reg_entity_parent.reg_entity_id, reg_entity_child.reg_entity_id)))
             # block until there is an item available or timeout
-            try:
-                on_response(rel_resp_q.get(True, timeout), rel_resp_q)
-            except:
-                raise Exception("Exception while creating relationship")
+            set_relationship = on_response(rel_resp_q.get(True, timeout), rel_resp_q)
 
-            if not self.set_relationship:
+            if set_relationship == False:
                 raise CreateRelationshipFailure()
             log.info("Relationship Created")
 
@@ -229,9 +226,9 @@ class Iotcv2(DataCenterComponent):
         log.info("Properties defined for resource {0}".format(entity.name))
         # set_properties fun internal queue
         set_prop_resp_q = Queue.Queue()
-        self.set_prop = False
 
         def on_response(msg, set_prop_resp_q):
+            set_prop = False
             try:
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
@@ -240,12 +237,13 @@ class Iotcv2(DataCenterComponent):
                                 json_msg["guid"] == entity.entity_id:
                     log.info("Received set properties response for: {0}".format(json_msg["guid"]))
                     if json_msg["result"] == 'SUCCESS':
-                        self.set_prop = True
+                        set_prop = True
                 else:
                     log.info("Waiting for set properties response")
-                    on_response(set_prop_resp_q.get(True, timeout), set_prop_resp_q)
+                    set_prop = on_response(set_prop_resp_q.get(True, timeout), set_prop_resp_q)
             except:
-                raise Exception("Exception while set properties")
+                log.exception("Exception while set properties")
+            return set_prop
 
         # create and add register request into req_list (waiting list)
         operation_id = self.next_id()
@@ -258,12 +256,9 @@ class Iotcv2(DataCenterComponent):
         self.comms.send(json.dumps(
             self._properties(operation_id, entity.entity_type, entity.entity_id, entity.name, properties)))
         # block until there is an item available or timeout
-        try:
-            on_response(set_prop_resp_q.get(True, timeout), set_prop_resp_q)
-        except:
-            raise Exception("Exception while setting properties")
+        set_prop = on_response(set_prop_resp_q.get(True, timeout), set_prop_resp_q)
 
-        if not self.set_prop:
+        if set_prop == False:
             raise SetPropertiesFailure()
         log.info("Set Properties for {0} succeeded".format(entity.name))
 
