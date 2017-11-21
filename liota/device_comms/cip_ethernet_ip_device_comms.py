@@ -103,7 +103,7 @@ class CipEtherNetIpDeviceComms(DeviceComms):
         else:
             self.client.send(tag, elements, data, tag_type)
 
-    def receive(self,tag):
-        data = self.client.receive(tag)
+    def receive(self, tag, index):	
+        data = self.client.receive(tag, index)
         return data
 

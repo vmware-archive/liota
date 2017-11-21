@@ -43,8 +43,8 @@ from liota.entities.devices.simulated_device import SimulatedDevice
 dependencies = ["graphite"]
 
 
-def read_value(conn,tag):
-    value = conn.receive(tag)
+def read_value(conn, tag, index):
+    value = conn.receive(tag, index)
     return value
 
 
@@ -59,33 +59,35 @@ class PackageClass(LiotaPackage):
 
         self.config = read_user_config(config_path + '/sampleProp.conf')
 
-        self.ethernetIP_conn =  CipEtherNetIpDeviceComms(host=self.config['CipEtherNetIp'])
+        self.cip_ethernet_ip_conn =  CipEtherNetIpDeviceComms(host=self.config['CipEtherNetIp'])
         
-	self.tag = self.config['Tag']                                        
+	self.tag = self.config['Tag']         
+        self.index = self.config['Index']
+                               
 
-        ethernet_device = SimulatedDevice(self.config['DeviceName'], "Test")
-        reg_ethernet_device = graphite.register(ethernet_device)
+        cip_ethernet_device = SimulatedDevice(self.config['DeviceName'], "Test")
+        reg_cip_ethernet_device = graphite.register(cip_ethernet_device)
 
         self.metrics = []
 
-        ethernet_device_metric_name = "CIP.ethernetIP"
+        cip_ethernet_device_metric_name = "CIP.ethernetIP"
 
-        ethernet_device_metric = Metric(
-            name=ethernet_device_metric_name,
+        cip_ethernet_device_metric = Metric(
+            name=cip_ethernet_device_metric_name,
             unit=None,
             interval=5,
-            sampling_function=lambda: read_value(self.ethernetIP_conn,self.tag)
+            sampling_function=lambda: read_value(self.cip_ethernet_ip_conn, self.tag, self.index)
         )
 
-        reg_ethernet_device_metric = graphite.register(ethernet_device_metric)
+        reg_cip_ethernet_device_metric = graphite.register(cip_ethernet_device_metric)
         graphite.create_relationship(
-            reg_ethernet_device,
-            reg_ethernet_device_metric)
-        reg_ethernet_device_metric.start_collecting()
-        self.metrics.append(reg_ethernet_device_metric)
+            reg_cip_ethernet_device,
+            reg_cip_ethernet_device_metric)
+        reg_cip_ethernet_device_metric.start_collecting()
+        self.metrics.append(reg_cip_ethernet_device_metric)
 
     def clean_up(self):
-        for metric in self.metrics:
+	for metric in self.metrics:
             metric.stop_collecting()
-	self.ethernetIP_conn._disconnect()
+	self.cip_ethernet_ip_conn._disconnect()
 

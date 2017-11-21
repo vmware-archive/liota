@@ -70,8 +70,7 @@ class CipEthernetIp:
 
     def connect(self):
         with client.connector(host=self.host) as self.conn:
-            if(self.conn):
-                log.info("Connected to Server")
+            log.info("Connected to Server")
 
     def send(self, tag, elements, data, tag_type):
         self.tag = tag
@@ -85,26 +84,21 @@ class CipEthernetIp:
         except AssertionError as exc:
             log.info("Response timed out!!")
         except socket.error as exc:
-            log.error("Couldn't send command: %s" % (exc))
+            log.exception("Couldn't send command: %s" % (exc))
 
-    def receive(self,tag):
+    def receive(self, tag, index):
         with self.conn:
+	    Tag = tag+'['+index+']'
             try:
-                request_ = self.conn.read(tag)
+                request_ = self.conn.read(Tag)
                 assert self.conn.readable(timeout=1.0), "Failed to receive reply"
                 response = next(self.conn)
                 data = response['enip']['CIP']['send_data']['CPF']['item'][1]['unconnected_send']['request']['read_frag']['data'][0]
             except AssertionError as error:
-                log.error("Failed to receive reply")
+                log.exception("Failed to receive reply")
         return data if data else None
 
     def disconnect(self):
-        if not self.udp:
-            try:
-                self.conn.shutdown(socket.SHUT_WR)
-            except:
-                pass
-
         if self.conn is not None:
             self.conn.close()
 

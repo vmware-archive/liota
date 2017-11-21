@@ -49,8 +49,11 @@ with client.connector(host=HOST) as conn:
                                    tag_type=tagType)
 
           	except socket.error as exc:
-                	print "Couldn't send command: %s" 
-			
+                	log.exception("Couldn't send command: %s" % (exc)) 
+		except AssertionError as error:
+                        log.exception("Failed to receive reply")
+                except AttributeError as error:
+                        log.exception("Instance has no such attribute")		
 		time.sleep(5)
 		i = i + 1
 
