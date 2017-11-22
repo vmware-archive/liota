@@ -81,9 +81,9 @@ class CipEthernetIp:
         try:
             req = self.conn.write(self.tag, elements=self.elements, data=self.data,
                                   tag_type=self.tag_type)
-        except AssertionError as exc:
-            log.info("Response timed out!!")
-        except socket.error as exc:
+	except AssertionError as exc:
+	    log.info("Response timed out!!")
+	except socket.error as exc:
             log.exception("Couldn't send command: %s" % (exc))
 
     def receive(self, tag, index):
@@ -101,5 +101,3 @@ class CipEthernetIp:
     def disconnect(self):
         if self.conn is not None:
             self.conn.close()
-
-

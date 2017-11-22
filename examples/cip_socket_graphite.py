@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # ----------------------------------------------------------------------------#
-#  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.                    #
+#  Copyright © 2015-2016 VMware, Inc. All Rights Reserved.             	      #
 #                                                                             #
 #  Licensed under the BSD 2-Clause License (the “License”); you may not use   #
 #  this file except in compliance with the License.                           #
@@ -18,7 +18,6 @@
 #      documentation and/or other materials provided with the distribution.   #
 #                                                                             #
 #  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"#
-
 #  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE  #
 #  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE #
 #  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE  #
@@ -31,78 +30,48 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
-import logging
+from liota.dcc_comms.socket_comms import SocketDccComms
+from liota.dccs.graphite import Graphite
+from liota.entities.metrics.metric import Metric
+from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
+from liota.lib.utilities.utility import read_user_config
+from liota.device_comms.cip_ethernet_ip_device_comms import CipEtherNetIpDeviceComms 
+from liota.entities.devices.simulated_device import SimulatedDevice
 
-from liota.device_comms.device_comms import DeviceComms
-from liota.lib.transports.cip_ethernet_ip import CipEthernetIp 
-import random
-
-log = logging.getLogger(__name__)
 
 
-class CipEtherNetIpDeviceComms(DeviceComms):
-    """
-    DeviceComms for EtherNet/IP protocol
-    """
+config = read_user_config('sampleProp.conf')
 
-    def __init__(
-            self,
-            host,
-            port=None,
-            timeout=None,
-            dialect=None,
-            profiler=None,
-            udp=False,
-            broadcast=False,
-            source_address=None):
-            
-        """
-	    :param host: CIP EtherNet/IP IP
-	    :param port: CIP EtherNet/IP Port
-	    :param timeout: Connection timeout
-	    :param dialect: An EtherNet/IP CIP dialect, if not logix.Logix
-	    :param profiler: If using a Python profiler, provide it to disable around I/O code
-	    :param udp: Establishes a UDP/IP socket to use for request (eg. List Identity)
-	    :param broadcast: Avoids connecting UDP/IP sockets; may receive many replies
-	    :param source_address: Bind to a specific local interface (Default: 0.0.0.0:0)
-	    
-        """
+def read_value(conn, tag, index):
+    value = conn.receive(tag, index)
+    return value
 
-        self.host = host
-        self.port = port
-        self.timeout = timeout
-        self.dialect = dialect
-        self.profiler = profiler
-        self.udp = udp
-        self.broadcast = broadcast
-        self.source_address = source_address
 
-        if host is None:
-            raise TypeError("Host can't be None")
+if __name__ == "__main__":
 
-        self._connect()
+    cip_ethernet_ip_conn =  CipEtherNetIpDeviceComms(host=config['CipEtherNetIp'])
+    
+    tag = config['Tag']
+    index = config['Index']
+    
+    graphite = Graphite(SocketDccComms(ip=config['GraphiteIP'],
+                               port=config['GraphitePort']))
+	
 
-    def _connect(self):
-        self.client = CipEthernetIp(
-            self.host,
-            self.port,
-            self.timeout,
-            self.dialect,
-            self.profiler,
-            self.udp,
-            self.broadcast,
-            self.source_address)
-        self.client.connect()
+    cip_ethernet_device = SimulatedDevice(config['DeviceName'], "Test")
+    reg_cip_ethernet_device = graphite.register(cip_ethernet_device)
 
-    def _disconnect(self):
-        self.client.disconnect()
 
-    def send(self, tag, elements, data, tag_type):
-        if data is None:
-            raise TypeError("Data can't be none")
-        else:
-            self.client.send(tag, elements, data, tag_type)
+    cip_ethernet_device_metric_name = "model.cipEthernetIP"
 
-    def receive(self, tag, index):	
-        data = self.client.receive(tag, index)
-        return data
+
+	cip_ethernet_device_metric = Metric(
+		name=cip_ethernet_device_metric_name,
+		unit=None,
+		interval=5,
+		sampling_function=lambda:read_value(cip_ethernet_ip_conn, tag, index)
+	)
+
+	reg_cip_ethernet_device_metric = graphite.register(cip_ethernet_device_metric)
+	graphite.create_relationship(reg_cip_ethernet_device, reg_cip_ethernet_device_metric)
+	reg_cip_ethernet_device_metric.start_collecting()

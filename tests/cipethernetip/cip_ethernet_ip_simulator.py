@@ -35,10 +35,19 @@ from cpppo.server.enip import client
 from cpppo.server.enip.getattr import attribute_operations
 import json
 
+
+# --------------------------------------------------------------------------------------------------------------
+# In this example, we demonstrate how data is written to the cip ethernetip server
+#  by using the write() function.
+# Numbers are generated starting from 1, and directed to cip ethernetip server every 5 seconds.
+# --------------------------------------------------------------------------------------------------------------
+
+
+
 HOST = "127.0.0.1"
 
 with client.connector(host=HOST) as conn:
-        i =1 
+        i = 1 
         while(1):
         	try:
                 	data = [int(i) for c in range( 1 )]
@@ -56,7 +65,3 @@ with client.connector(host=HOST) as conn:
                         log.exception("Instance has no such attribute")		
 		time.sleep(5)
 		i = i + 1
-
-
-
-

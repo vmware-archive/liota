@@ -43,9 +43,17 @@ from liota.entities.devices.simulated_device import SimulatedDevice
 dependencies = ["graphite"]
 
 
+#  Reading values from the cip ethernetip server.
 def read_value(conn, tag, index):
     value = conn.receive(tag, index)
     return value
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# In this example, we demonstrate how data is read from the cip ethernet server every 7 seconds.
+# The value got from the user-defined method is directed to Graphite data center component using Liota.
+#----------------------------------------------------------------------------------------------------------------
+
 
 
 class PackageClass(LiotaPackage):
@@ -55,30 +63,34 @@ class PackageClass(LiotaPackage):
         # Acquire resources from registry
         graphite = registry.get("graphite")
 
+        # Get values from configuration file
         config_path = registry.get("package_conf")
-
         self.config = read_user_config(config_path + '/sampleProp.conf')
 
         self.cip_ethernet_ip_conn =  CipEtherNetIpDeviceComms(host=self.config['CipEtherNetIp'])
-        
+    
 	self.tag = self.config['Tag']         
         self.index = self.config['Index']
                                
-
+        #  Creating Simulated Device
         cip_ethernet_device = SimulatedDevice(self.config['DeviceName'], "Test")
-        reg_cip_ethernet_device = graphite.register(cip_ethernet_device)
+        #  Registering Device and creating Parent-Child relationship
+	reg_cip_ethernet_device = graphite.register(cip_ethernet_device)
 
+        # Create metrics
         self.metrics = []
 
         cip_ethernet_device_metric_name = "CIP.ethernetIP"
 
+        #  Creating CIP device Metric
         cip_ethernet_device_metric = Metric(
             name=cip_ethernet_device_metric_name,
             unit=None,
-            interval=5,
+            interval=7,
             sampling_function=lambda: read_value(self.cip_ethernet_ip_conn, self.tag, self.index)
         )
 
+        #  Registering Metric and creating Parent-Child relationship
         reg_cip_ethernet_device_metric = graphite.register(cip_ethernet_device_metric)
         graphite.create_relationship(
             reg_cip_ethernet_device,
@@ -90,4 +102,3 @@ class PackageClass(LiotaPackage):
 	for metric in self.metrics:
             metric.stop_collecting()
 	self.cip_ethernet_ip_conn._disconnect()
-
