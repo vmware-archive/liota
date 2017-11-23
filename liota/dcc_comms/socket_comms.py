@@ -39,13 +39,26 @@ log = logging.getLogger(__name__)
 
 
 class SocketDccComms(DCCComms):
+    """
+    DccComms for BSD Socket transport.
+    """
 
     def __init__(self, ip, port):
+        """
+        Init method for SocketDccComms.
+
+        :param ip: IP address of the BSD socket server.
+        :param port: Port number
+        """
         self.ip = ip
         self.port = port
         self._connect()
 
     def _connect(self):
+        """
+        Establishes connection to the BSD socket server.
+        :return:
+        """
         self.client = socket.socket()
         log.info("Establishing Socket Connection")
         try:
@@ -62,9 +75,15 @@ class SocketDccComms(DCCComms):
         raise NotImplementedError
 
     def send(self, message, msg_attr=None):
+        """
+        Sends message to the BSD socket server.
+        :param message: Message to be published
+        :param msg_attr: MessagingAttribute.  It is 'None' for BSD Socket.
+        :return:
+        """
         log.debug("Publishing message:" + str(message))
         if self.client is not None:
             self.client.sendall(message)
 
-    def receive(self):
+    def receive(self, msg_attr):
         raise NotImplementedError

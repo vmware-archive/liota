@@ -37,6 +37,9 @@ from liota.lib.utilities.utility import systemUUID
 
 
 class Metric(Entity):
+    """
+    Metric represents sensor values collected from Device (Sensors/Things) or EdgeSystem (Gateway).
+    """
 
     def __init__(self, name, entity_type="Metric",
                  unit=None,
@@ -44,6 +47,16 @@ class Metric(Entity):
                  aggregation_size=1,
                  sampling_function=None
                  ):
+        """
+        Init method for Metric
+
+        :param name: Metric name
+        :param entity_type: Entity type which is "Metric"
+        :param unit: Unit of representation
+        :param interval: Sampling interval (in seconds ) at which the metric should be collected
+        :param aggregation_size: Number of times the metric should be collected before publishing it to the DCC
+        :param sampling_function: User defined function from which the metric should be collected
+        """
         if not (unit is None or isinstance(unit, pint.unit._Unit)) \
                 or not (
             isinstance(interval, int) or isinstance(interval, float)
@@ -61,4 +74,11 @@ class Metric(Entity):
         self.sampling_function = sampling_function
 
     def register(self, dcc_obj, reg_entity_id):
+        """
+        This method returns RegisteredMetric Object
+
+        :param dcc_obj: DCC Object
+        :param reg_entity_id: RegisteredEntity ID
+        :return:
+        """
         return RegisteredMetric(self, dcc_obj, reg_entity_id)

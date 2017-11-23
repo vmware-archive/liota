@@ -33,15 +33,30 @@
 from abc import ABCMeta, abstractmethod
 from liota.entities.registered_entity import RegisteredEntity
 
+
 class Entity:
 
     """
     Abstract base class for all entities.
+
+    In LIOTA ecosystem, an Entity could be:
+
+     - an EdgeSystem (Gateway)
+     - a Device (Sensors/Things) or
+     - a Metric (Sensor values)
+
     """
     __metaclass__ = ABCMeta
 
     @abstractmethod
     def __init__(self, name, entity_id, entity_type):
+        """
+        Abstract init method for Entity.
+
+        :param name: Entity name
+        :param entity_id: Entity ID
+        :param entity_type: Entity Type
+        """
         if not isinstance(name, basestring) \
                 or not isinstance(entity_type, basestring):
             raise TypeError()
