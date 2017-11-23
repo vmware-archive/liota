@@ -73,6 +73,7 @@ package_thread = None
 package_lock = None
 package_path = None
 package_messenger_pipe = None
+package_responser_pipe = None
 
 # Parse Liota configuration file
 package_path = os.path.abspath(
@@ -81,8 +82,12 @@ package_path = os.path.abspath(
 package_messenger_pipe = os.path.abspath(
     read_liota_config('PKG_CFG', 'pkg_msg_pipe')
 )
+package_responser_pipe = os.path.abspath(
+    read_liota_config('PKG_CFG', 'pkg_rsp_pipe')
+)
 assert(isinstance(package_path, basestring))
 assert(isinstance(package_messenger_pipe, basestring))
+assert(isinstance(package_responser_pipe, basestring))
 
 package_startup_list_path = None
 package_startup_list = []
@@ -244,6 +249,7 @@ class PackageThread(Thread):
         self._packages_loaded = {}  # key: package name, value: PackageRecord obj
         self._resource_registry = ResourceRegistry()
         self._resource_registry.register("package_conf", package_path)
+        self._rsp_pipe_file = package_responser_pipe
         self.flag_alive = True
         self.start()
 
@@ -373,10 +379,18 @@ class PackageThread(Thread):
 
             # Switch on message content (command), determine what to do
             command = msg[0]
+            if command in ["unload", "delete", "list", "stat", "unload_all",\
+                           "unload_all", "terminate"]:
+                # currently, write 'Success' to the named pipe once
+                #     successfully receives these commands
+                with open(self._rsp_pipe_file, "w+") as fp:
+                    fp.write('Success\n')
+
+            # currently, write 'Success' to the named pipe after verification
+            #     of the checksum for load/reload/update related commands
             if command in ["load", "reload", "update"]:
                 #-----------------------------------------------------------
                 # Use these commands to handle package management tasks
-
                 with package_lock:
                     offset = 0
                     autoload_flag = False
@@ -472,6 +486,10 @@ class PackageThread(Thread):
                     self.flag_alive = False
                     break
             else:
+                # currently, write 'Unsupported' to the named pipe once
+                #     successfully receives these commands
+                with open(self._rsp_pipe_file, "w+") as fp:
+                    fp.write('Unsupported\n')
                 log.warning("Unsupported command is dropped")
         log.info("Thread exits: %s" % str(self.name))
 
@@ -641,9 +659,13 @@ class PackageThread(Thread):
                         break
                 if (verify_flag == False):
                     log.error("Package %s integrity verification failed" % path_file_ext)
+                    with open(self._rsp_pipe_file, "w+") as fp:
+                        fp.write('Failure\n')
                     return None
             else:
                 sha1 = sha1sum(path_file_ext);
+                with open(self._rsp_pipe_file, "w+") as fp:
+                    fp.write('Success\n')
         except IOError:
             log.error("Could not open file: %s" % path_file_ext)
             return None
@@ -1140,12 +1162,19 @@ class PackageThread(Thread):
     def _terminate_all(self):
         global package_messenger_thread
         global package_messenger_pipe
+        global package_responser_pipe
 
         log.info("Shutting down package messenger...")
         if package_messenger_thread.isAlive():
             with open(package_messenger_pipe, "w") as fp:
                 fp.write(
                     "terminate_messenger_but_you_should_not_do_this_yourself\n")
+
+        log.info("Shutting down package responser...")
+        if package_messenger_thread.isAlive():
+            with open(package_responser_pipe, "w") as fp:
+                fp.write(
+                    "terminate_responser_but_you_should_not_do_this_yourself\n")
 
         log.info("Unloading packages...")
         if not self._package_unload_list(self._packages_loaded.keys()):
@@ -1272,6 +1301,35 @@ def initialize():
             log.error("Could not create messenger pipe")
             return
     assert(stat.S_ISFIFO(os.stat(package_messenger_pipe).st_mode))
+
+    # Validate package responser pipe
+    global package_responser_pipe
+    assert(isinstance(package_responser_pipe, basestring))
+    if os.path.exists(package_responser_pipe):
+        if stat.S_ISFIFO(os.stat(package_responser_pipe).st_mode):
+            pass
+        else:
+            log.error("Pipe path exists, but it is not a pipe")
+            package_responser_pipe = None
+            return
+    else:
+        package_responser_pipe_dir = os.path.dirname(package_responser_pipe)
+        if not os.path.isdir(package_responser_pipe_dir):
+            try:
+                os.makedirs(package_responser_pipe_dir)
+                log.info("Created directory: " + package_responser_pipe_dir)
+            except OSError:
+                package_responser_pipe = None
+                log.error("Could not create directory for responser pipe")
+                return
+        try:
+            os.mkfifo(package_responser_pipe, 0600)
+            log.info("Created pipe: " + package_responser_pipe)
+        except OSError:
+            package_responser_pipe = None
+            log.error("Could not create responser pipe")
+            return
+    assert(stat.S_ISFIFO(os.stat(package_responser_pipe).st_mode))
 
     # Will not initialize package manager if package path is mis-configured
     if package_path is None:
