@@ -43,6 +43,14 @@ class PackageClass(LiotaPackage):
     """
 
     def run(self, registry):
+        """
+        The execution function of a liota package.
+
+        Establishes connection with Graphite DCC using SocketDccComms
+
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        :return:
+        """
         import copy
         from liota.dccs.graphite import Graphite
         from liota.dcc_comms.socket_comms import SocketDccComms
@@ -68,4 +76,11 @@ class PackageClass(LiotaPackage):
         registry.register("graphite_edge_system", graphite_edge_system)
 
     def clean_up(self):
+        """
+        The clean up function of a liota package.
+
+        Disconnects from Graphite DCC.
+
+        :return:
+        """
         self.graphite.comms.client.close()

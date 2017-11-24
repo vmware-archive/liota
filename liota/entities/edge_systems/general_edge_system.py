@@ -35,7 +35,14 @@ from liota.lib.utilities.utility import systemUUID
 
 
 class GeneralEdgeSystem(EdgeSystem):
+    """
+    General EdgeSystem representation.
+    """
     def __init__(self, name):
+        """
+        Init method for GeneralEdgeSystem
+        :param name: GeneralEdgeSystem name
+        """
         super(GeneralEdgeSystem, self).__init__(
             name=name,
             entity_id=systemUUID().get_uuid(name)

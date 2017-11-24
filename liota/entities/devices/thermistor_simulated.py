@@ -39,6 +39,9 @@ from liota.lib.utilities.utility import systemUUID
 
 
 class ThermistorSimulated(Device):
+    """
+    Simulated Thermistor Device.
+    """
 
     def __init__(self, name, u=5.0, r0=3000, interval=5, ureg=None):
         super(ThermistorSimulated, self).__init__(
@@ -66,7 +69,7 @@ class ThermistorSimulated(Device):
         self.th.daemon = True
         self.th.start()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # This method randomly changes some state variables in the model every a
     # few seconds (as is defined as interval).
 
@@ -83,7 +86,7 @@ class ThermistorSimulated(Device):
                 ), 3.5
             )
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # These methods are used to access the state of the simulated physical
     # object. A typical caller is the sampling method for a metric in a Liota
     # application.

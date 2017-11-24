@@ -35,8 +35,17 @@ from liota.lib.utilities.utility import systemUUID
 
 
 class SimulatedDevice(Device):
+    """
+    Simulated Device representation for demo purposes.
+    """
 
     def __init__(self, name, entity_type="SimulatedDevice"):
+        """
+        Init method for SimulatedDevice.
+
+        :param name:  SimulatedDevice name
+        :param entity_type: Entity type which is "SimulatedDevice"
+        """
         super(SimulatedDevice, self).__init__(
             name=name,
             entity_type=entity_type,

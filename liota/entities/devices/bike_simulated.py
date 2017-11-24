@@ -40,6 +40,9 @@ from liota.lib.utilities.utility import systemUUID
 
 
 class BikeSimulated(Device):
+    """
+    Simulated Bike Device.
+    """
 
     def __init__(self, name, wheel=26, m_bike=20, m_rider=80,
                  m_load=0, interval=5, ureg=None):
@@ -70,7 +73,7 @@ class BikeSimulated(Device):
         self.th.daemon = True
         self.th.start()
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # This method randomly changes some state variables in the model every a
     # few seconds (as is defined as interval).
 
@@ -105,7 +108,7 @@ class BikeSimulated(Device):
                     self.weight_load = random.randrange(0, 50)
                     self.time_last = t
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # These methods are used to access the state of the simulated physical
     # object. A typical caller is the sampling method for a metric in a Liota
     # application.
