@@ -40,9 +40,7 @@ from threading import Thread, Lock
 from Queue import Queue
 from time import sleep
 
-from liota.lib.utilities.utility import LiotaConfigPath
-from liota.lib.utilities.utility import DiscUtilities
-from liota.lib.utilities.utility import read_user_config
+from liota.lib.utilities.utility import LiotaConfigPath, validate_named_pipe, read_user_config
 from liota.dev_sims.named_pipe import NamedPipeSimulator
 from liota.dev_sims.socket_clnt import SocketSimulator
 from liota.dev_sims.mqtt import MqttSimulator
@@ -218,7 +216,7 @@ class SimulatorThread(Thread):
         assert(isinstance(self.cmd_messenger_pipe, basestring))
 
     def _executable_check(self):
-        if DiscUtilities().validate_named_pipe(self.cmd_messenger_pipe) == False:
+        if validate_named_pipe(self.cmd_messenger_pipe) == False:
             return None
         # Will not initialize device simulator if simulator list is empty
         if len(self.endpoint_list) is 0:
