@@ -106,16 +106,24 @@ class systemUUID:
         return systemUUID.__UUID
 
     def get_uuid(self, resource_name):
-        # creating a uuid for a particular resource on this system
-        # all resources with the same resource name will have the same uuid, on this system
-        # resources created on a different system with a name used on this
-        # system will have *different* uuids' as it should be
+        """
+        Get/create a uuid for a particular resource on this system.
+        All resources with the same resource name will have the same uuid on this system.
+        Resources created on a different system with a name used on this
+        system will have *different* uuids' as it should be.
+        :param resource_name: resource name
+        :return: uuid
+        """
         tmp = str(uuid.uuid5(self._get_system_uuid(), resource_name.encode('utf-8')))
         log.info('resource: ' + resource_name + '  uuid=' + str(tmp))
         return str(tmp)
 
 
 def get_linux_version():
+    """
+    Get linux version.
+    :return: linux version
+    """
     return platform.platform()
 
 
@@ -148,10 +156,19 @@ def get_disk_name():
 
 
 def getUTCmillis():
+    """
+    Get UTC now epoch time (since Jan 1, 1970) in milliseconds.
+    :return: epoch time in milliseconds
+    """
     return long(1000 * ((datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()))
 
 
 def mkdir(path):
+    """
+    Create a directory if it does not exists.
+    :param path: directory path
+    :return:
+    """
     if not os.path.exists(path):
         try:
             os.makedirs(path)
@@ -209,11 +226,17 @@ class LiotaConfigPath:
             log.error('liota.conf file not found')
 
     def get_liota_fullpath(self):
+        """
+        Get the full path of liota configuration file.
+        :return: configuration file path
+        """
         return LiotaConfigPath.path_liota_config
 
     def setup_logging(self, default_level=logging.WARNING):
         """
         Setup logging configuration
+        :param default_level: default message level
+        :return:
         """
         log = logging.getLogger(__name__)
         config = ConfigParser.RawConfigParser()
@@ -250,7 +273,10 @@ class LiotaConfigPath:
 
 def read_liota_config(section, name):
     """
-    Returns the value of name within the specified section.
+    Return the value of name within the specified section.
+    :param section: configuration section
+    :param name: name of a configuration
+    :return: configuration value
     """
     config = ConfigParser.RawConfigParser()
     fullPath = LiotaConfigPath().get_liota_fullpath()
@@ -274,6 +300,8 @@ def read_liota_config(section, name):
 def read_user_config(config_file_path):
     """
     Returns the user defined configuration as a dictionary from DEFAULT section.
+    :param config_file_path: path of a configuration file
+    :return: the user defined configuration as a dictionary
     """
 
     config = ConfigParser.RawConfigParser()
@@ -295,6 +323,11 @@ class DiscUtilities:
         pass
 
     def validate_named_pipe(self, pipe_file):
+        """
+        Check whether a named pipe exists or not; if not, create it.
+        :param pipe_file: path of a named pipe file
+        :return: True or False
+        """
         assert (isinstance(pipe_file, basestring))
         if os.path.exists(pipe_file):
             if stat.S_ISFIFO(os.stat(pipe_file).st_mode):

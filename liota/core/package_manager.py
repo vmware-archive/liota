@@ -105,12 +105,29 @@ class ResourceRegistryPerPackage:
         self._package_name = package_name
 
     def register(self, identifier, ref):
+        """
+        Store resource/object reference with certain name/identifier
+        for the package.
+        :param identifier: identifier for resource reference (ref)
+        :param ref: reference for a resource
+        :return:
+        """
         self._outer.register(identifier, ref, self._package_name)
 
     def get(self, identifier):
+        """
+        Get resource/object reference by a name/identifier.
+        :param identifier: identifier for a registered resource
+        :return: resource reference
+        """
         return self._outer.get(identifier)
 
     def has(self, identifier):
+        """
+        Check whether a resource has been registered with an identifier or not.
+        :param identifier: identifier for a resource
+        :return: True or False
+        """
         return self._outer.has(identifier)
 
 
@@ -125,6 +142,14 @@ class ResourceRegistry:
         self._packages = {}  # key: package name, value: list of resource names
 
     def register(self, identifier, ref, package_name=None):
+        """
+        Store resource/object reference with certain name/identifier
+        for a package with certain name.
+        :param identifier: identifier for resource reference (ref)
+        :param ref: reference for a resource
+        :param package_name: the name of a package to register a resource to
+        :return:
+        """
         if identifier in self._registry:
             raise KeyError("Conflicting resource identifier: " + identifier)
         self._registry[identifier] = ref
@@ -134,12 +159,27 @@ class ResourceRegistry:
             self._packages[package_name].append(identifier)
 
     def deregister(self, identifier):
+        """
+        Remove the record of a resource with a name/identifier.
+        :param identifier: identifier for a resource
+        :return:
+        """
         del self._registry[identifier]
 
     def get(self, identifier):
+        """
+        Get resource/object reference by a name/identifier.
+        :param identifier: identifier for a registered resource
+        :return: resource reference
+        """
         return self._registry[identifier]
 
     def has(self, identifier):
+        """
+        Check whether a resource has been registered with an identifier or not.
+        :param identifier: identifier for a resource
+        :return: True or False
+        """
         return identifier in self._registry
 
     #-----------------------------------------------------------------------
@@ -148,6 +188,11 @@ class ResourceRegistry:
     # them automatically if package is unloaded.
 
     def get_package_registry(self, package_name):
+        """
+        Get the instance of ResourceRegistryPerPackage by package name.
+        :param package_name: the name of a package
+        :return: the reference of a ResourceRegistryPerPackage instance
+        """
         return ResourceRegistryPerPackage(self, package_name)
 
 
@@ -161,10 +206,17 @@ class LiotaPackage:
 
     @abstractmethod
     def run(self, registry):
+        """
+        The execution function of a liota package.
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        """
         raise NotImplementedError
 
     @abstractmethod
     def clean_up(self):
+        """
+        The clean up function of a liota package.
+        """
         raise NotImplementedError
 
 
@@ -191,6 +243,11 @@ class PackageRecord:
         self._instance = None
 
     def set_instance(self, obj):
+        """
+        Set _instance field for an instance of PackageRecord of a liota package.
+        :param obj: a liota package class instance
+        :return: True or False
+        """
         if self._instance is not None:
             log.warning("Should not override instance of package class")
             return False
@@ -198,33 +255,78 @@ class PackageRecord:
         return True
 
     def get_instance(self):
+        """
+        Set the instance of a liota package class.
+        :return: the reference of a liota package class instance
+        """
         return self._instance
 
     def set_sha1(self, sha1):
+        """
+        Set _sha1 field for an instance of PackageRecord of a liota package.
+        :param sha1: the SHA-1 checksum of a liota package
+        :return:
+        """
         self._sha1 = sha1
 
     def get_sha1(self):
+        """
+        Get the SHA-1 checksum of a liota package.
+        :return: the SHA-1 checksum of a liota package
+        """
         return self._sha1
 
     def set_ext(self, ext):
+        """
+        Set _ext field for an instance of PackageRecord.
+        :param ext: the extention of a liota package file
+        :return:
+        """
         self._ext = ext
 
     def get_ext(self):
+        """
+        Get the extention of a liota package file.
+        :return: the extention of a liota package file
+        """
         return self._ext
 
     def get_dependents(self):
+        """
+        Get dependent package names of a liota package.
+        :return: the dependent package names of a liota package
+        """
         return self._dependents.keys()
 
     def add_dependent(self, file_name):
+        """
+        Add the record for a package into dependent dictionary.
+        :param file_name: the name of a liota package file
+        :return:
+        """
         self._dependents[file_name] = None
 
     def del_dependent(self, file_name):
+        """
+        Delete the record for a package from dependent dictionary.
+        :param file_name: the name of a liota package file
+        :return:
+        """
         del self._dependents[file_name]
 
     def get_dependencies(self):
+        """
+        Get the dependency list of the liota package.
+        :return: the dependency list of the liota package
+        """
         return self._dependencies
 
     def set_dependencies(self, list_dependencies):
+        """
+        Set the dependency list for the liota package.
+        :param list_dependencies: the dependency list of the liota package
+        :return:
+        """
         self._dependencies = list_dependencies
 
 
@@ -350,11 +452,13 @@ class PackageThread(Thread):
             return
         log.warning("Unsupported stat")
 
-    #-----------------------------------------------------------------------
-    # This method will loop on message queue and select methods to call with
-    # respect to commands received.
-
     def run(self):
+        """
+        The execution function of PackageThread class:
+        loop on message queue and select methods to call with
+        respect to commands received.
+        :return:
+        """
         global package_lock
         global package_startup_list
 
@@ -1197,6 +1301,12 @@ class PackageMessengerThread(Thread):
         self.start()
 
     def run(self):
+        """
+        The execution function of PackageMessengerThread class:
+        loop to read messages from messenger namedPipe and put into
+        message queue.
+        :return:
+        """
         global package_message_queue
 
         while self.flag_alive:
@@ -1211,14 +1321,13 @@ class PackageMessengerThread(Thread):
                         package_message_queue.put(msg)
         log.info("Thread exits: %s" % str(self.name))
 
-#---------------------------------------------------------------------------
-# Initialization should occur when this module is imported for first time.
-# This method create queues and spawns PackageThread, which will loop on
-# commands grabbed from a queue and load/unload packages as requested in
-# those commands.
-
-
 def initialize():
+    """
+    Create queues and spawns PackageThread, which will loop on commands grabbed
+    from a queue and load/unload packages as requested in those commands.
+    Initialization should occur when this module is imported for first time.
+    :return:
+    """
     global is_package_manager_initialized
     if is_package_manager_initialized:
         log.debug("Package manager is already initialized")

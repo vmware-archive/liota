@@ -61,4 +61,12 @@ class Metric(Entity):
         self.sampling_function = sampling_function
 
     def register(self, dcc_obj, reg_entity_id):
+        """
+        Register metric to a DCC instance by an identifier (create a
+        registered metric instance to record dcc instance reference
+        and registered metric identifier).
+        :param dcc_obj: dcc object reference
+        :param reg_entity_id: the identifier for a registered entity
+        :return: Registered metric reference
+        """
         return RegisteredMetric(self, dcc_obj, reg_entity_id)
