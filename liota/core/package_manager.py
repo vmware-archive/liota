@@ -494,8 +494,8 @@ class PackageThread(Thread):
         """
         Write command status back to response named pipe.
         Currently, for commands of ["unload", "delete", "list", "stat",
-        "unload_all", "unload_all", "terminate"], 'Success' means
-        that PackageThread has successfully received these commands;
+        "unload_all", "terminate"], 'Success' means that PackageThread
+        has successfully received these commands;
         for commands of ["load", "reload", "update"], 'Success' means
         that verification of the package checksum succeeds, while
         'Failure' means that verification fails; 'Unsupported' means

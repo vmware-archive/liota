@@ -96,7 +96,7 @@ then
 fi
 
 # Echo to named pipe
-echo "Pipe file: $package_messenger_pipe" >&2
+#echo "Pipe file: $package_messenger_pipe" >&2
 echo "$@" > $package_messenger_pipe
 # read result
 if read line <$package_response_pipe; then
