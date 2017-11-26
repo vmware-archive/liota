@@ -57,7 +57,13 @@ class IotControlCenter(DataCenterComponent):
 
     """
 
-    def __init__(self, con):
+    def __init__(self, con, buffering_params=None):
+        '''
+        :param buffering_params: BufferingParams object, for offline_storage of data
+        '''
+        super(IotControlCenter, self).__init__(
+            buffering_params=buffering_params
+        )
         log.info("Logging into DCC")
         self._version = 20171023
         self.comms = con

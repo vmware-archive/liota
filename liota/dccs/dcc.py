@@ -31,28 +31,40 @@
 # ----------------------------------------------------------------------------#
 
 import logging
+import json
 from abc import ABCMeta, abstractmethod
 
 from liota.entities.entity import Entity
 from liota.dcc_comms.dcc_comms import DCCComms
 from liota.entities.metrics.registered_metric import RegisteredMetric
+from liota.dcc_comms.check_connection import CheckConnection
+from liota.core.offline_queue import OfflineQueue
+from liota.core.offline_database import OfflineDatabase
+from liota.lib.utilities.offline_buffering import BufferingParams
 
 log = logging.getLogger(__name__)
 
-
 class DataCenterComponent:
-
     """
     Abstract base class for all DCCs.
     """
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def __init__(self, comms):
+    def __init__(self, comms, buffering_params):
         if not isinstance(comms, DCCComms):
             log.error("DCCComms object is expected.")
             raise TypeError("DCCComms object is expected.")
         self.comms = comms
+        self.buffering_params = buffering_params
+        if self.buffering_params is not None:
+            self.persistent_storage = self.buffering_params.persistent_storage
+            self.data_drain_size = self.buffering_params.data_drain_size
+            self.draining_frequency = self.buffering_params.draining_frequency
+            self.drop_oldest = self.buffering_params.drop_oldest
+            self.queue_size = self.buffering_params.queue_size
+            self.conn = CheckConnection()
+            self.offline_buffering_enabled = False         #False means offline buffering/storage is off else on
 
     # -----------------------------------------------------------------------
     # Implement this method in subclasses and do actual registration.
@@ -80,11 +92,63 @@ class DataCenterComponent:
         if not isinstance(reg_metric, RegisteredMetric):
             log.error("RegisteredMetric object is expected.")
             raise TypeError("RegisteredMetric object is expected.")
+        
         message = self._format_data(reg_metric)
-        if hasattr(reg_metric, 'msg_attr'):
-            self.comms.send(message, reg_metric.msg_attr)
+        if message is not None:
+            if self.buffering_params is not None:
+                if self.conn.check:
+                    if self.offline_buffering_enabled:         #checking if buffering is enabled or not, incase internet comes back after disconnectivity
+                        self.offline_buffering_enabled = False
+                        if self.persistent_storage is True:
+                            log.info("Draining starts.")
+                            self.offline_database.start_drain()
+                        else:
+                            self.offlineQ.start_drain()    
+                    try:
+                        if hasattr(reg_metric, 'msg_attr'):
+                            self.comms.send(message, reg_metric.msg_attr)   
+                        else:
+                            self.comms.send(message, None)
+                    except Exception as e:
+                        raise e
+                else:                                       #if no internet connectivity
+                    if self.persistent_storage is True:
+                        table_name = self.__class__.__name__ + type(self.comms).__name__
+                        self._start_database_storage(table_name, message)
+                    else:
+                        self._start_queuing(message)
+            else:
+                if hasattr(reg_metric, 'msg_attr'):
+                    self.comms.send(message, reg_metric.msg_attr)
+                else:
+                    self.comms.send(message, None)
+                
+    def _start_queuing(self, message):
+        if self.offline_buffering_enabled  is False:
+            self.offline_buffering_enabled = True
+            try:
+                if self.offlineQ.draining_in_progress:
+                    self.offlineQ.append(message)
+            except Exception as e:
+                self.offlineQ = OfflineQueue(comms=self.comms, conn=self.conn, queue_size=self.queue_size,
+                                data_drain_size=self.data_drain_size, drop_oldest=self.drop_oldest, 
+                                draining_frequency=self.draining_frequency)
+                log.info("Offline queueing started.") 
+        self.offlineQ.append(message)
+
+    def _start_database_storage(self, table_name, message):
+        if self.offline_buffering_enabled  is False:
+            self.offline_buffering_enabled = True
+            try:
+                if self.offline_database.draining_in_progress:
+                    self.offline_database.add(message)
+            except Exception as e:
+                self.offline_database = OfflineDatabase(table_name=table_name, comms=self.comms, conn=self.conn, 
+                                    data_drain_size=self.data_drain_size, draining_frequency=self.draining_frequency)
+                log.info("Database created.")
+                self.offline_database.add(message)
         else:
-            self.comms.send(message, None)
+            self.offline_database.add(message)   
 
     @abstractmethod
     def set_properties(self, reg_entity, properties):
@@ -95,4 +159,5 @@ class DataCenterComponent:
         if not isinstance(entity_obj, Entity):
             raise TypeError
 
-class RegistrationFailure(Exception): pass
+class RegistrationFailure(Exception): 
+    pass
