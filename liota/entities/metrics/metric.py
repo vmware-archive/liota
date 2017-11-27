@@ -44,6 +44,16 @@ class Metric(Entity):
                  aggregation_size=1,
                  sampling_function=None
                  ):
+        """
+        Create a local metric object.
+        :param name: metric name
+        :param entity_type: entity type (by default, is "Metric")
+        :param unit: Metric unit
+        :param interval: Metric sampling interval
+        :param aggregation_size: How many sampling results will be aggregated before publishing
+        :param sampling_function: Metric sampling function
+        :return:
+        """
         if not (unit is None or isinstance(unit, pint.unit._Unit)) \
                 or not (
             isinstance(interval, int) or isinstance(interval, float)

@@ -315,6 +315,11 @@ def read_user_config(config_file_path):
 
 
 def validate_named_pipe(pipe_file):
+    """
+    Check whether a named pipe exists: if not, create it and set permission.
+    :param pipe_file: path of a named pipe file
+    :return: True or False (named pipe finally exists or not)
+    """
     assert (isinstance(pipe_file, basestring))
     if os.path.exists(pipe_file):
         if stat.S_ISFIFO(os.stat(pipe_file).st_mode):
