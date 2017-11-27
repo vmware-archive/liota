@@ -193,9 +193,24 @@ class IotControlCenter(DataCenterComponent):
             if entity_obj.unit is not None:
                 self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
+            def on_response(msg):
+                try:
+                    log.debug("Received msg: {0}".format(msg))
+                    json_msg = json.loads(msg)
+                    log.debug("Processing msg: {0}".format(json_msg["type"]))
+                    self._check_version(json_msg)
+                    if json_msg["type"] == "create_relationship_response" and json_msg["body"]["result"] == "succeeded" and json_msg["body"]["parent"] == reg_entity_parent.reg_entity_id and json_msg["body"]["child"] == reg_entity_child.reg_entity_id:
+                        log.info("Relationship created successfully between parent {0} & child {1}:".format(reg_entity_parent.name, reg_entity_child.name))
+                    else:
+                        log.info("Waiting for relationship response")
+                        on_response(self.recv_msg_queue.get(True, timeout))
+                except Exception as err:
+                    log.exception("Exception while relationship response")
+                    raise err
             self.comms.send(json.dumps(self._relationship(self.next_id(),
                                                           reg_entity_parent.reg_entity_id,
                                                           reg_entity_child.reg_entity_id)))
+            on_response(self.recv_msg_queue.get(True, timeout))
             if hasattr(reg_entity_parent, 'sys_properties') and reg_entity_parent.sys_properties:
                 self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
 
