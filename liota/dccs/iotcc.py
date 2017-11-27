@@ -57,6 +57,11 @@ class IotControlCenter(DataCenterComponent):
     """
 
     def __init__(self, con):
+        """
+        Initialization of IoT Pulse Center
+
+        :param con: DCC Comms connection Object
+        """
         log.info("Logging into DCC")
         self._dcc_load_time = datetime.datetime.now()
         self._version = 20171023

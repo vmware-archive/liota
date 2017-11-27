@@ -53,6 +53,11 @@ PACKAGE_VERSION = "0.3.1"
 
 
 def get_tree_walk(path):
+    """
+    Used to get the files names list which exists at specified directory
+    :param path: Directory Path
+    :return: files names list
+    """
     filename_list = []
     for dirpath, dirname, filenames in os.walk(path):
         # We need to remove the leading directory
@@ -72,12 +77,16 @@ def get_tree_walk(path):
 
 
 def get_data_files():
+    """
+    Used to get all the data files name required to be bundled with Liota
+    :return: data files name list
+    """
     # Setup an empty return
     data_files = []
 
     #
     # The following 4 lines would be useful if we were doing cross
-    # platform instalation.  It's currently unclear if this is
+    # platform installation.  It's currently unclear if this is
     # supported so this is being left here in the off chance it
     # becomes relevant
     #
@@ -110,7 +119,6 @@ def get_data_files():
 #
 # Python setup.py definitions
 #
-
 requirements = [str(requirement.req) for requirement in parse_requirements(
     'requirements.txt', session=pip.download.PipSession())]
 
