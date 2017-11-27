@@ -54,9 +54,9 @@ PACKAGE_VERSION = "0.3.1"
 
 def get_tree_walk(path):
     """
-    Used to get the files names list which exists at specified directory
+    Get the file names list present in directory or its sub-directories
     :param path: Directory Path
-    :return: files names list
+    :return: File name list
     """
     filename_list = []
     for dirpath, dirname, filenames in os.walk(path):
@@ -78,8 +78,8 @@ def get_tree_walk(path):
 
 def get_data_files():
     """
-    Used to get all the data files name required to be bundled with Liota
-    :return: data files name list
+    Get data files name list required to be bundled with Liota
+    :return: Data Files list
     """
     # Setup an empty return
     data_files = []

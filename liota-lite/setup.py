@@ -51,6 +51,11 @@ PACKAGE_VERSION = "0.3.1"
 
 
 def get_tree_walk(path):
+    """
+    Get the file names list present in directory or its sub-directories
+    :param path: Directory Path
+    :return: File name list
+    """
     filename_list = []
     for dirpath, dirname, filenames in os.walk(path):
         # We need to remove the leading directory
@@ -70,12 +75,16 @@ def get_tree_walk(path):
 
 
 def get_data_files():
+    """
+    Get data files name list required to be bundled with Liota
+    :return: Data Files list
+    """
     # Setup an empty return
     data_files = []
 
     #
     # The following 4 lines would be useful if we were doing cross
-    # platform instalation.  It's currently unclear if this is
+    # platform installation.  It's currently unclear if this is
     # supported so this is being left here in the off chance it
     # becomes relevant
     #

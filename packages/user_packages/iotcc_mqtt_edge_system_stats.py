@@ -66,7 +66,8 @@ def read_cpu_procs():
 def read_cpu_utilization(sample_duration_sec=1):
     """
     User defined method
-    :param sample_duration_sec:
+    :param sample_duration_sec: Sample duration sample
+    is collected
     :return: percentage of cpu utilized.
     """
     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
