@@ -66,6 +66,11 @@ class WebSocketDccComms(DCCComms):
         self.client = WebSocket(self.url, self.verify_cert, self.identity)
 
     def _disconnect(self):
+        """
+        Disconnects from WebSocket server.
+        TODO: To be implemented
+        :return:
+        """
         raise NotImplementedError
 
     def send(self, message, msg_attr=None):

@@ -42,22 +42,8 @@ log = logging.getLogger(__name__)
 
 
 class RegisteredMetric(RegisteredEntity):
-    """
-    RegisteredMetric implementation.
-
-    This class provides APIs to control collection of Metrics.
-
-    Collected Metric values are stored in a Queue as (timestamp, value) pairs till the aggregation size is reached.
-    """
 
     def __init__(self, ref_metric, ref_dcc, reg_entity_id):
-        """
-        Init method for RegisteredMetric.
-
-        :param ref_metric: Metric that is represented by a RegisteredMetric Object
-        :param ref_dcc: DCC with which the Metric is registered with
-        :param reg_entity_id: RegisteredEntity ID
-        """
         super(RegisteredMetric, self).__init__(ref_entity=ref_metric,
                                   ref_dcc=ref_dcc,
                                   reg_entity_id=reg_entity_id)
@@ -70,10 +56,6 @@ class RegisteredMetric(RegisteredEntity):
         self.values = Queue()
 
     def start_collecting(self):
-        """
-        Starts metric collection through MetricHandler.
-        :return:
-        """
         self.flag_alive = True
         # TODO: Add a check to ensure that start_collecting for a metric is
         # called only once by the client code
@@ -82,26 +64,11 @@ class RegisteredMetric(RegisteredEntity):
         metric_handler.event_ds.put_and_notify(self)
 
     def stop_collecting(self):
-        """
-        Stops metric collection by marking metric as dead.
-
-        :return:
-        """
         self.flag_alive = False
         log.debug("Metric %s is marked for deletion" %
                  str(self.ref_entity.name))
 
     def add_collected_data(self, collected_data):
-        """
-        Adds collected data to the Queue as (timestamp, value) tuple.
-
-        :param collected_data: It MUST be one of the following:
-                              - List of (timestamp, value) tuples
-                              - (timestamp, value) tuple
-                              - value
-
-        :return: Number of data points collected in Integer
-        """
         if isinstance(collected_data, list):
             for data_sample in collected_data:
                 self.values.put(data_sample)
@@ -114,28 +81,14 @@ class RegisteredMetric(RegisteredEntity):
             return 1
 
     def get_next_run_time(self):
-        """
-        Returns the upcoming time when a Metric must be collected in milliseconds.
-        :return: time in milliseconds
-        """
         return self._next_run_time
 
     def set_next_run_time(self):
-        """
-        Sets the upcoming time when a Metric must be collected in milliseconds.
-        :return:
-        """
         self._next_run_time = self._next_run_time + \
             (self.ref_entity.interval * 1000)
         log.debug("Set next run time to:" + str(self._next_run_time))
 
     def is_ready_to_send(self):
-        """
-        Returns whether collected metrics should be published or not based on the current queue size
-        and the specified aggregation size.
-
-        :return: boolean true or false
-        """
         log.debug("self.current_aggregation_size:" +
                   str(self.current_aggregation_size))
         log.debug("self.aggregation_size:" +
@@ -143,14 +96,6 @@ class RegisteredMetric(RegisteredEntity):
         return self.current_aggregation_size >= self.ref_entity.aggregation_size
 
     def collect(self):
-        """
-        Collects metric by invoking the sampling function.
-
-        It is the responsibility of the user to make sure that sampling function doesn't through error or block indefinitely.
-
-        'None' values returned by sampling functions will be ignored.
-        :return:
-        """
         log.debug("Collecting values for the resource {0} ".format(
             self.ref_entity.name))
         self.args_required = len(inspect.getargspec(
@@ -168,17 +113,9 @@ class RegisteredMetric(RegisteredEntity):
             self.current_aggregation_size = self.current_aggregation_size + no_of_values_added
 
     def reset_aggregation_size(self):
-        """
-        Resets current aggregation size
-        :return:
-        """
         self.current_aggregation_size = 0
 
     def send_data(self):
-        """
-        Sends the RegisteredMetric to DCC so that it can publish the data
-        :return:
-        """
         log.info("Publishing values for the resource {0} ".format(
             self.ref_entity.name))
         if not self.values:
@@ -190,20 +127,9 @@ class RegisteredMetric(RegisteredEntity):
             log.error("Exception while publishing message", exc_info=True)
 
     def __str__(self, *args, **kwargs):
-        """
-        Overridden toString method implementation for RegisteredMetric object.
-        :param args:
-        :param kwargs:
-        :return:
-        """
         return str(self.ref_entity.name) + ":" + str(self._next_run_time)
 
     def __cmp__(self, other):
-        """
-        Overridden Comparator method implementation for RegisteredMetric based on _next_run_time.
-        :param other: Other Object to be compared with this RegisteredMetric Object
-        :return:
-        """
         if other is None:
             return -1
         if not isinstance(other, RegisteredMetric):

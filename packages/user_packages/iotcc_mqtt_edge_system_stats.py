@@ -57,17 +57,17 @@ disk_name = get_disk_name()
 
 def read_cpu_procs():
     """
-    Sampling function that returns number of running cpu processes.
-    :return:
+    User defined method
+    :return: number of running cpu processes.
     """
     return cpu_stat.procs_running()
 
 
 def read_cpu_utilization(sample_duration_sec=1):
     """
-    Sampling function to return percentage of cpu utilized.
+    User defined method
     :param sample_duration_sec:
-    :return:
+    :return: percentage of cpu utilized.
     """
     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
     return round((100 - cpu_pcts['idle']), 2)
@@ -75,8 +75,8 @@ def read_cpu_utilization(sample_duration_sec=1):
 
 def read_disk_usage_stats():
     """
-    Sampling function to return disk usage.
-    :return:
+    User defined method
+    :return: disk usage.
     """
     # If the device raises an intermittent exception during metric collection process it will be required
     # to be handled in the user code otherwise if an exception is thrown from user code
@@ -91,16 +91,16 @@ def read_disk_usage_stats():
 
 def read_network_bytes_received():
     """
-    Sampling function to return network bytes received.
-    :return:
+    User defined method.
+    :return: network bytes received
     """
     return round(net_stat.rx_tx_bytes(network_interface)[0], 2)
 
 
 def read_mem_free():
     """
-    Sampling function to return percentage of memory free.
-    :return:
+    User defined method.
+    :return: percentage of memory free.
     """
     total_mem = round(mem_stat.mem_stats()[1], 4)
     free_mem = round(mem_stat.mem_stats()[3], 4)

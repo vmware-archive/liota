@@ -69,7 +69,7 @@ class DeviceComms:
     @abstractmethod
     def _disconnect(self):
         """
-        Abstract method for protocol specific connection disconnect implementation.
+        Abstract method for protocol-specific disconnect implementation.
         :return:
         """
         pass

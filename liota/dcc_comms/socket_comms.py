@@ -72,6 +72,11 @@ class SocketDccComms(DCCComms):
             raise ex
 
     def _disconnect(self):
+        """
+        Disconnect from BSD socket server.
+        TODO: To be implemented
+        :return:
+        """
         raise NotImplementedError
 
     def send(self, message, msg_attr=None):
@@ -85,5 +90,11 @@ class SocketDccComms(DCCComms):
         if self.client is not None:
             self.client.sendall(message)
 
-    def receive(self, msg_attr):
+    def receive(self, msg_attr=None):
+        """
+        Method to receive message from  BSD socket server.
+        TODO: To be implemented
+        :param msg_attr: MessagingAttributes.  It is 'None' for BSD Socket.
+        :return:
+        """
         raise NotImplementedError

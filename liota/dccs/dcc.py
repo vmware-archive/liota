@@ -65,8 +65,10 @@ class DataCenterComponent:
         Abstract register method to register an Entity Object with the Dcc.  Call this method from subclasses for a type
         check.
 
+        If successful RegisteredEntity should be returned by DCC implementation. Raise an exception if failed.
+
         :param entity_obj: Entity Object to be registered.
-        :return: RegisteredEntity if successful, or raise  an exception if failed.
+        :return:
         """
         if not isinstance(entity_obj, Entity):
             log.error("Entity object is expected.")
@@ -121,7 +123,7 @@ class DataCenterComponent:
         properties.
 
         :param reg_entity: RegisteredEntity Object
-        :param properties: Property String
+        :param properties: Property String, List or Dict dependant on DCC implementation
         :return:
         """
         pass

@@ -69,7 +69,7 @@ class DCCComms:
     @abstractmethod
     def _disconnect(self):
         """
-        Abstract method for protocol specific connection disconnect implementation.
+        Abstract method for protocol-specific disconnect implementation.
         :return:
         """
         pass
@@ -90,7 +90,7 @@ class DCCComms:
     @abstractmethod
     def receive(self, msg_attr):
         """
-        Abstract message to receive message from the DCC.
+        Abstract method to receive message from the DCC.
 
         :param msg_attr: MessagingAttributes object.  Message oriented protocols require params like QoS, RoutingKey,
                         Topics, Callbacks, etc.,  Such parameters should be encapsulated into protocol specific objects.
