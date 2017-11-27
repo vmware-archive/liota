@@ -558,7 +558,7 @@ class IotControlCenter(DataCenterComponent):
                 new_prop_dict = tmp_dict
         else:
             tmp_dict = self.read_entity_file(reg_entity_id)
-            # check Entity_Timestamp of entity_file: if < boottime, get properties from cloud
+            # check Entity_Timestamp of entity_file: if < _dcc_load_time, get properties from cloud
             if (self.enable_reboot_getprop == "True") and ('Entity_Timestamp' in tmp_dict):
                 last_dtime = datetime.datetime.strptime(tmp_dict["Entity_Timestamp"], "%Y-%m-%dT%H:%M:%S")
                 if (last_dtime <= self._dcc_load_time):
