@@ -33,18 +33,19 @@
 
 liota_config="/etc/liota/liota.conf"
 package_messenger_pipe=""
+package_response_pipe=""
 
 if ! [ `ps -ef | grep "liotad.py" | grep -v grep | wc -l` -gt 0 ]
 then
         echo "Liota package manager is not running. Please run it first!"
-        exit -1
+        exit 1
 fi
 
 if [ ! -f "$liota_config" ]
 then
     echo "ERROR: Configuration file not found" >&2
     echo "You made need to copy the distributed configuration file from /usr/lib/liota/config/liota.conf to /etc/liota/liota.conf" >&2
-    exit -2
+    exit 2
 fi
 
 while read line # Read configurations from file
@@ -54,22 +55,50 @@ do
     then
         value=$(echo "$line" | sed "s/^..*\s*\=\s*\(..*\)$/\1/")
         package_messenger_pipe=$value
-        break
+        if [ "$package_response_pipe" != "" ]
+        then
+            break
+        fi
+    fi
+    if [ "$varname" = "pkg_rsp_pipe " ]
+    then
+        value=$(echo "$line" | sed "s/^..*\s*\=\s*\(..*\)$/\1/")
+        package_response_pipe=$value
+        if [ "$package_messenger_pipe" != "" ]
+        then
+            break
+        fi
     fi
 done < $liota_config
 
 if [ "$package_messenger_pipe" = "" ]
 then
-    echo "ERROR: Pipe path not found in configuration file" >&2
-    exit -3
+    echo "ERROR: Messenger Pipe path not found in configuration file" >&2
+    exit 3
 fi
 
 if [ ! -p "$package_messenger_pipe" ]
 then
-    echo "ERROR: Pipe path is not a named pipe" >&2
-    exit -4
+    echo "ERROR: Messenger Pipe path is not a named pipe" >&2
+    exit 4
+fi
+
+if [ "$package_response_pipe" = "" ]
+then
+    echo "ERROR: Responser Pipe path not found in configuration file" >&2
+    exit 5
+fi
+
+if [ ! -p "$package_response_pipe" ]
+then
+    echo "ERROR: Responser Pipe path is not a named pipe" >&2
+    exit 6
 fi
 
 # Echo to named pipe
-echo "Pipe file: $package_messenger_pipe" >&2
+#echo "Pipe file: $package_messenger_pipe" >&2
 echo "$@" > $package_messenger_pipe
+# read result
+if read line <$package_response_pipe; then
+    echo $line
+fi

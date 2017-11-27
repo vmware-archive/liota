@@ -314,41 +314,28 @@ def read_user_config(config_file_path):
     return user_config
 
 
-class DiscUtilities:
-    """
-    DiscUtilities is a wrapper of utility functions
-    """
-
-    def __init__(self):
-        pass
-
-    def validate_named_pipe(self, pipe_file):
-        """
-        Check whether a named pipe exists or not; if not, create it.
-        :param pipe_file: path of a named pipe file
-        :return: True or False
-        """
-        assert (isinstance(pipe_file, basestring))
-        if os.path.exists(pipe_file):
-            if stat.S_ISFIFO(os.stat(pipe_file).st_mode):
-                pass
-            else:
-                log.error("Pipe path exists, but it is not a pipe")
-                return False
+def validate_named_pipe(pipe_file):
+    assert (isinstance(pipe_file, basestring))
+    if os.path.exists(pipe_file):
+        if stat.S_ISFIFO(os.stat(pipe_file).st_mode):
+            pass
         else:
-            pipe_dir = os.path.dirname(pipe_file)
-            if not os.path.isdir(pipe_dir):
-                try:
-                    os.makedirs(pipe_dir)
-                    log.info("Created directory: " + pipe_dir)
-                except OSError:
-                    log.error("Could not create directory for messenger pipe")
-                    return False
+            log.error("Pipe path exists, but it is not a pipe")
+            return False
+    else:
+        pipe_dir = os.path.dirname(pipe_file)
+        if not os.path.isdir(pipe_dir):
             try:
-                os.mkfifo(pipe_file, 0600)
-                log.info("Created pipe: " + pipe_file)
+                os.makedirs(pipe_dir)
+                log.info("Created directory: " + pipe_dir)
             except OSError:
-                log.error("Could not create messenger pipe")
+                log.error("Could not create directory for pipe")
                 return False
-        assert (stat.S_ISFIFO(os.stat(pipe_file).st_mode))
-        return True
+        try:
+            os.mkfifo(pipe_file, 0600)
+            log.info("Created pipe: " + pipe_file)
+        except OSError:
+            log.error("Could not create pipe")
+            return False
+    assert (stat.S_ISFIFO(os.stat(pipe_file).st_mode))
+    return True
