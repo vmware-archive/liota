@@ -56,6 +56,12 @@ class RegisteredMetric(RegisteredEntity):
         self.values = Queue()
 
     def start_collecting(self):
+        """
+        Start to collect data for the metric:
+        initialize metric handler and put the metric's first event to events
+        priority queue.
+        :return:
+        """
         self.flag_alive = True
         # TODO: Add a check to ensure that start_collecting for a metric is
         # called only once by the client code
@@ -64,11 +70,21 @@ class RegisteredMetric(RegisteredEntity):
         metric_handler.event_ds.put_and_notify(self)
 
     def stop_collecting(self):
+        """
+        Stop collecting data for the metric.
+        :return:
+        """
         self.flag_alive = False
         log.debug("Metric %s is marked for deletion" %
                  str(self.ref_entity.name))
 
     def add_collected_data(self, collected_data):
+        """
+        For the metric, add collected data into values queue.
+        :param collected_data: collected data which may be in the format
+                of list, tuple, and single sampled value
+        :return: the length of added data
+        """
         if isinstance(collected_data, list):
             for data_sample in collected_data:
                 self.values.put(data_sample)
@@ -81,14 +97,26 @@ class RegisteredMetric(RegisteredEntity):
             return 1
 
     def get_next_run_time(self):
+        """
+        Get next run time for the metric.
+        :return: next run time
+        """
         return self._next_run_time
 
     def set_next_run_time(self):
+        """
+        Set next run time for the metric.
+        :return:
+        """
         self._next_run_time = self._next_run_time + \
             (self.ref_entity.interval * 1000)
         log.debug("Set next run time to:" + str(self._next_run_time))
 
     def is_ready_to_send(self):
+        """
+        Check whether the metric is ready to send its collected data or not.
+        :return: True or False
+        """
         log.debug("self.current_aggregation_size:" +
                   str(self.current_aggregation_size))
         log.debug("self.aggregation_size:" +
@@ -96,6 +124,12 @@ class RegisteredMetric(RegisteredEntity):
         return self.current_aggregation_size >= self.ref_entity.aggregation_size
 
     def collect(self):
+        """
+        For the metric, call its sampling function to collect values for it,
+        add formated collected data into data queue, and update current
+        aggregation size.
+        :return:
+        """
         log.debug("Collecting values for the resource {0} ".format(
             self.ref_entity.name))
         self.args_required = len(inspect.getargspec(
@@ -113,9 +147,17 @@ class RegisteredMetric(RegisteredEntity):
             self.current_aggregation_size = self.current_aggregation_size + no_of_values_added
 
     def reset_aggregation_size(self):
+        """
+        Reset the metric's current aggregation size to 0.
+        :return:
+        """
         self.current_aggregation_size = 0
 
     def send_data(self):
+        """
+        Send the metric's collected data out.
+        :return:
+        """
         log.info("Publishing values for the resource {0} ".format(
             self.ref_entity.name))
         if not self.values:

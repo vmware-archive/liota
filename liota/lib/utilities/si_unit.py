@@ -140,12 +140,13 @@ def _get_unit_name(unit):
 
     return str_temp
 
-#---------------------------------------------------------------------------
-# This is primary method that should be imported in vROps DCC, or any future
-# DCC that has or requires unit support, in order to parse unit parameter
-# passed through create_metric call.
-#
 def parse_unit(unit):
+    """
+    Parse unit parameter passed through create_metric call.
+    This is primary method that should be imported in vROps DCC, or any future
+    DCC that has or requires unit support.
+    :return: prefix and unit strings
+    """
     str_prefix = None
     obj_unit = None
     if unit is None:
