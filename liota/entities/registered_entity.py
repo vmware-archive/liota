@@ -53,7 +53,7 @@ class RegisteredEntity(object):
         """
         This method sets properties for this RegisteredEntity in the DCC.
 
-        :param properties:
+        :param properties: Property String, List or Dict
         :return:
         """
         self.ref_dcc.set_properties(self, properties)
