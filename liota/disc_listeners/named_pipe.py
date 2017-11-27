@@ -39,7 +39,7 @@ import logging
 from Queue import Queue
 from threading import Thread
 
-from liota.lib.utilities.utility import DiscUtilities
+from liota.lib.utilities.utility import validate_named_pipe
 from liota.disc_listeners.discovery_listener import DiscoveryListener
 
 log = logging.getLogger(__name__)
@@ -52,7 +52,7 @@ class NamedPipeListener(DiscoveryListener):
 
     def __init__(self, pipe_file, name=None, discovery=None):
         super(NamedPipeListener, self).__init__(name=name)
-        if DiscUtilities().validate_named_pipe(pipe_file) == False:
+        if validate_named_pipe(pipe_file) == False:
             return None
         self._pipe_file = pipe_file
         self.msg_queue = Queue()
