@@ -91,9 +91,13 @@ class IotControlCenter(DataCenterComponent):
 
         """
         if not self._validate_input(entity_obj.name):
-            raise Exception("Name of the resource contains unacceptable character : " + entity_obj.name)
+            raise ValueError("Name of the resource contains unacceptable character : " + entity_obj.name)
+        if not len(entity_obj.name) <= 50:
+            raise ValueError("Name of the resource contains more than 50 characters : " + entity_obj.name)
         if not self._validate_input(entity_obj.entity_type):
-            raise Exception("Type of the resource contains unacceptable character : " + entity_obj.entity_type)
+            raise ValueError("Type of the resource contains unacceptable character : " + entity_obj.entity_type)
+        if not len(entity_obj.entity_type) <= 50:
+            raise ValueError("Type of the resource contains more than 50 characters : " + entity_obj.entity_type)
 
         if isinstance(entity_obj, Metric):
             # reg_entity_id should be parent's one: not known here yet
@@ -245,8 +249,16 @@ class IotControlCenter(DataCenterComponent):
             if not self._validate_input(key):
                 log.error("Property key {0} contains unacceptable character for resource {1}".format(key, entity_name))
                 continue
+            if not len(key) <= 100:
+                log.error("Property key {0} for resource {1} contains more than 100 characters".format(key, entity_name))
+                continue
             if not self._validate_input(value):
-                log.error("Property value {0} of key {1} contains unacceptable character for resource {2}".format(value, key, entity_name))
+                log.error("Property value {0} of key {1} contains unacceptable character for resource {2}"
+                          .format(value, key, entity_name))
+                continue
+            if not len(value) <= 255:
+                log.error("Property value {0} of key {1} for resource {2} contains more than 255 characters"
+                          .format(value, key, entity_name))
                 continue
             msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
         return msg
