@@ -313,7 +313,7 @@ def read_user_config(config_file_path):
         user_config[key] = ast.literal_eval(value)
     return user_config
 
- 
+
 def validate_named_pipe(pipe_file):
     assert (isinstance(pipe_file, basestring))
     if os.path.exists(pipe_file):
