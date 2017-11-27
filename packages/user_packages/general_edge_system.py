@@ -32,13 +32,22 @@
 
 from liota.core.package_manager import LiotaPackage
 
+
 class PackageClass(LiotaPackage):
     """
     This package contains specifications of GeneralEdgeSystem.
-    It registers "edge system" in package manager's resource registry.
+    It registers "edge_system" in package manager's resource registry.
     """
 
     def run(self, registry):
+        """
+        The execution function of a liota package.
+
+        Registers GeneralEdgeSystem as "edge_system" in package manager's resource registry.
+
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        :return:
+        """
         from liota.entities.edge_systems.general_edge_system import GeneralEdgeSystem
 
         # Initialize edgesystem, user needs to provide the code to auto-generate the unique name everytime this package

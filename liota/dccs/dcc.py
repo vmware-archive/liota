@@ -49,34 +49,64 @@ class DataCenterComponent:
 
     @abstractmethod
     def __init__(self, comms):
+        """
+        Abstract init method for DCC (Data Center Component).
+
+        :param comms: DccComms Object
+        """
         if not isinstance(comms, DCCComms):
             log.error("DCCComms object is expected.")
             raise TypeError("DCCComms object is expected.")
         self.comms = comms
 
-    # -----------------------------------------------------------------------
-    # Implement this method in subclasses and do actual registration.
-    #
-    # This method should return a RegisteredEntity if successful, or raise
-    # an exception if failed. Call this method from subclasses for a type
-    # check.
-    #
-
     @abstractmethod
     def register(self, entity_obj):
+        """
+        Abstract register method to register an Entity Object with the Dcc.  Call this method from subclasses for a type
+        check.
+
+        If successful RegisteredEntity should be returned by DCC implementation. Raise an exception if failed.
+
+        :param entity_obj: Entity Object to be registered.
+        :return:
+        """
         if not isinstance(entity_obj, Entity):
             log.error("Entity object is expected.")
             raise TypeError("Entity object is expected.")
 
     @abstractmethod
     def create_relationship(self, reg_entity_parent, reg_entity_child):
+        """
+        Abstract create_relationship method to create a relationship between a parent and a child entity.
+
+        :param reg_entity_parent: RegisteredEntity object of the parent.
+        :param reg_entity_child:  RegisteredEntity object of the child.
+        :return:
+        """
         pass
 
     @abstractmethod
     def _format_data(self, reg_metric):
+        """
+        Abstract _format_data method.  This is a private method and it should take care of formatting the message
+        in a structure specific to a DCC.
+
+        :param reg_metric: RegisteredMetric Object
+        :return: Formatted message string
+        """
         pass
 
     def publish(self, reg_metric):
+        """
+        Publishes the formatted message to the Dcc using DccComms.
+
+        Users must pass MessagingAttributes Object as part of RegisteredMetric Objects wherever necessary.
+
+        This method EXPECTS MessagingAttributes to be passed in RegisteredMetric's 'msg_attr' attribute.
+
+        :param reg_metric: RegisteredMetricObject.
+        :return:
+        """
         if not isinstance(reg_metric, RegisteredMetric):
             log.error("RegisteredMetric object is expected.")
             raise TypeError("RegisteredMetric object is expected.")
@@ -88,11 +118,31 @@ class DataCenterComponent:
 
     @abstractmethod
     def set_properties(self, reg_entity, properties):
+        """
+        Abstract set_properties method.  DCCs should implement this method to allow RegisteredEntities to set their
+        properties.
+
+        :param reg_entity: RegisteredEntity Object
+        :param properties: Property String, List or Dict dependant on DCC implementation
+        :return:
+        """
         pass
 
     @abstractmethod
     def unregister(self, entity_obj):
+        """
+        Abstract unregister method.  DCCs should implement this method to un-register an Entity.
+
+        :param entity_obj: Entity Object
+        :return:
+        """
         if not isinstance(entity_obj, Entity):
             raise TypeError
 
-class RegistrationFailure(Exception): pass
+
+class RegistrationFailure(Exception):
+    """
+    Raise this exception in case of registration failure with the DCC.
+    """
+    pass
+

@@ -33,14 +33,23 @@
 from liota.core.package_manager import LiotaPackage
 from liota.lib.utilities.utility import read_user_config
 
+
 class PackageClass(LiotaPackage):
     """
     This package contains specifications of Dell5K and properties to import
     from configuration file.
-    It registers "edge system" in package manager's resource registry.
+    It registers "edge_system" in package manager's resource registry.
     """
 
     def run(self, registry):
+        """
+        The execution function of a liota package.
+
+        Registers Dell5KEdgeSystem as "edge_system" in package manager's resource registry.
+
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        :return:
+        """
         from liota.entities.edge_systems.dell5k_edge_system import Dell5KEdgeSystem
 
         # getting values from conf file
