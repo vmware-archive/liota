@@ -50,7 +50,8 @@ from liota.entities.metrics.registered_metric import RegisteredMetric
 from liota.entities.registered_entity import RegisteredEntity
 
 log = logging.getLogger(__name__)
-timeout = 300
+timeout = int(read_liota_config('IOTCC_PATH', 'iotcc_response_timeout'))
+
 class IotControlCenter(DataCenterComponent):
     """ The implementation of IoTCC cloud provider solution
 
@@ -110,7 +111,9 @@ class IotControlCenter(DataCenterComponent):
                     log.debug("Processing msg: {0}".format(json_msg["type"]))
                     self._check_version(json_msg)
                     if json_msg["type"] == "UNSUPPORTED_VERSION":
-                         raise Exception("Exception in registering resource, version mismatch. Response received from server:" + json_msg["body"])
+                        raise Exception(
+                            "Exception in registering resource, version mismatch. Response received from server:" +
+                            json_msg["body"])
                     if json_msg["type"] == "create_or_find_resource_response" and json_msg["body"]["uuid"] != "null" and \
                                     json_msg["body"]["id"] == entity_obj.entity_id:
                         log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
@@ -146,7 +149,9 @@ class IotControlCenter(DataCenterComponent):
 
     def _check_version(self, json_msg):
         if json_msg["version"] != self._version:
-            raise Exception("CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS:" + self._version + ". SERVER VERSION IS:" + json_msg["version"])
+            raise Exception(
+                "CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS:" + self._version + ". SERVER VERSION IS:" +
+                json_msg["version"])
 
     def unregister(self, entity_obj):
         """
@@ -214,9 +219,29 @@ class IotControlCenter(DataCenterComponent):
             if entity_obj.unit is not None:
                 self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
+            def on_response(msg):
+                try:
+                    log.debug("Received msg: {0}".format(msg))
+                    json_msg = json.loads(msg)
+                    log.debug("Processing msg: {0}".format(json_msg["type"]))
+                    self._check_version(json_msg)
+                    if json_msg["type"] == "create_relationship_response" and json_msg["body"][
+                        "result"] == "succeeded" and json_msg["body"]["parent"] == reg_entity_parent.reg_entity_id and \
+                                    json_msg["body"]["child"] == reg_entity_child.reg_entity_id:
+                        log.info(
+                            "Relationship between entities {0} & {1} created successfully in IoTCC".format(
+                                reg_entity_parent.ref_entity.name, reg_entity_child.ref_entity.name))
+                    else:
+                        log.info("Waiting for create relationship response")
+                        on_response(self.recv_msg_queue.get(True, timeout))
+                except Exception as err:
+                    log.exception("Exception while create relationship request")
+                    raise err
+
             self.comms.send(json.dumps(self._relationship(self._next_id(),
                                                           reg_entity_parent.reg_entity_id,
                                                           reg_entity_child.reg_entity_id)))
+            on_response(self.recv_msg_queue.get(True, timeout))
             if hasattr(reg_entity_parent, 'sys_properties') and reg_entity_parent.sys_properties:
                 self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
 
@@ -315,10 +340,26 @@ class IotControlCenter(DataCenterComponent):
             reg_entity_obj.sys_properties = system_properties
             entity = reg_entity_obj.ref_entity
 
-        log.info("System Properties defined for resource {0}".format(entity.name))
+        def on_response(msg):
+            try:
+                log.debug("Received msg: {0}".format(msg))
+                json_msg = json.loads(msg)
+                log.debug("Processing msg: {0}".format(json_msg["type"]))
+                self._check_version(json_msg)
+                if json_msg["type"] == "add_properties_response" and json_msg["body"][
+                    "result"] == "succeeded":
+                    log.info("System Properties defined for resource {0}".format(entity.name))
+                else:
+                    log.info("Waiting for set system properties response")
+                    on_response(self.recv_msg_queue.get(True, timeout))
+            except Exception as err:
+                log.exception("Exception while setting system properties")
+                raise err
+
         self.comms.send(json.dumps(
             self._properties(self._next_id(), entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), system_properties)))
+        on_response(self.recv_msg_queue.get(True, timeout))
 
     def set_properties(self, reg_entity_obj, properties):
         """
@@ -335,10 +376,26 @@ class IotControlCenter(DataCenterComponent):
         else:
             entity = reg_entity_obj.ref_entity
 
-        log.info("Properties defined for resource {0}".format(entity.name))
+        def on_response(msg):
+            try:
+                log.debug("Received msg: {0}".format(msg))
+                json_msg = json.loads(msg)
+                log.debug("Processing msg: {0}".format(json_msg["type"]))
+                self._check_version(json_msg)
+                if json_msg["type"] == "add_properties_response" and json_msg["body"][
+                    "result"] == "succeeded":
+                    log.info("Properties defined for resource {0}".format(entity.name))
+                else:
+                    log.info("Waiting for set properties response")
+                    on_response(self.recv_msg_queue.get(True, timeout))
+            except Exception as err:
+                log.exception("Exception while setting properties")
+                raise err
+
         self.comms.send(json.dumps(
             self._properties(self._next_id(), entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), properties)))
+        on_response(self.recv_msg_queue.get(True, timeout))
         if entity.entity_type == "HelixGateway":
             with self.file_ops_lock:
                 self._store_reg_entity_attributes("EdgeSystem", entity.name,
@@ -581,7 +638,7 @@ class IotControlCenter(DataCenterComponent):
     def _store_reg_entity_attributes(self, entity_type, entity_name, reg_entity_id,
                                      dev_type, prop_dict):
         log.debug('store_reg_entity_attributes {0}:{1}:{2}:{3}'.format(entity_type,
-            entity_name, reg_entity_id, prop_dict))
+                                                                       entity_name, reg_entity_id, prop_dict))
 
         ### Update IOTCC local entity file first
         # look for uuid.json file first, if not, first time to write
@@ -611,9 +668,9 @@ class IotControlCenter(DataCenterComponent):
                     # merge property info from get_properties() into our local entity record
                     tmp_dict = self._merge_prop_dict_list(tmp_dict, list_prop)
             if ((('entity type' in tmp_dict) and (tmp_dict["entity type"] == entity_type)) and
-                (('name' in tmp_dict) and (tmp_dict["name"] == entity_name)) and
-                (('device type' in tmp_dict) and ((tmp_dict["device type"] == dev_type) or
-                    ((tmp_dict["device type"] == '') and (dev_type == None))))):
+                    (('name' in tmp_dict) and (tmp_dict["name"] == entity_name)) and
+                    (('device type' in tmp_dict) and ((tmp_dict["device type"] == dev_type) or
+                                                          ((tmp_dict["device type"] == '') and (dev_type == None))))):
                 # the same entity
                 if (tmp_dict is not None) and (prop_dict is not None):
                     new_prop_dict = dict(tmp_dict.items() + prop_dict.items())
