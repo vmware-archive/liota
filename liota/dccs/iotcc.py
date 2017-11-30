@@ -138,10 +138,9 @@ class IotControlCenter(DataCenterComponent):
                 entity_obj.entity_type = "HelixGateway"
             transaction_id = self._next_id()
             req = Request(transaction_id, reg_resp_q)
-            log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
+            log.debug("Updating resource registration queue for transaction_id:{0}".format(transaction_id))
             with self.req_ops_lock:
                 self.req_dict.update({transaction_id: req})
-                log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
             self.comms.send(json.dumps(
                 self._registration(transaction_id, entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
             on_response(reg_resp_q.get(True, timeout), reg_resp_q)
@@ -200,10 +199,9 @@ class IotControlCenter(DataCenterComponent):
 
         transaction_id = self._next_id()
         req = Request(transaction_id, unreg_resp_q)
-        log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
+        log.debug("Updating unregister response queue for transaction_id:{0}".format(transaction_id))
         with self.req_ops_lock:
             self.req_dict.update({transaction_id: req})
-            log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
         self.comms.send(json.dumps(self._unregistration(transaction_id, entity_obj.ref_entity)))
         on_response(unreg_resp_q.get(True, timeout),unreg_resp_q)
 
@@ -262,10 +260,9 @@ class IotControlCenter(DataCenterComponent):
                     raise err
             transaction_id = self._next_id()
             req = Request(transaction_id, rel_resp_q)
-            log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
+            log.debug("Updating create relationship response queue for transaction_id:{0}".format(transaction_id))
             with self.req_ops_lock:
                 self.req_dict.update({transaction_id: req})
-                log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
             self.comms.send(json.dumps(self._relationship(transaction_id,
                                                           reg_entity_parent.reg_entity_id,
                                                           reg_entity_child.reg_entity_id)))
@@ -388,10 +385,9 @@ class IotControlCenter(DataCenterComponent):
         # create and add register request into req_list (waiting list)
         transaction_id = self._next_id()
         req = Request(transaction_id, set_sys_prop_resp_q)
-        log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
+        log.debug("Updating set system properties response queue for transaction_id:{0}".format(transaction_id))
         with self.req_ops_lock:
             self.req_dict.update({transaction_id: req})
-            log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
         self.comms.send(json.dumps(
             self._properties(transaction_id, entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), system_properties)))
@@ -432,11 +428,9 @@ class IotControlCenter(DataCenterComponent):
         # create and add register request into req_list (waiting list)
         transaction_id = self._next_id()
         req = Request(transaction_id, set_prop_resp_q)
-        log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
+        log.debug("Updating set properties response queue for transaction_id:{0}".format(transaction_id))
         with self.req_ops_lock:
             self.req_dict.update({transaction_id: req})
-            log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
-
         self.comms.send(json.dumps(
             self._properties(transaction_id, entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), properties)))
@@ -820,10 +814,9 @@ class IotControlCenter(DataCenterComponent):
                 log.exception("Exception while getting properties")
         transaction_id = self._next_id()
         req = Request(transaction_id, get_prop_resp_q)
-        log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
+        log.debug("Updating get properties response queue for transaction_id:{0}".format(transaction_id))
         with self.req_ops_lock:
             self.req_dict.update({transaction_id: req})
-            log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
         self.comms.send(json.dumps(self._get_properties(transaction_id, resource_uuid)))
         on_response(get_prop_resp_q.get(True, timeout),get_prop_resp_q)
         return self.prop_list
@@ -840,16 +833,15 @@ class IotControlCenter(DataCenterComponent):
                 log.debug("Processing msg: type:{0} transaction_id:{1}".format(json_msg["type"], json_msg["transactionID"]))
                 # search matched request in request dictionary
                 # assume transaction_id will be unique in one process
-                log.debug("req_dict {0} keys:{1}".format(self.req_dict, self.req_dict.keys()))
+                log.debug("Dictonary keys:{0}".format(self.req_dict.keys()))
                 if (json_msg["transactionID"] in self.req_dict):
                     req = self.req_dict[json_msg["transactionID"]]
-                    log.debug("req_dict {0} req:{1}".format(self.req_dict, req))
                     # get/delete request from dictionary
                     if (req is not None):
                         with self.req_ops_lock:
                             del self.req_dict[json_msg["transactionID"]]
                         # put response into requester's reception queue
-                        log.debug("req_dict {0} msg:{1} user_queue{2}".format(self.req_dict, msg, req.user_queue))
+                        log.debug("Msg:{0} dispatched to user queue".format(msg))
                         req.user_queue.put(msg)
                 else:
                     # TBD: it may be other messages, e.g., Actions, Armada Campaign
