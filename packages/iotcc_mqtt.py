@@ -43,6 +43,14 @@ class PackageClass(LiotaPackage):
     """
 
     def run(self, registry):
+        """
+        The execution function of a liota package.
+
+        Establishes connection with IoTControlCenter DCC using MqttDccComms
+
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        :return:
+        """
         import copy
         from liota.lib.utilities.identity import Identity
         from liota.dccs.iotcc import IotControlCenter
@@ -86,10 +94,17 @@ class PackageClass(LiotaPackage):
         self.iotcc.set_properties(self.iotcc_edge_system, config['SystemPropList'])
 
     def clean_up(self):
+        """
+        The clean up function of a liota package.
+
+        Disconnects from IoTControlCenter DCC and un-registers the edge-system if specified in configuration.
+
+        :return:
+        """
         # Get values from configuration file
         config = read_user_config(self.config_path + '/sampleProp.conf')
 
-        #Unregister edge system
+        # Un-register edge system
         if config['ShouldUnregisterOnUnload'] == "True":
             self.iotcc.unregister(self.iotcc_edge_system)
         self.iotcc.comms.client.disconnect()

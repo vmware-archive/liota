@@ -44,6 +44,16 @@ class Metric(Entity):
                  aggregation_size=1,
                  sampling_function=None
                  ):
+        """
+        Create a local metric object.
+        :param name: metric name
+        :param entity_type: entity type (by default, is "Metric")
+        :param unit: Metric unit
+        :param interval: Metric sampling interval
+        :param aggregation_size: How many sampling results will be aggregated before publishing
+        :param sampling_function: Metric sampling function
+        :return:
+        """
         if not (unit is None or isinstance(unit, pint.unit._Unit)) \
                 or not (
             isinstance(interval, int) or isinstance(interval, float)
@@ -61,4 +71,12 @@ class Metric(Entity):
         self.sampling_function = sampling_function
 
     def register(self, dcc_obj, reg_entity_id):
+        """
+        Register metric to a DCC instance by an identifier (create a
+        registered metric instance to record dcc instance reference
+        and registered metric identifier).
+        :param dcc_obj: dcc object reference
+        :param reg_entity_id: the identifier for a registered entity
+        :return: Registered metric reference
+        """
         return RegisteredMetric(self, dcc_obj, reg_entity_id)

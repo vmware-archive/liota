@@ -40,12 +40,26 @@ log = logging.getLogger(__name__)
 
 
 class Graphite(DataCenterComponent):
+    """
+    DCC implementation for Graphite.
+    """
     def __init__(self, comms):
+        """
+        Init method for Graphite DCC.
+
+        :param comms: DccComms Object.
+        """
         super(Graphite, self).__init__(
             comms=comms
         )
 
     def register(self, entity_obj):
+        """
+        Since Graphite doesn't provide any API for registration, we simply return RegisteredEntity Object.
+
+        :param entity_obj: Metric or Entity Object.
+        :return: RegisteredMetric or RegisteredEntity Object.
+        """
         log.info("Registering resource with Graphite DCC {0}".format(entity_obj.name))
         if isinstance(entity_obj, Metric):
             return RegisteredMetric(entity_obj, self, None)
@@ -53,9 +67,31 @@ class Graphite(DataCenterComponent):
             return RegisteredEntity(entity_obj, self, None)
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
+        """
+        This method creates Parent-Child relationship.  Supported relationships are:
+
+               EdgeSystem
+                   |                                      EdgeSystem
+                Device                   (or)                |
+                   |                                    RegisteredMetric
+             RegisteredMetric
+
+        However, A single EdgeSystem can have multiple child Devices and a each Device can have
+        multiple child Metrics.
+
+        :param reg_entity_parent: Registered EdgeSystem or Registered Device Object
+        :param reg_entity_child:  Registered Device or Registered Metric Object
+        :return: None
+        """
         reg_entity_child.parent = reg_entity_parent
 
     def _format_data(self, reg_metric):
+        """
+        Formats data as required by Graphite DCC.
+
+        :param reg_metric: RegisteredMetric Object.
+        :return: Formatted message string.
+        """
         met_cnt = reg_metric.values.qsize()
         message = ''
         if met_cnt == 0:

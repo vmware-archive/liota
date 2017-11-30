@@ -6,6 +6,7 @@ def sha1sum(path_file):
     """
     This method calculates SHA-1 checksum of file.
     :param path_file: the relative or absolute path of a file
+    :return: the SHA-1 checksum of the file
     """
     if not os.path.isfile(path_file):
         return None

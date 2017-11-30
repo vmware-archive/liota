@@ -39,7 +39,7 @@ import ConfigParser
 from threading import Thread, Lock
 from Queue import Queue
 
-from liota.lib.utilities.utility import LiotaConfigPath, DiscUtilities
+from liota.lib.utilities.utility import LiotaConfigPath, validate_named_pipe
 from liota.disc_listeners.named_pipe import NamedPipeListener
 from liota.disc_listeners.socket_svr import SocketListener
 from liota.disc_listeners.mqtt import MqttListener
@@ -195,7 +195,7 @@ class DiscoveryThread(Thread):
         assert(isinstance(self.cmd_messenger_pipe, basestring))
 
     def _executable_check(self):
-        if DiscUtilities().validate_named_pipe(self.cmd_messenger_pipe) == False:
+        if validate_named_pipe(self.cmd_messenger_pipe) == False:
             return None
         # Will not initialize device discovery if DISCOVERY_LISTENER list is empty
         if len(self.endpoint_list) is 0:

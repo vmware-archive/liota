@@ -40,27 +40,54 @@ class DeviceComms:
     """
     __metaclass__ = ABCMeta
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # If a specific DeviceComms has parameters to establish connection, pass
     # them to its constructor, not self._connect. Keep self._connect free of
     # external arguments.
-    #
+
     @abstractmethod
     def __init__(self):
+        """
+        Abstract init method for DeviceComms (DeviceCommunication Protocols).
+
+        This must take all necessary params to establish a connection and must call _connect().
+        """
         self._connect()
 
     @abstractmethod
     def _connect(self):
+        """
+        Abstract method for protocol specific connection establishment implementation.
+
+        All sub-classes implementing this method MUST assign the established connection to the variable 'self.client'
+        (Eg:) self.client = MyProtocol(ip, port, credentials)
+
+        :return:
+        """
         pass
 
     @abstractmethod
     def _disconnect(self):
+        """
+        Abstract method for protocol-specific disconnect implementation.
+        :return:
+        """
         pass
 
     @abstractmethod
     def send(self, message):
+        """
+        Abstract method to send message over the established connection.
+
+        :param message: Message to be sent
+        :return:
+        """
         pass
 
     @abstractmethod
     def receive(self):
+        """
+        Abstract message to receive message from the Device.
+        :return:
+        """
         pass

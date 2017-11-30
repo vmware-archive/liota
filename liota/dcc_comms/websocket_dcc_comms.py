@@ -40,8 +40,18 @@ log = logging.getLogger(__name__)
 
 
 class WebSocketDccComms(DCCComms):
+    """
+    DccComms implementation for WebSocket Transport.
+    """
 
     def __init__(self, url, verify_cert, identity=None):
+        """
+        Init method for WebSocketDccComms
+
+        :param url: WebScoket server URL
+        :param verify_cert: Boolean value to verify certificate or not
+        :param identity: Identity Object
+        """
         self.url = url
         self.verify_cert = verify_cert
         self.identity = identity
@@ -49,13 +59,35 @@ class WebSocketDccComms(DCCComms):
         self._connect()
 
     def _connect(self):
+        """
+        Establishes connection with a WebSocket server.
+        :return:
+        """
         self.client = WebSocket(self.url, self.verify_cert, self.identity)
 
     def _disconnect(self):
+        """
+        Disconnects from WebSocket server.
+        TODO: To be implemented
+        :return:
+        """
         raise NotImplementedError
 
     def send(self, message, msg_attr=None):
+        """
+        Sends message to the WebSocket Server.
+
+        :param message: Message to be sent.
+        :param msg_attr: MessagingAttributes Object.  It is 'None' for WebSocket.
+        :return:
+        """
         self.client.send(message)
 
     def receive(self, msg_attr=None):
+        """
+        Receives message from WebSocket Server in a blocking manner.
+
+        :param msg_attr: MessagingAttributes.  It is 'None' for WebSocket.
+        :return:
+        """
         self.client.receive(self.userdata)

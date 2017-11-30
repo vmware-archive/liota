@@ -56,15 +56,29 @@ disk_name = get_disk_name()
 
 
 def read_cpu_procs():
+    """
+    User defined method
+    :return: number of running cpu processes.
+    """
     return cpu_stat.procs_running()
 
 
 def read_cpu_utilization(sample_duration_sec=1):
+    """
+    User defined method
+    :param sample_duration_sec: Sample duration sample
+    is collected
+    :return: percentage of cpu utilized.
+    """
     cpu_pcts = cpu_stat.cpu_percents(sample_duration_sec)
     return round((100 - cpu_pcts['idle']), 2)
 
 
 def read_disk_usage_stats():
+    """
+    User defined method
+    :return: disk usage.
+    """
     # If the device raises an intermittent exception during metric collection process it will be required
     # to be handled in the user code otherwise if an exception is thrown from user code
     # the collection process will be stopped for that metric.
@@ -77,10 +91,18 @@ def read_disk_usage_stats():
 
 
 def read_network_bytes_received():
+    """
+    User defined method.
+    :return: network bytes received
+    """
     return round(net_stat.rx_tx_bytes(network_interface)[0], 2)
 
 
 def read_mem_free():
+    """
+    User defined method.
+    :return: percentage of memory free.
+    """
     total_mem = round(mem_stat.mem_stats()[1], 4)
     free_mem = round(mem_stat.mem_stats()[3], 4)
     mem_free_percent = ((total_mem - free_mem) / total_mem) * 100
@@ -89,6 +111,15 @@ def read_mem_free():
 
 class PackageClass(LiotaPackage):
     def run(self, registry):
+        """
+        The execution function of a liota package.
+
+        Acquires "iotcc_mqtt" and "iotcc_mqtt_edge_system" from registry and registers edge_system related metrics
+        with the DCC and publishes those metrics.
+
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        :return:
+        """
         import copy
         from liota.entities.metrics.metric import Metric
 
@@ -154,6 +185,12 @@ class PackageClass(LiotaPackage):
         self.metrics.append(reg_mem_free_metric)
 
     def clean_up(self):
+        """
+        The clean up function of a liota package.
+
+        Stops metric collection and publish.
+        :return:
+        """
         # Kindly include this call to stop the metrics collection on package unload
         for metric in self.metrics:
             metric.stop_collecting()

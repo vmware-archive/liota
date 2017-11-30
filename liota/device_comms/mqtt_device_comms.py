@@ -120,7 +120,20 @@ class MqttDeviceComms(DeviceComms):
         self.client.subscribe(topic, qos, callback)
 
     def send(self, message):
+        """
+        Send message to MQTT broker.
+        TODO: To be implemented.
+        Use publish directly.
+        :param message: String message to be sent.
+        :return:
+        """
         raise NotImplementedError
 
     def receive(self):
+        """
+        Receive message from MQTT broker.
+        TODO: To be implemented.
+        USe subscribe directly.
+        :return:
+        """
         raise NotImplementedError

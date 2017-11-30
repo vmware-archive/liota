@@ -30,16 +30,12 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 import os
-import sys
 import time
 import json
-import stat
 import fcntl
-import inspect
 import logging
-from Queue import Queue
 
-from liota.lib.utilities.utility import DiscUtilities
+from liota.lib.utilities.utility import validate_named_pipe
 from liota.dev_sims.device_simulator import DeviceSimulator
 
 log = logging.getLogger(__name__)
@@ -52,7 +48,7 @@ class NamedPipeSimulator(DeviceSimulator):
 
     def __init__(self, pipe_file, name=None, simulator=None):
         super(NamedPipeSimulator, self).__init__(name=name)
-        if DiscUtilities().validate_named_pipe(pipe_file) == False:
+        if validate_named_pipe(pipe_file) == False:
             return None
         self._pipe_file = pipe_file
         self.simulator = simulator # backpoint to simulator obj
