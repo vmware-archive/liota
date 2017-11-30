@@ -140,7 +140,7 @@ class IotControlCenter(DataCenterComponent):
             req = Request(transaction_id, reg_resp_q)
             log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
             with self.req_ops_lock:
-                self.req_dict.update({str(transaction_id): req})
+                self.req_dict.update({transaction_id: req})
                 log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
             self.comms.send(json.dumps(
                 self._registration(transaction_id, entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
