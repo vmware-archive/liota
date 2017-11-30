@@ -94,14 +94,15 @@ class PackageClass(LiotaPackage):
             # If the set_properties or register call fails due to DCC_Comms Publish exception
             # the optional retry mechanism can be implemented in the following way
             attempts = 0
-            while attempts < 3:
+            max_retry_attempts = 3
+            while attempts < max_retry_attempts:
                 try:
                     # Register edge system (gateway)
                     self.iotcc.set_properties(self.iotcc_edge_system, {"key1": "value1", "key2": "value2"})
                     break
                 except Exception:
                     # In the third attempt if get exception raise it
-                    if attempts == 3:
+                    if attempts == max_retry_attempts:
                         raise
                     attempts += 1
                     # The sleep time before re-trying depends on the infrastructure requirement of broker to restart
