@@ -129,7 +129,7 @@ class IotControlCenter(DataCenterComponent):
                         self.reg_entity_id = json_msg["body"]["uuid"]
                     else:
                         log.info("Waiting for resource creation")
-                        on_response(self.reg_resp_q.get(True, timeout), reg_resp_q)
+                        on_response(reg_resp_q.get(True, timeout), reg_resp_q)
                 except Exception as err:
                     log.exception("Exception while registering resource")
                     raise err
@@ -144,7 +144,7 @@ class IotControlCenter(DataCenterComponent):
                 log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
             self.comms.send(json.dumps(
                 self._registration(transaction_id, entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
-            on_response(self.reg_resp_q.get(True, timeout), reg_resp_q)
+            on_response(reg_resp_q.get(True, timeout), reg_resp_q)
             if not self.reg_entity_id:
                 raise RegistrationFailure()
             log.info("Resource Registered {0}".format(entity_obj.name))
@@ -193,7 +193,7 @@ class IotControlCenter(DataCenterComponent):
                         self._store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
                 else:
                     log.info("Waiting for unregistration response")
-                    on_response(self.unreg_resp_q.get(True, timeout),unreg_resp_q)
+                    on_response(unreg_resp_q.get(True, timeout),unreg_resp_q)
             except Exception as err:
                 log.exception("Exception while unregistering resource")
                 raise err
@@ -205,7 +205,7 @@ class IotControlCenter(DataCenterComponent):
             self.req_dict.update({str(transaction_id): req})
             log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
         self.comms.send(json.dumps(self._unregistration(transaction_id, entity_obj.ref_entity)))
-        on_response(self.unreg_resp_q.get(True, timeout),unreg_resp_q)
+        on_response(unreg_resp_q.get(True, timeout),unreg_resp_q)
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """
@@ -242,7 +242,7 @@ class IotControlCenter(DataCenterComponent):
         else:
             # create relationship fun internal queue
             rel_resp_q = Queue.Queue()
-            def on_response(msg,rel_resp_q):
+            def on_response(msg, rel_resp_q):
                 try:
                     log.debug("Received msg: {0}".format(msg))
                     json_msg = json.loads(msg)
@@ -825,7 +825,7 @@ class IotControlCenter(DataCenterComponent):
             self.req_dict.update({str(transaction_id): req})
             log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
         self.comms.send(json.dumps(self._get_properties(transaction_id, resource_uuid)))
-        on_response(self.get_prop_resp_q.get(True, timeout),get_prop_resp_q)
+        on_response(get_prop_resp_q.get(True, timeout),get_prop_resp_q)
         return self.prop_list
 
     def _dispatch_recvd_msg(self):
