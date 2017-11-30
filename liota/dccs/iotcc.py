@@ -202,7 +202,7 @@ class IotControlCenter(DataCenterComponent):
         req = Request(transaction_id, unreg_resp_q)
         log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
         with self.req_ops_lock:
-            self.req_dict.update({str(transaction_id): req})
+            self.req_dict.update({transaction_id: req})
             log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
         self.comms.send(json.dumps(self._unregistration(transaction_id, entity_obj.ref_entity)))
         on_response(unreg_resp_q.get(True, timeout),unreg_resp_q)
@@ -264,7 +264,7 @@ class IotControlCenter(DataCenterComponent):
             req = Request(transaction_id, rel_resp_q)
             log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
             with self.req_ops_lock:
-                self.req_dict.update({str(transaction_id): req})
+                self.req_dict.update({transaction_id: req})
                 log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
             self.comms.send(json.dumps(self._relationship(transaction_id,
                                                           reg_entity_parent.reg_entity_id,
@@ -390,7 +390,7 @@ class IotControlCenter(DataCenterComponent):
         req = Request(transaction_id, set_sys_prop_resp_q)
         log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
         with self.req_ops_lock:
-            self.req_dict.update({str(transaction_id): req})
+            self.req_dict.update({transaction_id: req})
             log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
         self.comms.send(json.dumps(
             self._properties(transaction_id, entity.entity_type, entity.entity_id, entity.name,
@@ -434,7 +434,7 @@ class IotControlCenter(DataCenterComponent):
         req = Request(transaction_id, set_prop_resp_q)
         log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
         with self.req_ops_lock:
-            self.req_dict.update({str(transaction_id): req})
+            self.req_dict.update({transaction_id: req})
             log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
 
         self.comms.send(json.dumps(
@@ -822,7 +822,7 @@ class IotControlCenter(DataCenterComponent):
         req = Request(transaction_id, get_prop_resp_q)
         log.debug("transaction_id:{0} req:{1}".format(transaction_id, req))
         with self.req_ops_lock:
-            self.req_dict.update({str(transaction_id): req})
+            self.req_dict.update({transaction_id: req})
             log.debug("transaction_id:{0} req_dict:{1}".format(transaction_id, self.req_dict))
         self.comms.send(json.dumps(self._get_properties(transaction_id, resource_uuid)))
         on_response(get_prop_resp_q.get(True, timeout),get_prop_resp_q)
@@ -841,7 +841,7 @@ class IotControlCenter(DataCenterComponent):
                 # search matched request in request dictionary
                 # assume transaction_id will be unique in one process
                 log.debug("req_dict {0} keys:{1}".format(self.req_dict, self.req_dict.keys()))
-                if (json_msg["transactionID"] in self.req_dict):
+                if (json_msg["transactionID"] in self.req_dict.values()):
                     req = self.req_dict[json_msg["transactionID"]]
                     log.debug("req_dict {0} req:{1}".format(self.req_dict, req))
                     # get/delete request from dictionary
