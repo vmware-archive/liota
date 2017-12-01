@@ -177,34 +177,23 @@ class IotControlCenter(DataCenterComponent):
 
         log.info("Unregistering resource with IoTCC {0}".format(entity_obj.ref_entity.name))
         unreg_resp_q = Queue.Queue()
-
-        def on_response(msg, unreg_resp_q):
-            try:
-                log.debug("Received msg: {0}".format(msg))
-                json_msg = json.loads(msg)
-                log.debug("Processing msg: {0}".format(json_msg["type"]))
-                self._check_version(json_msg)
-                if json_msg["type"] == "remove_resource_response" and json_msg["body"]["result"] == "succeeded":
-                    log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
-                    if entity_obj.ref_entity.entity_type != "HelixGateway":
-                        self._store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name,
-                                                entity_obj.ref_entity.entity_type, None, True)
-                    else:
-                        self._remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
-                        self._store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
-                else:
-                    log.info("Waiting for unregistration response")
-                    on_response(unreg_resp_q.get(True, timeout), unreg_resp_q)
-            except Exception as err:
-                raise err
-
         transaction_id = self._next_id()
         req = Request(transaction_id, unreg_resp_q)
         log.debug("Updating unregister response queue for transaction_id:{0}".format(transaction_id))
         with self.req_ops_lock:
             self.req_dict.update({transaction_id: req})
         self.comms.send(json.dumps(self._unregistration(transaction_id, entity_obj.ref_entity)))
-        on_response(unreg_resp_q.get(True, timeout), unreg_resp_q)
+        response = self._handle_response(unreg_resp_q.get(True, timeout))
+        if response:
+            log.info("Unregistration of resource {0} with IoTCC succeeded".format(entity_obj.ref_entity.name))
+            if entity_obj.ref_entity.entity_type != "HelixGateway":
+                self._store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name,
+                                        entity_obj.ref_entity.entity_type, None, True)
+            else:
+                self._remove_reg_entity_details(entity_obj.ref_entity.name, entity_obj.reg_entity_id)
+                self._store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
+        else:
+            raise Exception("Unregistration of resource {0} unsuccessful with IoTCC".format(entity_obj.ref_entity.name))
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """
@@ -241,25 +230,6 @@ class IotControlCenter(DataCenterComponent):
         else:
             # create relationship internal queue
             rel_resp_q = Queue.Queue()
-
-            def on_response(msg, rel_resp_q):
-                try:
-                    log.debug("Received msg: {0}".format(msg))
-                    json_msg = json.loads(msg)
-                    log.debug("Processing msg: {0}".format(json_msg["type"]))
-                    self._check_version(json_msg)
-                    if json_msg["type"] == "create_relationship_response" and json_msg["body"][
-                        "result"] == "succeeded" and json_msg["body"]["parent"] == reg_entity_parent.reg_entity_id and \
-                                    json_msg["body"]["child"] == reg_entity_child.reg_entity_id:
-                        log.info(
-                            "Relationship between entities {0} & {1} created successfully in IoTCC".format(
-                                reg_entity_parent.ref_entity.name, reg_entity_child.ref_entity.name))
-                    else:
-                        log.info("Waiting for create relationship response")
-                        on_response(rel_resp_q.get(True, timeout), rel_resp_q)
-                except Exception as err:
-                    raise err
-
             transaction_id = self._next_id()
             req = Request(transaction_id, rel_resp_q)
             log.debug("Updating create relationship response queue for transaction_id:{0}".format(transaction_id))
@@ -268,9 +238,33 @@ class IotControlCenter(DataCenterComponent):
             self.comms.send(json.dumps(self._relationship(transaction_id,
                                                           reg_entity_parent.reg_entity_id,
                                                           reg_entity_child.reg_entity_id)))
-            on_response(rel_resp_q.get(True, timeout), rel_resp_q)
+            response = self._handle_response(rel_resp_q.get(True, timeout))
+            if response:
+                log.info("Relationship between entities {0} & {1} created successfully in IoTCC".format(
+                    reg_entity_parent.ref_entity.name, reg_entity_child.ref_entity.name))
+            else:
+                raise Exception("Relationship creation between entities {0} & {1} failed in IoTCC".format(
+                    reg_entity_parent.ref_entity.name, reg_entity_child.ref_entity.name))
             if hasattr(reg_entity_parent, 'sys_properties') and reg_entity_parent.sys_properties:
                 self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
+
+    def _handle_response(self, msg):
+        """
+        Process the responses for various types of request messages
+        :param msg: response message received
+        :return: boolean
+        """
+        try:
+            log.debug("Received msg: {0}".format(msg))
+            json_msg = json.loads(msg)
+            log.debug("Processing msg: {0}".format(json_msg["type"]))
+            self._check_version(json_msg)
+            if json_msg["body"]["result"] == "succeeded":
+                return True
+            else:
+                return False
+        except Exception as err:
+            raise err
 
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
@@ -368,22 +362,6 @@ class IotControlCenter(DataCenterComponent):
             entity = reg_entity_obj.ref_entity
         # set_properties internal response queue
         set_sys_prop_resp_q = Queue.Queue()
-
-        def on_response(msg, set_sys_prop_resp_q):
-            try:
-                log.debug("Received msg: {0}".format(msg))
-                json_msg = json.loads(msg)
-                log.debug("Processing msg: {0}".format(json_msg["type"]))
-                self._check_version(json_msg)
-                if json_msg["type"] == "add_properties_response" and json_msg["body"][
-                    "result"] == "succeeded":
-                    log.info("System Properties defined for resource {0}".format(entity.name))
-                else:
-                    log.info("Waiting for set system properties response")
-                    on_response(set_sys_prop_resp_q.get(True, timeout), set_sys_prop_resp_q)
-            except Exception as err:
-                raise err
-
         # create and add register request into req_list (waiting list)
         transaction_id = self._next_id()
         req = Request(transaction_id, set_sys_prop_resp_q)
@@ -393,7 +371,12 @@ class IotControlCenter(DataCenterComponent):
         self.comms.send(json.dumps(
             self._properties(transaction_id, entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), system_properties)))
-        on_response(set_sys_prop_resp_q.get(True, timeout), set_sys_prop_resp_q)
+
+        response = self._handle_response(set_sys_prop_resp_q.get(True, timeout))
+        if response:
+            log.info("System Properties defined for resource {0}".format(entity.name))
+        else:
+            raise Exception("Setting System Properties for resource {0} failed".format(entity.name))
 
     def set_properties(self, reg_entity_obj, properties):
         """
@@ -411,22 +394,6 @@ class IotControlCenter(DataCenterComponent):
             entity = reg_entity_obj.ref_entity
 
         set_prop_resp_q = Queue.Queue()
-
-        def on_response(msg, set_prop_resp_q):
-            try:
-                log.debug("Received msg: {0}".format(msg))
-                json_msg = json.loads(msg)
-                log.debug("Processing msg: {0}".format(json_msg["type"]))
-                self._check_version(json_msg)
-                if json_msg["type"] == "add_properties_response" and json_msg["body"][
-                    "result"] == "succeeded":
-                    log.info("Properties defined for resource {0}".format(entity.name))
-                else:
-                    log.info("Waiting for set properties response")
-                    on_response(set_prop_resp_q.get(True, timeout), set_prop_resp_q)
-            except Exception as err:
-                raise err
-
         # create and add register request into req_list (waiting list)
         transaction_id = self._next_id()
         req = Request(transaction_id, set_prop_resp_q)
@@ -436,7 +403,11 @@ class IotControlCenter(DataCenterComponent):
         self.comms.send(json.dumps(
             self._properties(transaction_id, entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), properties)))
-        on_response(set_prop_resp_q.get(True, timeout), set_prop_resp_q)
+        response = self._handle_response(set_prop_resp_q.get(True, timeout))
+        if response:
+            log.info("Properties defined for resource {0}".format(entity.name))
+        else:
+            raise Exception("Setting Properties for resource {0} failed".format(entity.name))
         if entity.entity_type == "HelixGateway":
             with self.file_ops_lock:
                 self._store_reg_entity_attributes("EdgeSystem", entity.name,
