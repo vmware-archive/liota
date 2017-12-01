@@ -810,7 +810,7 @@ class IotControlCenter(DataCenterComponent):
                 # search matched request in request dictionary
                 # assume transaction_id will be unique in one process
                 log.debug("Dictionary keys:{0}".format(self.req_dict.keys()))
-                req = self.req_dict.get([json_msg["transactionID"]])
+                req = self.req_dict.get(json_msg["transactionID"])
                 # get/delete request from dictionary
                 if (req is not None):
                     with self.req_ops_lock:
