@@ -52,11 +52,13 @@ from liota.entities.registered_entity import RegisteredEntity
 log = logging.getLogger(__name__)
 timeout = int(read_liota_config('IOTCC_PATH', 'iotcc_response_timeout'))
 
+
 class Request:
     def __init__(self, transaction_id, user_queue):
         # assume transaction_id will be unique in one process
         self.transaction_id = transaction_id
         self.user_queue = user_queue
+
 
 class IotControlCenter(DataCenterComponent):
     """ The implementation of IoTCC cloud provider solution
@@ -79,10 +81,10 @@ class IotControlCenter(DataCenterComponent):
         elif not self.comms.identity.password:
             log.error("Password not found")
             raise ValueError("Password not found")
-        thread = threading.Thread(target=self.comms.receive)
-        thread.daemon = True
+        recv_thread = threading.Thread(target=self.comms.receive)
+        recv_thread.daemon = True
         # This thread will continuously run in background to receive response or actions from DCC
-        thread.start()
+        recv_thread.start()
         # Wait for Subscription to be complete and then proceed to publish message
         time.sleep(0.5)
         self._iotcc_json = self._create_iotcc_json()
@@ -92,10 +94,10 @@ class IotControlCenter(DataCenterComponent):
         self.recv_msg_queue = self.comms.userdata
         self.req_ops_lock = Lock()
         self.req_dict = {}
-        thread = threading.Thread(target=self._dispatch_recvd_msg)
-        thread.daemon = True
+        dispatch_thread = threading.Thread(target=self._dispatch_recvd_msg)
+        dispatch_thread.daemon = True
         # This thread will continuously run in background to check and dispatch received responses
-        thread.start()
+        dispatch_thread.start()
         self.dev_file_path = self._get_file_storage_path("dev_file_path")
         # Liota internal entity file system path special for iotcc
         self.entity_file_path = self._get_file_storage_path("entity_file_path")
@@ -131,7 +133,6 @@ class IotControlCenter(DataCenterComponent):
                         log.info("Waiting for resource creation")
                         on_response(reg_resp_q.get(True, timeout), reg_resp_q)
                 except Exception as err:
-                    log.exception("Exception while registering resource")
                     raise err
 
             if entity_obj.entity_type == "EdgeSystem":
@@ -176,7 +177,8 @@ class IotControlCenter(DataCenterComponent):
 
         log.info("Unregistering resource with IoTCC {0}".format(entity_obj.ref_entity.name))
         unreg_resp_q = Queue.Queue()
-        def on_response(msg,unreg_resp_q):
+
+        def on_response(msg, unreg_resp_q):
             try:
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
@@ -192,9 +194,8 @@ class IotControlCenter(DataCenterComponent):
                         self._store_device_info(entity_obj.reg_entity_id, entity_obj.ref_entity.name, None, None, True)
                 else:
                     log.info("Waiting for unregistration response")
-                    on_response(unreg_resp_q.get(True, timeout),unreg_resp_q)
+                    on_response(unreg_resp_q.get(True, timeout), unreg_resp_q)
             except Exception as err:
-                log.exception("Exception while unregistering resource")
                 raise err
 
         transaction_id = self._next_id()
@@ -203,7 +204,7 @@ class IotControlCenter(DataCenterComponent):
         with self.req_ops_lock:
             self.req_dict.update({transaction_id: req})
         self.comms.send(json.dumps(self._unregistration(transaction_id, entity_obj.ref_entity)))
-        on_response(unreg_resp_q.get(True, timeout),unreg_resp_q)
+        on_response(unreg_resp_q.get(True, timeout), unreg_resp_q)
 
     def create_relationship(self, reg_entity_parent, reg_entity_child):
         """
@@ -238,8 +239,9 @@ class IotControlCenter(DataCenterComponent):
             if entity_obj.unit is not None:
                 self.publish_unit(reg_entity_child, entity_obj.name, entity_obj.unit)
         else:
-            # create relationship fun internal queue
+            # create relationship internal queue
             rel_resp_q = Queue.Queue()
+
             def on_response(msg, rel_resp_q):
                 try:
                     log.debug("Received msg: {0}".format(msg))
@@ -256,8 +258,8 @@ class IotControlCenter(DataCenterComponent):
                         log.info("Waiting for create relationship response")
                         on_response(rel_resp_q.get(True, timeout), rel_resp_q)
                 except Exception as err:
-                    log.exception("Exception while create relationship request")
                     raise err
+
             transaction_id = self._next_id()
             req = Request(transaction_id, rel_resp_q)
             log.debug("Updating create relationship response queue for transaction_id:{0}".format(transaction_id))
@@ -366,7 +368,8 @@ class IotControlCenter(DataCenterComponent):
             entity = reg_entity_obj.ref_entity
         # set_properties internal response queue
         set_sys_prop_resp_q = Queue.Queue()
-        def on_response(msg,set_sys_prop_resp_q):
+
+        def on_response(msg, set_sys_prop_resp_q):
             try:
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
@@ -379,7 +382,6 @@ class IotControlCenter(DataCenterComponent):
                     log.info("Waiting for set system properties response")
                     on_response(set_sys_prop_resp_q.get(True, timeout), set_sys_prop_resp_q)
             except Exception as err:
-                log.exception("Exception while setting system properties")
                 raise err
 
         # create and add register request into req_list (waiting list)
@@ -409,7 +411,8 @@ class IotControlCenter(DataCenterComponent):
             entity = reg_entity_obj.ref_entity
 
         set_prop_resp_q = Queue.Queue()
-        def on_response(msg,set_prop_resp_q):
+
+        def on_response(msg, set_prop_resp_q):
             try:
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
@@ -422,7 +425,6 @@ class IotControlCenter(DataCenterComponent):
                     log.info("Waiting for set properties response")
                     on_response(set_prop_resp_q.get(True, timeout), set_prop_resp_q)
             except Exception as err:
-                log.exception("Exception while setting properties")
                 raise err
 
         # create and add register request into req_list (waiting list)
@@ -797,6 +799,7 @@ class IotControlCenter(DataCenterComponent):
         log.info("Get properties defined with IoTCC for resource {0}".format(resource_uuid))
         self.prop_list = None
         get_prop_resp_q = Queue.Queue()
+
         def on_response(msg, get_prop_resp_q):
             try:
                 log.debug("Received msg: {0}".format(msg))
@@ -809,20 +812,21 @@ class IotControlCenter(DataCenterComponent):
                     self.prop_list = json_msg["body"]["propertyList"]
                 else:
                     log.info("Waiting for getting properties")
-                    on_response(self.get_prop_resp_q.get(True, timeout),get_prop_resp_q)
+                    on_response(self.get_prop_resp_q.get(True, timeout), get_prop_resp_q)
             except:
                 log.exception("Exception while getting properties")
+
         transaction_id = self._next_id()
         req = Request(transaction_id, get_prop_resp_q)
         log.debug("Updating get properties response queue for transaction_id:{0}".format(transaction_id))
         with self.req_ops_lock:
             self.req_dict.update({transaction_id: req})
         self.comms.send(json.dumps(self._get_properties(transaction_id, resource_uuid)))
-        on_response(get_prop_resp_q.get(True, timeout),get_prop_resp_q)
+        on_response(get_prop_resp_q.get(True, timeout), get_prop_resp_q)
         return self.prop_list
 
     def _dispatch_recvd_msg(self):
-        log.info("Dispatching received messages from IOTCC")
+        log.debug("Dispatching received messages from IOTCC")
 
         while True:
             try:
@@ -830,22 +834,21 @@ class IotControlCenter(DataCenterComponent):
                 msg = self.recv_msg_queue.get(True)
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
-                log.debug("Processing msg: type:{0} transaction_id:{1}".format(json_msg["type"], json_msg["transactionID"]))
+                log.debug(
+                    "Processing msg: type:{0} transaction_id:{1}".format(json_msg["type"], json_msg["transactionID"]))
                 # search matched request in request dictionary
                 # assume transaction_id will be unique in one process
-                log.debug("Dictonary keys:{0}".format(self.req_dict.keys()))
-                if (json_msg["transactionID"] in self.req_dict):
-                    req = self.req_dict[json_msg["transactionID"]]
-                    # get/delete request from dictionary
-                    if (req is not None):
-                        with self.req_ops_lock:
-                            del self.req_dict[json_msg["transactionID"]]
-                        # put response into requester's reception queue
-                        log.debug("Msg:{0} dispatched to user queue".format(msg))
-                        req.user_queue.put(msg)
+                log.debug("Dictionary keys:{0}".format(self.req_dict.keys()))
+                req = self.req_dict.get([json_msg["transactionID"]])
+                # get/delete request from dictionary
+                if (req is not None):
+                    with self.req_ops_lock:
+                        del self.req_dict[json_msg["transactionID"]]
+                    # put response into requester's reception queue
+                    log.debug("Msg:{0} dispatched to user queue".format(msg))
+                    req.user_queue.put(msg)
                 else:
                     # TBD: it may be other messages, e.g., Actions, Armada Campaign
-                    log.info("Received unexpected messages")
+                    log.info("Received unexpected message {0}".format(msg))
             except Exception as er:
-                log.exception("Exception in dispatching received messages: %s" % str(er))
-
+                log.exception("Exception in dispatching the received messages")
