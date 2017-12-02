@@ -476,7 +476,7 @@ class PackageThread(Thread):
         while self.flag_alive:
             msg = package_message_queue.get()
             log.info("Got message in package messenger queue: %s"
-                     % " ".join(msg))
+                     % ",".join(msg))
             if not isinstance(msg, tuple) and not isinstance(msg, list):
                 raise TypeError(type(msg))
 
@@ -670,7 +670,7 @@ class PackageThread(Thread):
         if isinstance(package_startup_list_path, basestring):
             try:
                 with open(package_startup_list_path, "r+") as fp:
-                    output_list = fp.read().split()
+                    output_list = fp.read().splitlines()
                     fp.seek(0)
                     for values in output_list:
                         k, v = values.split(":")
@@ -702,7 +702,7 @@ class PackageThread(Thread):
         if isinstance(package_startup_list_path, basestring):
             try:
                 with open(package_startup_list_path, "r+") as fp:
-                    output_list = fp.read().split()
+                    output_list = fp.read().splitlines()
                     fp.seek(0)
                     for values in output_list:
                         k, v = values.split(":")
@@ -1184,7 +1184,7 @@ class PackageThread(Thread):
         if isinstance(package_startup_list_path, basestring):
             try:
                 with open(package_startup_list_path, "r") as fp:
-                    output_list = fp.read().split()
+                    output_list = fp.read().splitlines()
                 for values in output_list:
                     k, v = values.split(":")
                     package_startup_list.append({k: v})
@@ -1351,7 +1351,7 @@ class PackageMessengerThread(Thread):
         while self.flag_alive:
             with open(self._pipe_file, "r") as fp:
                 for line in fp.readlines():
-                    msg = line.split()
+                    msg = line.split(',')
                     if len(msg) > 0:
                         if len(msg) == 1 and msg[0] == \
                                 "terminate_messenger_but_you_should_not_do_this_yourself":
