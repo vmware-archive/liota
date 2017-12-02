@@ -91,9 +91,9 @@ class IotControlCenter(DataCenterComponent):
         self._iotcc_json_load_retry = int(read_liota_config('IOTCC_PATH', 'iotcc_load_retry'))
         self.enable_reboot_getprop = read_liota_config('IOTCC_PATH', 'enable_reboot_getprop')
         self.counter = 0
-        self.recv_msg_queue = self.comms.userdata
-        self.req_ops_lock = Lock()
-        self.req_dict = {}
+        self._recv_msg_queue = self.comms.userdata
+        self._req_ops_lock = Lock()
+        self._req_dict = {}
         dispatch_thread = threading.Thread(target=self._dispatch_recvd_msg)
         dispatch_thread.daemon = True
         # This thread will continuously run in background to check and dispatch received responses
@@ -120,28 +120,25 @@ class IotControlCenter(DataCenterComponent):
             reg_resp_q = Queue.Queue()
 
             def on_response(msg, reg_resp_q):
-                try:
-                    log.debug("Received msg: {0}".format(msg))
-                    json_msg = json.loads(msg)
-                    log.debug("Processing msg: {0}".format(json_msg["type"]))
-                    self._check_version(json_msg)
-                    if json_msg["type"] == "create_or_find_resource_response" and json_msg["body"]["uuid"] != "null" and \
-                                    json_msg["body"]["id"] == entity_obj.entity_id:
-                        log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
-                        self.reg_entity_id = json_msg["body"]["uuid"]
-                    else:
-                        log.info("Waiting for resource creation")
-                        on_response(reg_resp_q.get(True, timeout), reg_resp_q)
-                except Exception as err:
-                    raise err
+                log.debug("Received msg: {0}".format(msg))
+                json_msg = json.loads(msg)
+                log.debug("Processing msg: {0}".format(json_msg["type"]))
+                self._check_version(json_msg)
+                if json_msg["type"] == "create_or_find_resource_response" and json_msg["body"]["uuid"] != "null" and \
+                                json_msg["body"]["id"] == entity_obj.entity_id:
+                    log.info("FOUND RESOURCE: {0}".format(json_msg["body"]["uuid"]))
+                    self.reg_entity_id = json_msg["body"]["uuid"]
+                else:
+                    log.info("Waiting for resource creation")
+                    on_response(reg_resp_q.get(True, timeout), reg_resp_q)
 
             if entity_obj.entity_type == "EdgeSystem":
                 entity_obj.entity_type = "HelixGateway"
             transaction_id = self._next_id()
             req = Request(transaction_id, reg_resp_q)
             log.debug("Updating resource registration queue for transaction_id:{0}".format(transaction_id))
-            with self.req_ops_lock:
-                self.req_dict.update({transaction_id: req})
+            with self._req_ops_lock:
+                self._req_dict.update({transaction_id: req})
             self.comms.send(json.dumps(
                 self._registration(transaction_id, entity_obj.entity_id, entity_obj.name, entity_obj.entity_type)))
             on_response(reg_resp_q.get(True, timeout), reg_resp_q)
@@ -180,8 +177,8 @@ class IotControlCenter(DataCenterComponent):
         transaction_id = self._next_id()
         req = Request(transaction_id, unreg_resp_q)
         log.debug("Updating unregister response queue for transaction_id:{0}".format(transaction_id))
-        with self.req_ops_lock:
-            self.req_dict.update({transaction_id: req})
+        with self._req_ops_lock:
+            self._req_dict.update({transaction_id: req})
         self.comms.send(json.dumps(self._unregistration(transaction_id, entity_obj.ref_entity)))
         response = self._handle_response(unreg_resp_q.get(True, timeout))
         if response:
@@ -233,8 +230,8 @@ class IotControlCenter(DataCenterComponent):
             transaction_id = self._next_id()
             req = Request(transaction_id, rel_resp_q)
             log.debug("Updating create relationship response queue for transaction_id:{0}".format(transaction_id))
-            with self.req_ops_lock:
-                self.req_dict.update({transaction_id: req})
+            with self._req_ops_lock:
+                self._req_dict.update({transaction_id: req})
             self.comms.send(json.dumps(self._relationship(transaction_id,
                                                           reg_entity_parent.reg_entity_id,
                                                           reg_entity_child.reg_entity_id)))
@@ -254,17 +251,11 @@ class IotControlCenter(DataCenterComponent):
         :param msg: response message received
         :return: boolean
         """
-        try:
-            log.debug("Received msg: {0}".format(msg))
-            json_msg = json.loads(msg)
-            log.debug("Processing msg: {0}".format(json_msg["type"]))
-            self._check_version(json_msg)
-            if json_msg["body"]["result"] == "succeeded":
-                return True
-            else:
-                return False
-        except Exception as err:
-            raise err
+        log.debug("Received msg: {0}".format(msg))
+        json_msg = json.loads(msg)
+        log.debug("Processing msg: {0}".format(json_msg["type"]))
+        self._check_version(json_msg)
+        return json_msg["body"]["result"] == "succeeded"
 
     def _registration(self, msg_id, res_id, res_name, res_kind):
         return {
@@ -366,8 +357,8 @@ class IotControlCenter(DataCenterComponent):
         transaction_id = self._next_id()
         req = Request(transaction_id, set_sys_prop_resp_q)
         log.debug("Updating set system properties response queue for transaction_id:{0}".format(transaction_id))
-        with self.req_ops_lock:
-            self.req_dict.update({transaction_id: req})
+        with self._req_ops_lock:
+            self._req_dict.update({transaction_id: req})
         self.comms.send(json.dumps(
             self._properties(transaction_id, entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), system_properties)))
@@ -398,8 +389,8 @@ class IotControlCenter(DataCenterComponent):
         transaction_id = self._next_id()
         req = Request(transaction_id, set_prop_resp_q)
         log.debug("Updating set properties response queue for transaction_id:{0}".format(transaction_id))
-        with self.req_ops_lock:
-            self.req_dict.update({transaction_id: req})
+        with self._req_ops_lock:
+            self._req_dict.update({transaction_id: req})
         self.comms.send(json.dumps(
             self._properties(transaction_id, entity.entity_type, entity.entity_id, entity.name,
                              getUTCmillis(), properties)))
@@ -790,8 +781,8 @@ class IotControlCenter(DataCenterComponent):
         transaction_id = self._next_id()
         req = Request(transaction_id, get_prop_resp_q)
         log.debug("Updating get properties response queue for transaction_id:{0}".format(transaction_id))
-        with self.req_ops_lock:
-            self.req_dict.update({transaction_id: req})
+        with self._req_ops_lock:
+            self._req_dict.update({transaction_id: req})
         self.comms.send(json.dumps(self._get_properties(transaction_id, resource_uuid)))
         on_response(get_prop_resp_q.get(True, timeout), get_prop_resp_q)
         return self.prop_list
@@ -802,24 +793,24 @@ class IotControlCenter(DataCenterComponent):
         while True:
             try:
                 # block until there is an item available
-                msg = self.recv_msg_queue.get(True)
+                msg = self._recv_msg_queue.get(True)
                 log.debug("Received msg: {0}".format(msg))
                 json_msg = json.loads(msg)
                 log.debug(
                     "Processing msg: type:{0} transaction_id:{1}".format(json_msg["type"], json_msg["transactionID"]))
                 # search matched request in request dictionary
                 # assume transaction_id will be unique in one process
-                log.debug("Dictionary keys:{0}".format(self.req_dict.keys()))
-                req = self.req_dict.get(json_msg["transactionID"])
+                log.debug("Dictionary keys:{0}".format(self._req_dict.keys()))
+                req = self._req_dict.get(json_msg["transactionID"])
                 # get/delete request from dictionary
                 if (req is not None):
-                    with self.req_ops_lock:
-                        del self.req_dict[json_msg["transactionID"]]
+                    with self._req_ops_lock:
+                        del self._req_dict[json_msg["transactionID"]]
                     # put response into requester's reception queue
                     log.debug("Msg:{0} dispatched to user queue".format(msg))
                     req.user_queue.put(msg)
                 else:
                     # TBD: it may be other messages, e.g., Actions, Armada Campaign
-                    log.info("Received unexpected message {0}".format(msg))
-            except Exception as er:
+                    log.warn("Received unexpected message {0}".format(msg))
+            except Exception:
                 log.exception("Exception in dispatching the received messages")
