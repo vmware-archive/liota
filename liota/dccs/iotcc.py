@@ -247,19 +247,15 @@ class IotControlCenter(DataCenterComponent):
         }
         for key, value in properties.items():
             if not self._validate_input(key):
-                log.error("Property key {0} contains unacceptable character for resource {1}".format(key, entity_name))
-                continue
+                raise ValueError("Property key {0} contains unacceptable character for resource {1}".format(key, entity_name))
             if not len(key) <= 100:
-                log.error("Property key {0} for resource {1} contains more than 100 characters".format(key, entity_name))
-                continue
+                raise ValueError("Property key {0} for resource {1} contains more than 100 characters".format(key, entity_name))
             if not self._validate_input(value):
-                log.error("Property value {0} of key {1} contains unacceptable character for resource {2}"
+                raise ValueError("Property value {0} of key {1} contains unacceptable character for resource {2}"
                           .format(value, key, entity_name))
-                continue
             if not len(value) <= 255:
-                log.error("Property value {0} of key {1} for resource {2} contains more than 255 characters"
+                raise ValueError("Property value {0} of key {1} for resource {2} contains more than 255 characters"
                           .format(value, key, entity_name))
-                continue
             msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
         return msg
 
