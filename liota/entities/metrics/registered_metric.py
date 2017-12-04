@@ -160,7 +160,7 @@ class RegisteredMetric(RegisteredEntity):
         """
         log.info("Publishing values for the resource {0} ".format(
             self.ref_entity.name))
-        if not self.values:
+        if self.values.qsize() == 0:
             # No values measured since last report_data
             return True
         try:

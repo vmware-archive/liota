@@ -146,7 +146,7 @@ class IotControlCenter(DataCenterComponent):
 
     def _check_version(self, json_msg):
         if json_msg["version"] != self._version:
-            raise Exception("CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS:" + self._version + ". SERVER VERSION IS:" + json_msg["version"])
+            raise Exception("CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS: {0}. SERVER VERSION IS: {1}".format(self._version, json_msg["version"]))
 
     def unregister(self, entity_obj):
         """
