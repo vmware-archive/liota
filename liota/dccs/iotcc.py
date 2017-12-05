@@ -159,11 +159,13 @@ class IotControlCenter(DataCenterComponent):
                                                       entity_obj.entity_type, None)
 
             _reg_entity_obj = RegisteredEntity(entity_obj, self, self.reg_entity_id)
-            if self.sys_properties is not None and self.sys_properties and isinstance(self.sys_properties, (list,)):
+            if self.sys_properties is not None and self.sys_properties:
                 self.set_properties(_reg_entity_obj, self.sys_properties)
-                log.info("System Properties defined for the resource {0}".format(entity_obj.name))
+                log.info(
+                    "System Properties defined {0} for the resource {1}".format(self.sys_properties, entity_obj.name))
             else:
-                log.info("System Properties not defined for the resource {0}.".format(entity_obj.name))
+                log.info("System Properties not defined {0} for the resource {1}.".format(self.sys_properties,
+                                                                                          entity_obj.name))
             return _reg_entity_obj
 
     def _check_version(self, json_msg):
