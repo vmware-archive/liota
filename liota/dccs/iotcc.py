@@ -41,6 +41,7 @@ import Queue
 import datetime
 from time import gmtime, strftime
 from threading import Lock
+import ast
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.entities.metrics.metric import Metric
@@ -90,7 +91,7 @@ class IotControlCenter(DataCenterComponent):
         self._iotcc_json = self._create_iotcc_json()
         self._iotcc_json_load_retry = int(read_liota_config('IOTCC_PATH', 'iotcc_load_retry'))
         self.enable_reboot_getprop = read_liota_config('IOTCC_PATH', 'enable_reboot_getprop')
-        self.sys_properties = read_liota_config('IOTCC_PATH', 'system_properties')
+        self.sys_properties = ast.literal_eval(read_liota_config('IOTCC_PATH', 'system_properties'))
         self.counter = 0
         self._recv_msg_queue = self.comms.userdata
         self._req_ops_lock = Lock()
@@ -162,10 +163,9 @@ class IotControlCenter(DataCenterComponent):
             if self.sys_properties is not None and self.sys_properties:
                 self.set_properties(_reg_entity_obj, self.sys_properties)
                 log.info(
-                    "System Properties defined {0} for the resource {1}".format(self.sys_properties, entity_obj.name))
+                    "System Properties defined for the resource {0}".format(entity_obj.name))
             else:
-                log.info("System Properties not defined {0} for the resource {1}.".format(self.sys_properties,
-                                                                                          entity_obj.name))
+                log.info("System Properties not defined for the resource {0}".format(entity_obj.name))
             return _reg_entity_obj
 
     def _check_version(self, json_msg):
