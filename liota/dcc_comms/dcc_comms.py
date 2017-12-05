@@ -40,27 +40,61 @@ class DCCComms:
     """
     __metaclass__ = ABCMeta
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # If a specific DCCComms has parameters to establish connection, pass
     # them to its constructor, not self._connect. Keep self._connect free of
     # external arguments.
     #
     @abstractmethod
     def __init__(self):
+        """
+        Abstract init method for DCCComms (Data Center Component Communication Protocols).
+
+        This must take all necessary params to establish a connection and must call _connect().
+        """
         self._connect()
 
     @abstractmethod
     def _connect(self):
+        """
+        Abstract method for protocol specific connection establishment implementation.
+
+        All sub-classes implementing this method MUST assign the established connection to the variable 'self.client'
+        (Eg:) self.client = MyProtocol(ip, port, credentials)
+
+        :return:
+        """
         pass
 
     @abstractmethod
     def _disconnect(self):
+        """
+        Abstract method for protocol-specific disconnect implementation.
+        :return:
+        """
         pass
 
     @abstractmethod
     def send(self, message, msg_attr):
+        """
+        Abstract method to send message over the established connection.
+
+        :param message: Message to be sent
+        :param msg_attr: MessagingAttributes object.  Message oriented protocols require params like QoS, RoutingKey,
+                        Topics, etc.,  Such parameters should be encapsulated into protocol specific objects.
+                        Eg: MqttMessagingAttributes, AmqpMessagingAttributes
+        :return:
+        """
         pass
 
     @abstractmethod
     def receive(self, msg_attr):
+        """
+        Abstract method to receive message from the DCC.
+
+        :param msg_attr: MessagingAttributes object.  Message oriented protocols require params like QoS, RoutingKey,
+                        Topics, Callbacks, etc.,  Such parameters should be encapsulated into protocol specific objects.
+                        Eg: MqttMessagingAttributes, AmqpMessagingAttributes
+        :return:
+        """
         pass

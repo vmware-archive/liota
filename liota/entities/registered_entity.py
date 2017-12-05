@@ -30,13 +30,30 @@
 #  THE POSSIBILITY OF SUCH DAMAGE.                                            #
 # ----------------------------------------------------------------------------#
 
+
 class RegisteredEntity(object):
+    """
+    RegisteredEntity represents an Entity registered with a DCC.
+    """
 
     def __init__(self, ref_entity, ref_dcc, reg_entity_id):
+        """
+        Init method for RegisteredEntity
+
+        :param ref_entity: Entity that is represented by a RegisteredEntity Object
+        :param ref_dcc: DCC with which the Entity is registered
+        :param reg_entity_id: RegisteredEntity ID
+        """
         self.ref_entity = ref_entity
         self.ref_dcc = ref_dcc
         self.reg_entity_id = reg_entity_id
         self.parent = None
 
     def set_properties(self, properties):
+        """
+        This method sets properties for this RegisteredEntity in the DCC.
+
+        :param properties: Property String, List or Dict
+        :return:
+        """
         self.ref_dcc.set_properties(self, properties)

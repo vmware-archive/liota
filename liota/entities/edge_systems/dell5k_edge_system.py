@@ -33,9 +33,17 @@
 from liota.entities.edge_systems.edge_system import EdgeSystem
 from liota.lib.utilities.utility import systemUUID
 
+
 class Dell5KEdgeSystem(EdgeSystem):
+    """
+    Dell5K EdgeSystem representation.
+    """
 
     def __init__(self, name):
+        """
+        Init method for Dell5KEdgeSystem.
+        :param name: Dell5KEdgeSystem name
+        """
         super(Dell5KEdgeSystem, self).__init__(
             name=name,
             entity_id=systemUUID().get_uuid(name)

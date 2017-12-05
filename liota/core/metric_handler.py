@@ -56,6 +56,13 @@ class EventsPriorityQueue(PriorityQueue):
         self.first_element_changed = Condition(self.mutex)
 
     def put_and_notify(self, item, block=True, timeout=None):
+        """
+        Add event into events priority queue and notify thread waiting to get.
+        :param item: the event to be added
+        :param block: whether to block until the event is added
+        :param timeout: if not block, how long wait at most to add event
+        :return:
+        """
         log.debug("Adding Event:" + str(item))
         self.not_full.acquire()
         try:
@@ -90,6 +97,12 @@ class EventsPriorityQueue(PriorityQueue):
             self.not_full.release()
 
     def get_next_element_when_ready(self):
+        """
+        Get next event from events priority queue when it is ready:
+        for SystemExit event and dead event, pop from queue immediately;
+        for other active event, wait until next run time, then pop from queue.
+        :return:
+        """
         self.first_element_changed.acquire()
         try:
             isNotReady = True
@@ -132,6 +145,14 @@ class EventCheckerThread(Thread):
         self.start()
 
     def run(self):
+        """
+        The execution function of EventCheckerThread.
+        Loop on events priority queue to get next ready event:
+        for SystemExit event, kill the thread;
+        for dead event, discard it;
+        for active event, put it into collect queue for execution.
+        :return:
+        """
         log.info("Started EventCheckerThread")
         global event_ds
         global collect_queue
@@ -157,6 +178,14 @@ class SendThread(Thread):
         self.start()
 
     def run(self):
+        """
+        The execution function of SendThread.
+        Loop on send queue to get next ready send task:
+        for SystemExit, kill the thread;
+        for dead metric task, discard it;
+        for active metric task, send metric data out.
+        :return:
+        """
         log.info("Started SendThread")
         global send_queue
         while self.flag_alive:
@@ -183,6 +212,15 @@ class CollectionThread(Thread):
         self.start()
 
     def run(self):
+        """
+        The execution function of CollectionThread.
+        Loop on collect queue to get next ready collection task:
+        for dead metric task, discard it;
+        for active metric task, collect data for that metric, then put
+            its next event into events priority queue; if its data is
+            ready to send, put it into send queue and reset for next round.
+        :return:
+        """
         global event_ds
         global collect_queue
         global send_queue
@@ -226,9 +264,19 @@ class CollectionThreadPool:
             ))
 
     def get_num_threads(self):
+        """
+        Get the number of CollectionThread.
+        :return: the number of CollectionThread
+        """
         return self._num_threads
 
     def get_stats_working(self):
+        """
+        Get the status of threads:
+        the number of working threads, the number of alive threads,
+        the number of all the threads and the number of threads.
+        :return: the status of threads
+        """
         num_working = 0
         num_alive = 0
         num_all = 0
@@ -250,6 +298,13 @@ is_initialization_done = False
 
 
 def initialize():
+    """
+    Initialization for metric handling:
+    create events priority queue, collect queue, and send queue;
+    spawn event check thread and send thread; and
+    create collection thread pool.
+    :return:
+    """
     global is_initialization_done
     if is_initialization_done:
         log.debug("Initialization already done")
@@ -279,6 +334,13 @@ def initialize():
 
 
 def terminate():
+    """
+    Terminate metric handling:
+    signal events priority queue and send queue to exit;
+    disable event check thread and send thread; and
+    create collection thread pool.
+    :return:
+    """
     global event_checker_thread
     if event_checker_thread:
         event_checker_thread.flag_alive = False

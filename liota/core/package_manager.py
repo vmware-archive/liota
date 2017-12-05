@@ -40,8 +40,7 @@ from threading import Thread, Lock
 from Queue import Queue
 from time import sleep
 from abc import ABCMeta, abstractmethod
-
-from liota.lib.utilities.utility import read_liota_config, sha1sum
+from liota.lib.utilities.utility import read_liota_config, sha1sum, validate_named_pipe
 
 log = logging.getLogger(__name__)
 
@@ -73,6 +72,7 @@ package_thread = None
 package_lock = None
 package_path = None
 package_messenger_pipe = None
+package_response_pipe = None
 
 # Parse Liota configuration file
 package_path = os.path.abspath(
@@ -81,8 +81,12 @@ package_path = os.path.abspath(
 package_messenger_pipe = os.path.abspath(
     read_liota_config('PKG_CFG', 'pkg_msg_pipe')
 )
+package_response_pipe = os.path.abspath(
+    read_liota_config('PKG_CFG', 'pkg_rsp_pipe')
+)
 assert(isinstance(package_path, basestring))
 assert(isinstance(package_messenger_pipe, basestring))
+assert(isinstance(package_response_pipe, basestring))
 
 package_startup_list_path = None
 package_startup_list = []
@@ -105,12 +109,29 @@ class ResourceRegistryPerPackage:
         self._package_name = package_name
 
     def register(self, identifier, ref):
+        """
+        Store resource/object reference with certain name/identifier
+        for the package.
+        :param identifier: identifier for resource reference (ref)
+        :param ref: reference for a resource
+        :return:
+        """
         self._outer.register(identifier, ref, self._package_name)
 
     def get(self, identifier):
+        """
+        Get resource/object reference by a name/identifier.
+        :param identifier: identifier for a registered resource
+        :return: resource reference
+        """
         return self._outer.get(identifier)
 
     def has(self, identifier):
+        """
+        Check whether a resource has been registered with an identifier or not.
+        :param identifier: identifier for a resource
+        :return: True or False
+        """
         return self._outer.has(identifier)
 
 
@@ -125,6 +146,14 @@ class ResourceRegistry:
         self._packages = {}  # key: package name, value: list of resource names
 
     def register(self, identifier, ref, package_name=None):
+        """
+        Store resource/object reference with certain name/identifier
+        for a package with certain name.
+        :param identifier: identifier for resource reference (ref)
+        :param ref: reference for a resource
+        :param package_name: the name of a package to register a resource to
+        :return:
+        """
         if identifier in self._registry:
             raise KeyError("Conflicting resource identifier: " + identifier)
         self._registry[identifier] = ref
@@ -134,12 +163,27 @@ class ResourceRegistry:
             self._packages[package_name].append(identifier)
 
     def deregister(self, identifier):
+        """
+        Remove the record of a resource with a name/identifier.
+        :param identifier: identifier for a resource
+        :return:
+        """
         del self._registry[identifier]
 
     def get(self, identifier):
+        """
+        Get resource/object reference by a name/identifier.
+        :param identifier: identifier for a registered resource
+        :return: resource reference
+        """
         return self._registry[identifier]
 
     def has(self, identifier):
+        """
+        Check whether a resource has been registered with an identifier or not.
+        :param identifier: identifier for a resource
+        :return: True or False
+        """
         return identifier in self._registry
 
     #-----------------------------------------------------------------------
@@ -148,6 +192,11 @@ class ResourceRegistry:
     # them automatically if package is unloaded.
 
     def get_package_registry(self, package_name):
+        """
+        Get the instance of ResourceRegistryPerPackage by package name.
+        :param package_name: the name of a package
+        :return: the reference of a ResourceRegistryPerPackage instance
+        """
         return ResourceRegistryPerPackage(self, package_name)
 
 
@@ -161,10 +210,17 @@ class LiotaPackage:
 
     @abstractmethod
     def run(self, registry):
+        """
+        The execution function of a liota package.
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        """
         raise NotImplementedError
 
     @abstractmethod
     def clean_up(self):
+        """
+        The clean up function of a liota package.
+        """
         raise NotImplementedError
 
 
@@ -191,6 +247,11 @@ class PackageRecord:
         self._instance = None
 
     def set_instance(self, obj):
+        """
+        Set _instance field for an instance of PackageRecord of a liota package.
+        :param obj: a liota package class instance
+        :return: True or False
+        """
         if self._instance is not None:
             log.warning("Should not override instance of package class")
             return False
@@ -198,33 +259,78 @@ class PackageRecord:
         return True
 
     def get_instance(self):
+        """
+        Set the instance of a liota package class.
+        :return: the reference of a liota package class instance
+        """
         return self._instance
 
     def set_sha1(self, sha1):
+        """
+        Set _sha1 field for an instance of PackageRecord of a liota package.
+        :param sha1: the SHA-1 checksum of a liota package
+        :return:
+        """
         self._sha1 = sha1
 
     def get_sha1(self):
+        """
+        Get the SHA-1 checksum of a liota package.
+        :return: the SHA-1 checksum of a liota package
+        """
         return self._sha1
 
     def set_ext(self, ext):
+        """
+        Set _ext field for an instance of PackageRecord.
+        :param ext: the extention of a liota package file
+        :return:
+        """
         self._ext = ext
 
     def get_ext(self):
+        """
+        Get the extention of a liota package file.
+        :return: the extention of a liota package file
+        """
         return self._ext
 
     def get_dependents(self):
+        """
+        Get dependent package names of a liota package.
+        :return: the dependent package names of a liota package
+        """
         return self._dependents.keys()
 
     def add_dependent(self, file_name):
+        """
+        Add the record for a package into dependent dictionary.
+        :param file_name: the name of a liota package file
+        :return:
+        """
         self._dependents[file_name] = None
 
     def del_dependent(self, file_name):
+        """
+        Delete the record for a package from dependent dictionary.
+        :param file_name: the name of a liota package file
+        :return:
+        """
         del self._dependents[file_name]
 
     def get_dependencies(self):
+        """
+        Get the dependency list of the liota package.
+        :return: the dependency list of the liota package
+        """
         return self._dependencies
 
     def set_dependencies(self, list_dependencies):
+        """
+        Set the dependency list for the liota package.
+        :param list_dependencies: the dependency list of the liota package
+        :return:
+        """
         self._dependencies = list_dependencies
 
 
@@ -244,6 +350,7 @@ class PackageThread(Thread):
         self._packages_loaded = {}  # key: package name, value: PackageRecord obj
         self._resource_registry = ResourceRegistry()
         self._resource_registry.register("package_conf", package_path)
+        self._rsp_pipe_file = package_response_pipe
         self.flag_alive = True
         self.start()
 
@@ -350,11 +457,13 @@ class PackageThread(Thread):
             return
         log.warning("Unsupported stat")
 
-    #-----------------------------------------------------------------------
-    # This method will loop on message queue and select methods to call with
-    # respect to commands received.
-
     def run(self):
+        """
+        The execution function of PackageThread class:
+        loop on message queue and select methods to call with
+        respect to commands received.
+        :return:
+        """
         global package_lock
         global package_startup_list
 
@@ -373,10 +482,17 @@ class PackageThread(Thread):
 
             # Switch on message content (command), determine what to do
             command = msg[0]
+            if command in ["unload", "delete", "list", "stat", "unload_all",\
+                           "terminate"]:
+                # currently, write 'Success' to the named pipe once
+                #     successfully receives these commands
+                self._write_cmd_exec_status('Success\n')
+
+            # currently, write 'Success' to the named pipe after verification
+            #     of the checksum for load/reload/update related commands
             if command in ["load", "reload", "update"]:
                 #-----------------------------------------------------------
                 # Use these commands to handle package management tasks
-
                 with package_lock:
                     offset = 0
                     autoload_flag = False
@@ -472,8 +588,28 @@ class PackageThread(Thread):
                     self.flag_alive = False
                     break
             else:
+                # currently, write 'Unsupported' to the named pipe once
+                #     successfully receives these commands
+                self._write_cmd_exec_status('Unsupported\n')
                 log.warning("Unsupported command is dropped")
         log.info("Thread exits: %s" % str(self.name))
+
+    def _write_cmd_exec_status(self, msg):
+        """
+        Write command status back to response named pipe.
+        Currently, for commands of ["unload", "delete", "list", "stat",
+        "unload_all", "terminate"], 'Success' means that PackageThread
+        has successfully received these commands;
+        for commands of ["load", "reload", "update"], 'Success' means
+        that verification of the package checksum succeeds, while
+        'Failure' means that verification fails; 'Unsupported' means
+        that receives some unsupported commands.
+        """
+        try:
+            with open(self._rsp_pipe_file, "w+") as fp:
+                fp.write(msg)
+        except:
+            log.exception("open file:{0} failed".format(self._rsp_pipe_file))
 
     #-----------------------------------------------------------------------
     # This method is called to check if specified package exists
@@ -624,11 +760,13 @@ class PackageThread(Thread):
         # Check if specified package is already loaded
         if file_name in self._packages_loaded:
             log.warning("Package already loaded: %s" % file_name)
+            self._write_cmd_exec_status('Success\n')
             return None
 
         path_file_ext, file_ext, checksum_list = self._package_chk_exists(
             file_name, ext_forced)
         if path_file_ext is None:
+            self._write_cmd_exec_status('Failure\n')
             return None
 
         try:
@@ -641,12 +779,16 @@ class PackageThread(Thread):
                         break
                 if (verify_flag == False):
                     log.error("Package %s integrity verification failed" % path_file_ext)
+                    self._write_cmd_exec_status('Failure\n')
                     return None
             else:
                 sha1 = sha1sum(path_file_ext);
         except IOError:
             log.error("Could not open file: %s" % path_file_ext)
+            self._write_cmd_exec_status('Failure\n')
             return None
+
+        self._write_cmd_exec_status('Success\n')
         log.info("Loaded package file: %s (%s)"
                  % (path_file_ext, sha1.hexdigest()))
 
@@ -1140,6 +1282,7 @@ class PackageThread(Thread):
     def _terminate_all(self):
         global package_messenger_thread
         global package_messenger_pipe
+        global package_response_pipe
 
         log.info("Shutting down package messenger...")
         if package_messenger_thread.isAlive():
@@ -1197,6 +1340,12 @@ class PackageMessengerThread(Thread):
         self.start()
 
     def run(self):
+        """
+        The execution function of PackageMessengerThread class:
+        loop to read messages from messenger namedPipe and put into
+        message queue.
+        :return:
+        """
         global package_message_queue
 
         while self.flag_alive:
@@ -1211,14 +1360,13 @@ class PackageMessengerThread(Thread):
                         package_message_queue.put(msg)
         log.info("Thread exits: %s" % str(self.name))
 
-#---------------------------------------------------------------------------
-# Initialization should occur when this module is imported for first time.
-# This method create queues and spawns PackageThread, which will loop on
-# commands grabbed from a queue and load/unload packages as requested in
-# those commands.
-
-
 def initialize():
+    """
+    Create queues and spawns PackageThread, which will loop on commands grabbed
+    from a queue and load/unload packages as requested in those commands.
+    Initialization should occur when this module is imported for first time.
+    :return:
+    """
     global is_package_manager_initialized
     if is_package_manager_initialized:
         log.debug("Package manager is already initialized")
@@ -1246,32 +1394,15 @@ def initialize():
 
     # Validate package messenger pipe
     global package_messenger_pipe
-    assert(isinstance(package_messenger_pipe, basestring))
-    if os.path.exists(package_messenger_pipe):
-        if stat.S_ISFIFO(os.stat(package_messenger_pipe).st_mode):
-            pass
-        else:
-            log.error("Pipe path exists, but it is not a pipe")
-            package_messenger_pipe = None
-            return
-    else:
-        package_messenger_pipe_dir = os.path.dirname(package_messenger_pipe)
-        if not os.path.isdir(package_messenger_pipe_dir):
-            try:
-                os.makedirs(package_messenger_pipe_dir)
-                log.info("Created directory: " + package_messenger_pipe_dir)
-            except OSError:
-                package_messenger_pipe = None
-                log.error("Could not create directory for messenger pipe")
-                return
-        try:
-            os.mkfifo(package_messenger_pipe, 0600)
-            log.info("Created pipe: " + package_messenger_pipe)
-        except OSError:
-            package_messenger_pipe = None
-            log.error("Could not create messenger pipe")
-            return
-    assert(stat.S_ISFIFO(os.stat(package_messenger_pipe).st_mode))
+    if validate_named_pipe(package_messenger_pipe) == False:
+        log.error("The validation for package messenger pipe failed")
+        return
+
+    # Validate package response pipe
+    global package_response_pipe
+    if validate_named_pipe(package_response_pipe) == False:
+        log.error("The validation for package response pipe failed")
+        return
 
     # Will not initialize package manager if package path is mis-configured
     if package_path is None:

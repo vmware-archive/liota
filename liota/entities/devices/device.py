@@ -33,14 +33,15 @@
 from abc import ABCMeta, abstractmethod
 from liota.entities.entity import Entity
 
+
 class Device(Entity):
 
     """
-    Abstract base class for all devices (things).
+    Abstract base class for all Devices (Sensors/Things).
     """
     __metaclass__ = ABCMeta
 
-    #-----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
     # Constructor of Device is not made abstract, so developer can create a
     # plain device if that device does not have any specific method/data.
     #
@@ -50,6 +51,13 @@ class Device(Entity):
     # Add @abstractmethod if this is not what we want.
     #
     def __init__(self, name, entity_id, entity_type="Device"):
+        """
+        Abstract init method for Device.
+
+        :param name: Device name
+        :param entity_id: Entity ID
+        :param entity_type: Entity type which is "Device"
+        """
         super(Device, self).__init__(
             name=name,
             entity_id=entity_id,

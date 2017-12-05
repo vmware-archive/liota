@@ -42,6 +42,14 @@ class PackageClass(LiotaPackage):
     """
 
     def run(self, registry):
+        """
+        The execution function of a liota package.
+
+        Establishes connection with IoTControlCenter DCC using MqttDccComms
+
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        :return:
+        """
         import copy
         import time
         from liota.lib.utilities.identity import Identity
@@ -59,17 +67,20 @@ class PackageClass(LiotaPackage):
         # Acquire credentials and required certificates from the registry
         identity = Identity(root_ca_cert=registry.get("broker_root_ca_cert"), username=registry.get("broker_username"),
                             password=registry.get("broker_password"),
-                            cert_file=registry.get("edge_system_cert_file"), key_file=registry.get("edge_system_key_file"))
+                            cert_file=registry.get("edge_system_cert_file"),
+                            key_file=registry.get("edge_system_key_file"))
 
         # Encapsulate TLS parameters
         tls_conf = TLSConf(cert_required="CERT_REQUIRED", tls_version="PROTOCOL_TLSv1_2", cipher=None)
 
         # Initialize DCC object with MQTT transport
-        mqtt_msg_attr = MqttMessagingAttributes(pub_topic="liota/"+registry.get("broker_username")+"/request",sub_topic="liota/"+registry.get("broker_username")+"/response")
+        mqtt_msg_attr = MqttMessagingAttributes(pub_topic="liota/" + registry.get("broker_username") + "/request",
+                                                sub_topic="liota/" + registry.get("broker_username") + "/response")
         self.iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
-                                              url=registry.get("broker_ip"), port=registry.get("broker_port"), identity=identity,
-                                              tls_conf=tls_conf,client_id=registry.get("broker_username"),
-                                              enable_authentication=True, mqtt_msg_attr=mqtt_msg_attr))
+                                                   url=registry.get("broker_ip"), port=registry.get("broker_port"),
+                                                   identity=identity,
+                                                   tls_conf=tls_conf, client_id=registry.get("broker_username"),
+                                                   enable_authentication=True, mqtt_msg_attr=mqtt_msg_attr))
 
         try:
             # Register edge system (gateway)
@@ -83,12 +94,16 @@ class PackageClass(LiotaPackage):
             # If the set_properties or register call fails due to DCC_Comms Publish exception
             # the optional retry mechanism can be implemented in the following way
             attempts = 0
-            while attempts < 3:
+            max_retry_attempts = 3
+            while attempts < max_retry_attempts:
                 try:
                     # Register edge system (gateway)
                     self.iotcc.set_properties(self.iotcc_edge_system, {"key1": "value1", "key2": "value2"})
                     break
                 except Exception:
+                    # In the third attempt if get exception raise it
+                    if attempts == max_retry_attempts:
+                        raise
                     attempts += 1
                     # The sleep time before re-trying depends on the infrastructure requirement of broker to restart
                     # It can be modified or removed as per the infrastructure requirement
@@ -102,6 +117,13 @@ class PackageClass(LiotaPackage):
             print "EdgeSystem registration to IOTCC failed"
 
     def clean_up(self):
+        """
+        The clean up function of a liota package.
+
+        Disconnects from IoTControlCenter DCC and un-registers the edge-system.
+
+        :return:
+        """
         # Unregister the edge system on package unload
         # Kindly include the edge system un-register call on package unload
         self.iotcc.unregister(self.iotcc_edge_system)

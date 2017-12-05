@@ -43,6 +43,14 @@ class PackageClass(LiotaPackage):
     """
 
     def run(self, registry):
+        """
+        The execution function of a liota package.
+
+        Establishes connection with AWSIoT DCC using MqttDccComms
+
+        :param registry: the instance of ResourceRegistryPerPackage of the package
+        :return:
+        """
         import copy
         from liota.dccs.aws_iot import AWSIoT
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
@@ -84,4 +92,11 @@ class PackageClass(LiotaPackage):
         registry.register("aws_iot_edge_system", aws_iot_edge_system)
 
     def clean_up(self):
+        """
+        The clean up function of a liota package.
+
+        Disconnects from AWSIoT DCC.
+
+        :return:
+        """
         self.aws_iot.comms.client.disconnect()

@@ -44,6 +44,13 @@ class EdgeSystem(Entity):
 
     @abstractmethod
     def __init__(self, name, entity_id, entity_type="EdgeSystem"):
+        """
+        Abstract init method for EdgeSystem.
+
+        :param name: EdgeSystem name
+        :param entity_id: Entity ID
+        :param entity_type: Entity type which is "EdgeSystem"
+        """
         super(EdgeSystem, self).__init__(
             name=name,
             entity_id=entity_id,

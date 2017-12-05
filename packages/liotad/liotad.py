@@ -41,6 +41,9 @@ import liota.core.package_manager
 #
 # Remove this comment upon completion of refactoring.
 
+"""
+Create only one instance of PackageThread.
+"""
 try:
     while not isinstance(
         liota.core.package_manager.package_thread,

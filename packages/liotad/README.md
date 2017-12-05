@@ -79,6 +79,16 @@ PackageMessengerThread listens on a named pipe whose location is defined in `lio
 
 Different techniques can be supported in PackageMessengerThread in the future.
 
+###Command Status Return
+
+Once liotapkg.sh passes commands to PackageThread through PackageMessengerThread,
+it will read from response namedPipe to get command status.
+For commands of ["unload", "delete", "list", "stat", "unload_all", "terminate"],
+'Success' means that PackageThread has successfully received these commands;
+for commands of ["load", "reload", "update"], 'Success' means that verification
+of the package checksum succeeds, while 'Failure' means that verification fails;
+'Unsupported' means that receives some unsupported commands.
+
 ##LiotaPackage
 
 There is a LiotaPackage class defined in `package_manager.py` which looks like

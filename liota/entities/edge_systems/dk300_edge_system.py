@@ -35,7 +35,15 @@ from liota.lib.utilities.utility import systemUUID
 
 
 class Dk300EdgeSystem(EdgeSystem):
+    """
+    Dk300 EdgeSystem representation.
+    """
+
     def __init__(self, name):
+        """
+        Init method for Dk300EdgeSystem.
+        :param name: Dk300EdgeSystem name
+        """
         super(Dk300EdgeSystem, self).__init__(
             name=name,
             entity_id=systemUUID().get_uuid(name)
