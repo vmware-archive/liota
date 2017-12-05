@@ -91,9 +91,7 @@ class IotControlCenter(DataCenterComponent):
         self._iotcc_json = self._create_iotcc_json()
         self._iotcc_json_load_retry = int(read_liota_config('IOTCC_PATH', 'iotcc_load_retry'))
         self.enable_reboot_getprop = read_liota_config('IOTCC_PATH', 'enable_reboot_getprop')
-        self.str_sys_properties = read_liota_config('IOTCC_PATH', 'system_properties')
-        if self.str_sys_properties is not None:
-            self.sys_properties = ast.literal_eval(self.str_sys_properties)
+        self.sys_properties = read_liota_config('IOTCC_PATH', 'system_properties')
         self.counter = 0
         self._recv_msg_queue = self.comms.userdata
         self._req_ops_lock = Lock()
@@ -163,7 +161,7 @@ class IotControlCenter(DataCenterComponent):
 
             _reg_entity_obj = RegisteredEntity(entity_obj, self, self.reg_entity_id)
             if self.sys_properties is not None and self.sys_properties:
-                self.set_properties(_reg_entity_obj, self.sys_properties)
+                self.set_properties(_reg_entity_obj, ast.literal_eval(self.sys_properties))
                 log.info(
                     "System Properties defined for the resource {0}".format(entity_obj.name))
             else:
