@@ -45,6 +45,9 @@ Unload a package with the specified name and attempt to reload the same package.
 
 Remove a package with the specified name. By default, the removed package will be stashed into a separate folder in the package path, so package manager will not find it. However, if package manager fails to create the folder, or fails to move the file, the package file will be deleted from the file system.
 
+**Note:** If the package_name contains space or special characters, it should be enclosed with in single/double quotes.
+e.g., ./liotapkg.sh load -r 'filename 1' sha1_checksum
+
 ###Package Load Automation
 
 Load Liota Packages automatically when Package Manager starts by listing package names and checksums in the file specified by pkg_list in [PKG_CFG] of liota.conf, e.g., by default /usr/lib/liota/packages/packages_auto.txt (Should NOT have " " around ":"):
