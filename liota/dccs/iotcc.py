@@ -41,6 +41,7 @@ import Queue
 import datetime
 from time import gmtime, strftime
 from threading import Lock
+from re import match
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.entities.metrics.metric import Metric
@@ -110,6 +111,9 @@ class IotControlCenter(DataCenterComponent):
         :param entity_obj: Metric or Entity Object
         :return: RegisteredMetric or RegisteredEntity Object
         """
+        self._assert_input(entity_obj.name, 50)
+        self._assert_input(entity_obj.entity_type, 50)
+
         if isinstance(entity_obj, Metric):
             # reg_entity_id should be parent's one: not known here yet
             # will add in creat_relationship(); publish_unit should be done inside
@@ -294,6 +298,8 @@ class IotControlCenter(DataCenterComponent):
             }
         }
         for key, value in properties.items():
+            self._assert_input(key, 100)
+            self._assert_input(value, 255)
             msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
         return msg
 
@@ -786,6 +792,13 @@ class IotControlCenter(DataCenterComponent):
         self.comms.send(json.dumps(self._get_properties(transaction_id, resource_uuid)))
         on_response(get_prop_resp_q.get(True, timeout), get_prop_resp_q)
         return self.prop_list
+
+    def _assert_input(self, input, max_length):
+        """ validates if the input string contains only the whitelisted characters """
+        if not match('^[A-Za-z0-9\s\._-]+$', input):
+            raise ValueError("The provided string contains unacceptable character : {0}".format(input))
+        if not len(input) <= max_length:
+            raise ValueError("The provided string contains more than {0} characters : {1}" .format(max_length, input))
 
     def _dispatch_recvd_msg(self):
         log.debug("Dispatching received messages from IOTCC")
