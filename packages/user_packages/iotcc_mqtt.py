@@ -85,10 +85,6 @@ class PackageClass(LiotaPackage):
         try:
             # Register edge system (gateway)
             self.iotcc_edge_system = self.iotcc.register(edge_system)
-            # System Properties has to be set only for the registered edge system before it is stored in the package
-            # manager registry, all the devices will internally inherit the the system properties from the
-            # registered edge system
-            self.iotcc.set_system_properties(self.iotcc_edge_system, registry.get("system_properties"))
             # Set the properties for edge system as key:value pair, you can also set the location
             # by passing the latitude and longitude as a property in the user package
             # If the set_properties or register call fails due to DCC_Comms Publish exception
@@ -110,7 +106,6 @@ class PackageClass(LiotaPackage):
                     time.sleep(5)
             registry.register("iotcc_mqtt", self.iotcc)
             # Store the registered edge system object in liota package manager registry after the
-            # system properties are set for it
             registry.register("iotcc_mqtt_edge_system", self.iotcc_edge_system)
 
         except RegistrationFailure:
