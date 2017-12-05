@@ -111,10 +111,11 @@ class DataCenterComponent:
             log.error("RegisteredMetric object is expected.")
             raise TypeError("RegisteredMetric object is expected.")
         message = self._format_data(reg_metric)
-        if hasattr(reg_metric, 'msg_attr'):
-            self.comms.send(message, reg_metric.msg_attr)
-        else:
-            self.comms.send(message, None)
+        if message:
+            if hasattr(reg_metric, 'msg_attr'):
+                self.comms.send(message, reg_metric.msg_attr)
+            else:
+                self.comms.send(message, None)
 
     @abstractmethod
     def set_properties(self, reg_entity, properties):
