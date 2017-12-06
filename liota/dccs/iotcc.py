@@ -42,6 +42,7 @@ import datetime
 from time import gmtime, strftime
 from threading import Lock
 import ast
+from re import match
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
 from liota.entities.metrics.metric import Metric
@@ -74,7 +75,7 @@ class IotControlCenter(DataCenterComponent):
         """
         log.info("Logging into DCC")
         self._dcc_load_time = datetime.datetime.now()
-        self._version = 20171023
+        self._version = 20171118
         self.comms = con
         if not self.comms.identity.username:
             log.error("Username not found")
@@ -112,6 +113,9 @@ class IotControlCenter(DataCenterComponent):
         :param entity_obj: Metric or Entity Object
         :return: RegisteredMetric or RegisteredEntity Object
         """
+        self._assert_input(entity_obj.name, 50)
+        self._assert_input(entity_obj.entity_type, 50)
+
         if isinstance(entity_obj, Metric):
             # reg_entity_id should be parent's one: not known here yet
             # will add in creat_relationship(); publish_unit should be done inside
@@ -151,12 +155,12 @@ class IotControlCenter(DataCenterComponent):
                 with self.file_ops_lock:
                     self._store_reg_entity_details(entity_obj.entity_type, entity_obj.name, self.reg_entity_id,
                                                    entity_obj.entity_id)
-                    self._store_reg_entity_attributes("EdgeSystem", entity_obj.name,
+                    self._store_reg_entity_attributes("EdgeSystem", entity_obj,
                                                       self.reg_entity_id, None, None)
             else:
                 # get dev_type, and prop_dict if possible
                 with self.file_ops_lock:
-                    self._store_reg_entity_attributes("Devices", entity_obj.name, self.reg_entity_id,
+                    self._store_reg_entity_attributes("Devices", entity_obj, self.reg_entity_id,
                                                       entity_obj.entity_type, None)
 
             _reg_entity_obj = RegisteredEntity(entity_obj, self, self.reg_entity_id)
@@ -174,9 +178,7 @@ class IotControlCenter(DataCenterComponent):
 
     def _check_version(self, json_msg):
         if json_msg["version"] != self._version:
-            raise Exception(
-                "CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS:" + self._version + ". SERVER VERSION IS:" +
-                json_msg["version"])
+            raise Exception("CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS: {0}. SERVER VERSION IS: {1}".format(self._version, json_msg["version"]))
 
     def unregister(self, entity_obj):
         """
@@ -223,8 +225,7 @@ class IotControlCenter(DataCenterComponent):
         :return: None
          """
         # sanity check: must be RegisteredEntity or RegisteredMetricRegisteredMetric
-        if (not isinstance(reg_entity_parent, RegisteredEntity) \
-                    and not isinstance(reg_entity_parent, RegisteredMetric)) \
+        if (not isinstance(reg_entity_parent, RegisteredEntity)) \
                 or (not isinstance(reg_entity_child, RegisteredEntity) \
                             and not isinstance(reg_entity_child, RegisteredMetric)):
             raise TypeError()
@@ -246,8 +247,8 @@ class IotControlCenter(DataCenterComponent):
             with self._req_ops_lock:
                 self._req_dict.update({transaction_id: req})
             self.comms.send(json.dumps(self._relationship(transaction_id,
-                                                          reg_entity_parent.reg_entity_id,
-                                                          reg_entity_child.reg_entity_id)))
+                                                          reg_entity_parent.ref_entity,
+                                                          reg_entity_child.ref_entity)))
             response = self._handle_response(rel_resp_q.get(True, timeout))
             if response:
                 log.info("Relationship between entities {0} & {1} created successfully in IoTCC".format(
@@ -280,14 +281,22 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 
-    def _relationship(self, msg_id, parent_res_uuid, child_res_uuid):
+    def _relationship(self, msg_id, parent_entity, child_entity):
         return {
             "transactionID": msg_id,
             "version": self._version,
             "type": "create_relationship_request",
             "body": {
-                "parent": parent_res_uuid,
-                "child": child_res_uuid
+                "parent":  {
+                    "kind": parent_entity.entity_type,
+                    "id": parent_entity.entity_id,
+                    "name": parent_entity.name
+                },
+                "child":  {
+                    "kind": child_entity.entity_type,
+                    "id": child_entity.entity_id,
+                    "name": child_entity.name
+                }
             }
         }
 
@@ -305,16 +314,20 @@ class IotControlCenter(DataCenterComponent):
             }
         }
         for key, value in properties.items():
+            self._assert_input(key, 100)
+            self._assert_input(value, 255)
             msg["body"]["property_data"].append({"propertyKey": key, "propertyValue": value})
         return msg
 
-    def _get_properties(self, msg_id, res_uuid):
+    def _get_properties(self, msg_id, ref_entity):
         return {
             "transactionID": msg_id,
             "version": self._version,
             "type": "get_properties_request",
             "body": {
-                "uuid": res_uuid
+                "kind": ref_entity.entity_type,
+                "id": ref_entity.entity_id,
+                "name": ref_entity.name
             }
         }
 
@@ -379,13 +392,13 @@ class IotControlCenter(DataCenterComponent):
             raise Exception("Setting Properties for resource {0} failed".format(entity.name))
         if entity.entity_type == "HelixGateway":
             with self.file_ops_lock:
-                self._store_reg_entity_attributes("EdgeSystem", entity.name,
+                self._store_reg_entity_attributes("EdgeSystem", entity,
                                                   reg_entity_obj.reg_entity_id, None, properties)
         else:
             # get dev_type, and prop_dict if possible
             with self.file_ops_lock:
-                self._store_reg_entity_attributes("Devices", entity.name, reg_entity_obj.reg_entity_id,
-                                                  entity.entity_type, properties)
+                self._store_reg_entity_attributes("Devices", entity, reg_entity_obj.reg_entity_id,
+                                                 entity.entity_type, properties)
 
     def publish_unit(self, reg_entity_obj, metric_name, unit):
         """
@@ -616,8 +629,9 @@ class IotControlCenter(DataCenterComponent):
         # get updated dict
         return prop_dict
 
-    def _store_reg_entity_attributes(self, entity_type, entity_name, reg_entity_id,
+    def _store_reg_entity_attributes(self, entity_type, entity, reg_entity_id,
                                      dev_type, prop_dict):
+        entity_name = entity.name
         log.debug('store_reg_entity_attributes {0}:{1}:{2}:{3}'.format(entity_type,
                                                                        entity_name, reg_entity_id, prop_dict))
 
@@ -645,7 +659,7 @@ class IotControlCenter(DataCenterComponent):
             if (self.enable_reboot_getprop == "True") and ('Entity_Timestamp' in tmp_dict):
                 last_dtime = datetime.datetime.strptime(tmp_dict["Entity_Timestamp"], "%Y-%m-%dT%H:%M:%S")
                 if (last_dtime <= self._dcc_load_time):
-                    list_prop = self.get_properties(reg_entity_id)
+                    list_prop = self.get_properties(entity)
                     # merge property info from get_properties() into our local entity record
                     tmp_dict = self._merge_prop_dict_list(tmp_dict, list_prop)
             if ((('entity type' in tmp_dict) and (tmp_dict["entity type"] == entity_type)) and
@@ -729,14 +743,14 @@ class IotControlCenter(DataCenterComponent):
             }
         }
 
-    def get_properties(self, resource_uuid):
+    def get_properties(self, entity):
         """
         Get the list of properties from IoT Pulse DCC
 
         :param resource_uuid: Resource Unique Identifier
         :return:
         """
-        log.info("Get properties defined with IoTCC for resource {0}".format(resource_uuid))
+        log.info("Get properties defined with IoTCC for resource {0}".format(entity.entity_id))
         self.prop_list = None
         get_prop_resp_q = Queue.Queue()
 
@@ -746,8 +760,8 @@ class IotControlCenter(DataCenterComponent):
                 json_msg = json.loads(msg)
                 log.debug("Processing msg: {0}".format(json_msg["type"]))
                 self._check_version(json_msg)
-                if json_msg["type"] == "get_properties_response" and json_msg["body"]["uuid"] != "null" and \
-                                json_msg["body"]["uuid"] == resource_uuid:
+                if json_msg["type"] == "get_properties_response" and json_msg["body"]["id"] != "null" and \
+                                json_msg["body"]["id"] == entity.entity_id:
                     log.info("FOUND PROPERTY LIST: {0}".format(json_msg["body"]["propertyList"]))
                     self.prop_list = json_msg["body"]["propertyList"]
                 else:
@@ -761,9 +775,16 @@ class IotControlCenter(DataCenterComponent):
         log.debug("Updating get properties response queue for transaction_id:{0}".format(transaction_id))
         with self._req_ops_lock:
             self._req_dict.update({transaction_id: req})
-        self.comms.send(json.dumps(self._get_properties(transaction_id, resource_uuid)))
+        self.comms.send(json.dumps(self._get_properties(transaction_id, entity)))
         on_response(get_prop_resp_q.get(True, timeout), get_prop_resp_q)
         return self.prop_list
+
+    def _assert_input(self, input, max_length):
+        """ validates if the input string contains only the whitelisted characters """
+        if not match('^[A-Za-z0-9\s\._-]+$', input):
+            raise ValueError("The provided string contains unacceptable character : {0}".format(input))
+        if not len(input) <= max_length:
+            raise ValueError("The provided string contains more than {0} characters : {1}" .format(max_length, input))
 
     def _dispatch_recvd_msg(self):
         log.debug("Dispatching received messages from IOTCC")
