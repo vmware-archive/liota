@@ -41,6 +41,7 @@ import Queue
 import datetime
 from time import gmtime, strftime
 from threading import Lock
+import ast
 from re import match
 
 from liota.dccs.dcc import DataCenterComponent, RegistrationFailure
@@ -91,6 +92,7 @@ class IotControlCenter(DataCenterComponent):
         self._iotcc_json = self._create_iotcc_json()
         self._iotcc_json_load_retry = int(read_liota_config('IOTCC_PATH', 'iotcc_load_retry'))
         self.enable_reboot_getprop = read_liota_config('IOTCC_PATH', 'enable_reboot_getprop')
+        self._sys_properties = read_liota_config('IOTCC_PATH', 'system_properties')
         self.counter = 0
         self._recv_msg_queue = self.comms.userdata
         self._req_ops_lock = Lock()
@@ -161,7 +163,18 @@ class IotControlCenter(DataCenterComponent):
                     self._store_reg_entity_attributes("Devices", entity_obj, self.reg_entity_id,
                                                       entity_obj.entity_type, None)
 
-            return RegisteredEntity(entity_obj, self, self.reg_entity_id)
+            _reg_entity_obj = RegisteredEntity(entity_obj, self, self.reg_entity_id)
+            if self._sys_properties:
+                _sys_prop_dict = ast.literal_eval(self._sys_properties)
+                if isinstance(_sys_prop_dict, dict) and _sys_prop_dict:
+                    self.set_properties(_reg_entity_obj, _sys_prop_dict)
+                    log.info(
+                        "System Properties {0} defined for the resource {1}".format(self._sys_properties,
+                                                                                    entity_obj.name))
+                else:
+                    log.info("System Properties {0} not defined for the resource {1}".format(self._sys_properties,
+                                                                                             entity_obj.name))
+            return _reg_entity_obj
 
     def _check_version(self, json_msg):
         if json_msg["version"] != self._version:
@@ -243,8 +256,6 @@ class IotControlCenter(DataCenterComponent):
             else:
                 raise Exception("Relationship creation between entities {0} & {1} failed in IoTCC".format(
                     reg_entity_parent.ref_entity.name, reg_entity_child.ref_entity.name))
-            if hasattr(reg_entity_parent, 'sys_properties') and reg_entity_parent.sys_properties:
-                self.set_system_properties(reg_entity_child, reg_entity_parent.sys_properties)
 
     def _handle_response(self, msg):
         """
@@ -348,39 +359,6 @@ class IotControlCenter(DataCenterComponent):
 
             }
         })
-
-    def set_system_properties(self, reg_entity_obj, system_properties):
-        """
-        Used to set the system property for RegisteredEntity(EdgeSystem)
-        Registered Devices will inherit the system properties
-        from the parent in create_relationship call
-        :param reg_entity_obj: RegisteredEntity Object
-        :param system_properties: System Property List
-        :return:
-        """
-        if isinstance(reg_entity_obj, RegisteredMetric):
-            reg_entity_obj.parent.sys_properties = system_properties
-            entity = reg_entity_obj.parent.ref_entity
-        else:
-            reg_entity_obj.sys_properties = system_properties
-            entity = reg_entity_obj.ref_entity
-        # set_properties internal response queue
-        set_sys_prop_resp_q = Queue.Queue()
-        # create and add register request into req_list (waiting list)
-        transaction_id = self._next_id()
-        req = Request(transaction_id, set_sys_prop_resp_q)
-        log.debug("Updating set system properties response queue for transaction_id:{0}".format(transaction_id))
-        with self._req_ops_lock:
-            self._req_dict.update({transaction_id: req})
-        self.comms.send(json.dumps(
-            self._properties(transaction_id, entity.entity_type, entity.entity_id, entity.name,
-                             getUTCmillis(), system_properties)))
-
-        response = self._handle_response(set_sys_prop_resp_q.get(True, timeout))
-        if response:
-            log.info("System Properties defined for resource {0}".format(entity.name))
-        else:
-            raise Exception("Setting System Properties for resource {0} failed".format(entity.name))
 
     def set_properties(self, reg_entity_obj, properties):
         """
