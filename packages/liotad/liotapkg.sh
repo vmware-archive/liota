@@ -95,9 +95,17 @@ then
     exit 6
 fi
 
+# Collect the supplied arguments and create a comma seperated string so that package manager can split using comma as
+# delimeter. The package name supplied could contain space character.
+comma_seperated_args="$1"
+shift
+for arg in "$@"; do
+	comma_seperated_args="$comma_seperated_args,$arg"
+done
+
 # Echo to named pipe
 #echo "Pipe file: $package_messenger_pipe" >&2
-echo "$@" > $package_messenger_pipe
+echo -n "$comma_seperated_args" > $package_messenger_pipe
 # read result
 if read line <$package_response_pipe; then
     echo $line
