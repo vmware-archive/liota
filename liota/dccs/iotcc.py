@@ -162,7 +162,7 @@ class IotControlCenter(DataCenterComponent):
             _reg_entity_obj = RegisteredEntity(entity_obj, self, self.reg_entity_id)
             if self._sys_properties:
                 _sys_prop_dict = ast.literal_eval(self._sys_properties)
-                if isinstance(_sys_prop_dict, dict):
+                if isinstance(_sys_prop_dict, dict) and _sys_prop_dict:
                     self.set_properties(_reg_entity_obj, _sys_prop_dict)
                     log.info(
                         "System Properties {0} defined for the resource {1}".format(self._sys_properties,
