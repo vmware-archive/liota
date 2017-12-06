@@ -91,7 +91,7 @@ class IotControlCenter(DataCenterComponent):
         self._iotcc_json = self._create_iotcc_json()
         self._iotcc_json_load_retry = int(read_liota_config('IOTCC_PATH', 'iotcc_load_retry'))
         self.enable_reboot_getprop = read_liota_config('IOTCC_PATH', 'enable_reboot_getprop')
-        self.sys_properties = read_liota_config('IOTCC_PATH', 'system_properties')
+        self._sys_properties = read_liota_config('IOTCC_PATH', 'system_properties')
         self.counter = 0
         self._recv_msg_queue = self.comms.userdata
         self._req_ops_lock = Lock()
@@ -160,13 +160,16 @@ class IotControlCenter(DataCenterComponent):
                                                       entity_obj.entity_type, None)
 
             _reg_entity_obj = RegisteredEntity(entity_obj, self, self.reg_entity_id)
-            if self.sys_properties is not None and self.sys_properties:
-                if ast.literal_eval(self.sys_properties):
-                    self.set_properties(_reg_entity_obj, ast.literal_eval(self.sys_properties))
+            if self._sys_properties:
+                _sys_prop_dict = ast.literal_eval(self._sys_properties)
+                if isinstance(_sys_prop_dict, dict):
+                    self.set_properties(_reg_entity_obj, _sys_prop_dict)
                     log.info(
-                        "System Properties defined for the resource {0}".format(entity_obj.name))
+                        "System Properties {0} defined for the resource {1}".format(self._sys_properties,
+                                                                                    entity_obj.name))
                 else:
-                    log.info("System Properties not defined for the resource {0}".format(entity_obj.name))
+                    log.info("System Properties {0} not defined for the resource {1}".format(self._sys_properties,
+                                                                                             entity_obj.name))
             return _reg_entity_obj
 
     def _check_version(self, json_msg):
