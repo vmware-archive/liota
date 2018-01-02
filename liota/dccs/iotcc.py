@@ -407,6 +407,7 @@ class IotControlCenter(DataCenterComponent):
         """
          Publish SI units as properties for Metrics but RegisteredMetric object are simply returned
          so currently units are set to the parent RegisteredEntity(Device or EdgeSystem)
+         Either units are set with prefix as properties or only unit gets set as property if prefix doesn't exist.
         :param reg_entity_obj: RegisteredEntity Object
         :param metric_name: Metric Name
         :param unit: SI Unit
@@ -417,19 +418,20 @@ class IotControlCenter(DataCenterComponent):
             properties_unit_list = {
                 metric_name + "_unit": str_unit_name
             }
-            log.info("Publishing metric unit to IoTCC")
+            log.debug("Publishing unit {0} for metric {1} to IoTCC".format(str_unit_name, metric_name))
         elif isinstance(str_unit_name, basestring) and isinstance(str_prefix, basestring):
             properties_unit_list = {
                 metric_name + "_unit": str_unit_name,
                 metric_name + "_prefix": str_prefix
             }
-            log.info("Publishing metric unit with prefix to IoTCC")
+            log.debug("Publishing unit {0} with prefix {1} for metric {2} to IoTCC".format(str_unit_name, str_prefix,
+                                                                                           metric_name))
         else:
-            properties_unit_list = []
-            log.info("Metric unit with prefix cannot be parsed and published to IoTCC")
+            properties_unit_list = {}
+            log.debug("{0} metric unit with prefix cannot be parsed and published to IoTCC".format(metric_name))
         if properties_unit_list:
             self.set_properties(reg_entity_obj, properties_unit_list)
-            log.info("Published metric units")
+            log.info("Published units for metric {0}".format(metric_name))
 
     def _create_iotcc_json(self):
         msg = {
