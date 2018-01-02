@@ -36,13 +36,14 @@ Liota supports plain old BSD sockets, WebSocket and MQTT communication protocols
 * Identity class encapsulates certificates or credentials related to a connection used at both DCC and Device side.
 * TLSConf class encapsulates parameters related to TLS configuration.
 * CRLs(Certificate Revocation Lists) check has been implemented: [VRIFY_CRL_CHECK_CHAIN](https://docs.python.org/2/library/ssl.html#ssl.VERIFY_CRL_CHECK_CHAIN) in this mode CRLs of all certificates in the peer cert chain are checked.
- In order to enable the CRLs set the 'crl_path' in '/etc/liota/liota.conf', it requires a valid path to CRL in PEM format (preferable directory '/usr/lib/liota'). If the check is required to be disabled 'crl_path' should be left blank.
+In order to enable the CRLs set the 'crl_path' in '/etc/liota/liota.conf', it requires a valid path to CRL; if in case intermediate CA is used the CRL should include both Intermediate CRL and Root CRL in PEM format (preferable directory '/usr/lib/liota'). If the check is required to be disabled 'crl_path' should be left blank.
+* Password based CA certificates are not supported.
 
 ## Package Manager
 Liota applications can be broken into small pieces that can be loaded and unloaded into a running liota process. We recommend putting the EdgeSystems, Devices, Metrics and DCC(s) in separate packages. Then each construct can be loaded and unloaded at will. See the README in the package directory for complete details.
 
 ## Device Discovery
-Liota SDK provides users a way to discover new devices at run-time through a dedicated discovery thread. The discovery thread could listen on a list of end points by spinning up a listening thread for each of them. Currently, Liota supports 4 kinds of end points: MQTT, COAP, Socket, and Named Pipe. However, because of security consideration on edge system, currently only MQTT and Named Pipe are allowed, especially Named Pipe is only accessible to its owner user.
+Under Development: Liota SDK provides users a way to discover new devices at run-time through a dedicated discovery thread. The discovery thread could listen on a list of end points by spinning up a listening thread for each of them. Currently, Liota supports 4 kinds of end points: MQTT, COAP, Socket, and Named Pipe. However, because of security consideration on edge system, currently only MQTT and Named Pipe are allowed, especially Named Pipe is only accessible to its owner user.
 
 Assume there is a list of DeviceType-to-DCC Mappings, such as {TypeA:[DCC1-Package-Name, DCC2-Package-Name], TypeB:[DCC3-Package-Name]}. Listening thread waits for a json message from devices, registers new devices with each DCC in the mapping list, sets any properties, fills out device file for AW agent. AW agent enrolls discovered device and pushes content to bring the device to compliance.
 
