@@ -415,22 +415,22 @@ class IotControlCenter(DataCenterComponent):
         """
         str_prefix, str_unit_name = parse_unit(unit)
         if not isinstance(str_prefix, basestring) and isinstance(str_unit_name, basestring):
-            properties_unit_list = {
+            properties_unit_dict = {
                 metric_name + "_unit": str_unit_name
             }
             log.debug("Publishing unit {0} for metric {1} to IoTCC".format(str_unit_name, metric_name))
         elif isinstance(str_unit_name, basestring) and isinstance(str_prefix, basestring):
-            properties_unit_list = {
+            properties_unit_dict = {
                 metric_name + "_unit": str_unit_name,
                 metric_name + "_prefix": str_prefix
             }
             log.debug("Publishing unit {0} with prefix {1} for metric {2} to IoTCC".format(str_unit_name, str_prefix,
                                                                                            metric_name))
         else:
-            properties_unit_list = {}
+            properties_unit_dict = {}
             log.debug("{0} metric unit with prefix cannot be parsed and published to IoTCC".format(metric_name))
-        if properties_unit_list:
-            self.set_properties(reg_entity_obj, properties_unit_list)
+        if properties_unit_dict:
+            self.set_properties(reg_entity_obj, properties_unit_dict)
             log.info("Published units for metric {0}".format(metric_name))
 
     def _create_iotcc_json(self):
