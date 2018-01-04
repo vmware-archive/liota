@@ -13,12 +13,12 @@ Currently, supported commands include package action commands and statistical co
 
 ### Package action commands
 
-* **load** package_name <sha1_checksum> package_name_2 <sha1_checksum_package_2>
+* **load** package_name <sha1_checksum>
 
-Load a package with the specified name and its sha1 checksum, even multiple packages can be loaded in the single command as shown above. For example, linux os user can first use "sha1sum filename" cmd to get checksum, and then load package:
+Load a package with the specified name and its sha1 checksum, even multiple packages can be loaded in the single command by giving the other package name followed by its checksum. For example, linux os user can first use "sha1sum filename" cmd to get checksum, and then load package:
 
 ```bash
-$ ./liotapkg.sh load filename sha1_checksum
+$ ./liotapkg.sh load filename <sha1_checksum>
 ```
 
 A python file of cal_sha1sum.py is also provided to help you calculate checksum for a file:
@@ -36,7 +36,7 @@ Liota packages must follow certain formats for package manager to process them c
 
 If dependency lists of specified packages and their dependencies contain loops, all packages involved in the loop are not to be loaded.
 
-* **unload** package_name [package_name] ...
+* **unload** package_name [package_name]
 
 Unload a package with the specified name. If the specified package has dependents loaded, recursively unload all its dependents. If more than one package names are specified, unload them (as well as their dependents) in a batch.
 
@@ -50,16 +50,16 @@ ShouldUnregisterOnUnload = "True"
 
 Unload a package with the specified name and attempt to reload the same package **using the same file name**. Batch operation is not supported for reloading. If the specified package is not loaded when this command is invoked, the command will fail.
 
-* **update** package_name <sha1_checksum> ...
+* **update** package_name <sha1_checksum>
 
-Unload a package with the specified name and attempt to reload the same package. If the specified package has dependents loaded, attempt to recursively update all these dependents. If the specified package is not loaded when this command is invoked, skip unloading and load the specified package directly.
+Unload a package with the specified name and attempt to reload the same package. The multiple packages can be updated in single command by providing the other package name followed by its checksum. If the specified package has dependents loaded, attempt to recursively update all these dependents. If the specified package is not loaded when this command is invoked, skip unloading and load the specified package directly.
 
 * **delete** package_name
 
 Remove a package with the specified name. By default, the removed package will be stashed into a separate folder in the package path, so package manager will not find it. However, if package manager fails to create the folder, or fails to move the file, the package file will be deleted from the file system.
 
 **Note:** If the package_name contains space or special characters, it should be enclosed with in single/double quotes.
-e.g., ./liotapkg.sh load -r 'filename 1' sha1_checksum
+e.g., ./liotapkg.sh load -r 'filename 1' <sha1_checksum>
 
 ### Package Load Automation
 
@@ -77,7 +77,7 @@ There are 2 options to add liota package names and checksum:
 
 ```bash
 $ cd /usr/lib/liota/packages
-$ ./liotapkg.sh load -r filename sha1_checksum
+$ ./liotapkg.sh load -r filename <sha1_checksum>
 To be reminded, unload command will remove it from pkg_list file.
 ```
 
