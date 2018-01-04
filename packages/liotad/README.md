@@ -52,7 +52,7 @@ Unload a package with the specified name and attempt to reload the same package 
 
 * **update** package_name <sha1_checksum>
 
-Unload a package with the specified name and attempt to reload the same package. The multiple packages can be updated in single command by providing the other package name followed by its checksum. If the specified package has dependents loaded, attempt to recursively update all these dependents. If the specified package is not loaded when this command is invoked, skip unloading and load the specified package directly.
+Unload a package with the specified name and attempt to reload the same package, even multiple packages can be updated in single command by providing the other package name followed by its checksum. If the specified package has dependents loaded, attempt to recursively update all these dependents. If the specified package is not loaded when this command is invoked, skip unloading and load the specified package directly.
 
 * **delete** package_name
 
