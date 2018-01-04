@@ -418,20 +418,26 @@ class IotControlCenter(DataCenterComponent):
             properties_unit_dict = {
                 metric_name + "_unit": str_unit_name
             }
-            log.debug("Publishing unit {0} for metric {1} to IoTCC".format(str_unit_name, metric_name))
+            log.debug("Publishing unit {0} for metric {1} to IoTCC for resource {2}".format(str_unit_name, metric_name,
+                                                                                            reg_entity_obj.ref_entity.name))
         elif isinstance(str_unit_name, basestring) and isinstance(str_prefix, basestring):
             properties_unit_dict = {
                 metric_name + "_unit": str_unit_name,
                 metric_name + "_prefix": str_prefix
             }
-            log.debug("Publishing unit {0} with prefix {1} for metric {2} to IoTCC".format(str_unit_name, str_prefix,
-                                                                                           metric_name))
+            log.debug(
+                "Publishing unit {0} with prefix {1} for metric {2} to IoTCC for resource {3}".format(str_unit_name,
+                                                                                                      str_prefix,
+                                                                                                      metric_name,
+                                                                                                      reg_entity_obj.ref_entity.name))
         else:
             properties_unit_dict = {}
-            log.debug("{0} metric unit with prefix cannot be parsed and published to IoTCC".format(metric_name))
+            log.debug("{0} metric unit with prefix cannot be parsed and published to IoTCC for resource {1}".format(
+                metric_name, reg_entity_obj.ref_entity.name))
         if properties_unit_dict:
             self.set_properties(reg_entity_obj, properties_unit_dict)
-            log.info("Published units for metric {0}".format(metric_name))
+            log.info("Published units for metric {0} to IoTCC for resource {1}".format(metric_name,
+                                                                                       reg_entity_obj.ref_entity.name))
 
     def _create_iotcc_json(self):
         msg = {
