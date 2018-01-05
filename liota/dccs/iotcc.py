@@ -178,7 +178,10 @@ class IotControlCenter(DataCenterComponent):
 
     def _check_version(self, json_msg):
         if json_msg["version"] != self._version:
-            raise Exception("CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS: {0}. SERVER VERSION IS: {1}".format(self._version, json_msg["version"]))
+            raise Exception(
+                "CLIENT SERVER VERSION MISMATCH. CLIENT VERSION IS: {0}. SERVER VERSION IS: {1}".format(self._version,
+                                                                                                        json_msg[
+                                                                                                            "version"]))
 
     def unregister(self, entity_obj):
         """
@@ -287,12 +290,12 @@ class IotControlCenter(DataCenterComponent):
             "version": self._version,
             "type": "create_relationship_request",
             "body": {
-                "parent":  {
+                "parent": {
                     "kind": parent_entity.entity_type,
                     "id": parent_entity.entity_id,
                     "name": parent_entity.name
                 },
-                "child":  {
+                "child": {
                     "kind": child_entity.entity_type,
                     "id": child_entity.entity_id,
                     "name": child_entity.name
@@ -398,28 +401,43 @@ class IotControlCenter(DataCenterComponent):
             # get dev_type, and prop_dict if possible
             with self.file_ops_lock:
                 self._store_reg_entity_attributes("Devices", entity, reg_entity_obj.reg_entity_id,
-                                                 entity.entity_type, properties)
+                                                  entity.entity_type, properties)
 
     def publish_unit(self, reg_entity_obj, metric_name, unit):
         """
          Publish SI units as properties for Metrics but RegisteredMetric object are simply returned
          so currently units are set to the parent RegisteredEntity(Device or EdgeSystem)
+         Either units are set with prefix as properties or only unit gets set as property if prefix doesn't exist.
         :param reg_entity_obj: RegisteredEntity Object
         :param metric_name: Metric Name
         :param unit: SI Unit
         :return:
         """
         str_prefix, str_unit_name = parse_unit(unit)
-        if not isinstance(str_prefix, basestring):
-            str_prefix = ""
-        if not isinstance(str_unit_name, basestring):
-            str_unit_name = ""
-        properties_added = {
-            metric_name + "_unit": str_unit_name,
-            metric_name + "_prefix": str_prefix
-        }
-        self.set_properties(reg_entity_obj, properties_added)
-        log.info("Published metric unit with prefix to IoTCC")
+        if not isinstance(str_prefix, basestring) and isinstance(str_unit_name, basestring):
+            properties_unit_dict = {
+                metric_name + "_unit": str_unit_name
+            }
+            log.debug("Publishing unit {0} for metric {1} to IoTCC for resource {2}".format(str_unit_name, metric_name,
+                                                                                            reg_entity_obj.parent.ref_entity.name))
+        elif isinstance(str_unit_name, basestring) and isinstance(str_prefix, basestring):
+            properties_unit_dict = {
+                metric_name + "_unit": str_unit_name,
+                metric_name + "_prefix": str_prefix
+            }
+            log.debug(
+                "Publishing unit {0} with prefix {1} for metric {2} to IoTCC for resource {3}".format(str_unit_name,
+                                                                                                      str_prefix,
+                                                                                                      metric_name,
+                                                                                                      reg_entity_obj.parent.ref_entity.name))
+        else:
+            properties_unit_dict = {}
+            log.debug("{0} metric unit with prefix cannot be parsed and published to IoTCC for resource {1}".format(
+                metric_name, reg_entity_obj.parent.ref_entity.name))
+        if properties_unit_dict:
+            self.set_properties(reg_entity_obj, properties_unit_dict)
+            log.info("Published units for metric {0} to IoTCC for resource {1}".format(metric_name,
+                                                                                       reg_entity_obj.parent.ref_entity.name))
 
     def _create_iotcc_json(self):
         msg = {
@@ -784,7 +802,7 @@ class IotControlCenter(DataCenterComponent):
         if not match('^[A-Za-z0-9\s\._-]+$', input):
             raise ValueError("The provided string contains unacceptable character : {0}".format(input))
         if not len(input) <= max_length:
-            raise ValueError("The provided string contains more than {0} characters : {1}" .format(max_length, input))
+            raise ValueError("The provided string contains more than {0} characters : {1}".format(max_length, input))
 
     def _dispatch_recvd_msg(self):
         log.debug("Dispatching received messages from IOTCC")
