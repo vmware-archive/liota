@@ -35,6 +35,9 @@ from linux_metrics import cpu_stat, disk_stat, net_stat
 from liota.core.package_manager import LiotaPackage
 from liota.lib.utilities.utility import get_default_network_interface, get_disk_name
 from linux_metrics import mem_stat
+import logging
+
+log = logging.getLogger(__name__)
 
 dependencies = ["iotcc_mqtt"]
 
@@ -127,62 +130,68 @@ class PackageClass(LiotaPackage):
         iotcc_edge_system = copy.copy(registry.get("iotcc_mqtt_edge_system"))
         iotcc = registry.get("iotcc_mqtt")
 
-        # Create metrics
-        self.metrics = []
-        metric_name = "CPU Utilization"
-        metric_cpu_utilization = Metric(name=metric_name,
-                                        unit=None, interval=5,
-                                        aggregation_size=1,
-                                        sampling_function=read_cpu_utilization
-                                        )
-        reg_metric_cpu_utilization = iotcc.register(metric_cpu_utilization)
-        iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_utilization)
-        reg_metric_cpu_utilization.start_collecting()
-        self.metrics.append(reg_metric_cpu_utilization)
+        try:
+            # Create metrics
+            self.metrics = []
+            metric_name = "CPU Utilization"
+            metric_cpu_utilization = Metric(name=metric_name,
+                                            unit=None, interval=5,
+                                            aggregation_size=1,
+                                            sampling_function=read_cpu_utilization
+                                            )
+            reg_metric_cpu_utilization = iotcc.register(metric_cpu_utilization)
+            iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_utilization)
+            reg_metric_cpu_utilization.start_collecting()
+            self.metrics.append(reg_metric_cpu_utilization)
 
-        metric_name = "CPU Process"
-        metric_cpu_procs = Metric(name=metric_name,
-                                  unit=None, interval=5,
-                                  aggregation_size=1,
-                                  sampling_function=read_cpu_procs
-                                  )
-        reg_metric_cpu_procs = iotcc.register(metric_cpu_procs)
-        iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_procs)
-        reg_metric_cpu_procs.start_collecting()
-        self.metrics.append(reg_metric_cpu_procs)
+            metric_name = "CPU Process"
+            metric_cpu_procs = Metric(name=metric_name,
+                                      unit=None, interval=5,
+                                      aggregation_size=1,
+                                      sampling_function=read_cpu_procs
+                                      )
+            reg_metric_cpu_procs = iotcc.register(metric_cpu_procs)
+            iotcc.create_relationship(iotcc_edge_system, reg_metric_cpu_procs)
+            reg_metric_cpu_procs.start_collecting()
+            self.metrics.append(reg_metric_cpu_procs)
 
-        metric_name = "Disk Usage Stats"
-        metric_disk_usage_stats = Metric(name=metric_name,
-                                         unit=None, interval=5,
-                                         aggregation_size=1,
-                                         sampling_function=read_disk_usage_stats
-                                         )
-        reg_metric_disk_usage_stats = iotcc.register(metric_disk_usage_stats)
-        iotcc.create_relationship(iotcc_edge_system, reg_metric_disk_usage_stats)
-        reg_metric_disk_usage_stats.start_collecting()
-        self.metrics.append(reg_metric_disk_usage_stats)
+            metric_name = "Disk Usage Stats"
+            metric_disk_usage_stats = Metric(name=metric_name,
+                                             unit=None, interval=5,
+                                             aggregation_size=1,
+                                             sampling_function=read_disk_usage_stats
+                                             )
+            reg_metric_disk_usage_stats = iotcc.register(metric_disk_usage_stats)
+            iotcc.create_relationship(iotcc_edge_system, reg_metric_disk_usage_stats)
+            reg_metric_disk_usage_stats.start_collecting()
+            self.metrics.append(reg_metric_disk_usage_stats)
 
-        metric_name = "Network Bytes Received"
-        metric_network_bytes_received = Metric(name=metric_name,
-                                               unit=None, interval=5,
-                                               aggregation_size=1,
-                                               sampling_function=read_network_bytes_received
-                                               )
-        reg_metric_network_bytes_received = iotcc.register(metric_network_bytes_received)
-        iotcc.create_relationship(iotcc_edge_system, reg_metric_network_bytes_received)
-        reg_metric_network_bytes_received.start_collecting()
-        self.metrics.append(reg_metric_network_bytes_received)
+            metric_name = "Network Bytes Received"
+            metric_network_bytes_received = Metric(name=metric_name,
+                                                   unit=None, interval=5,
+                                                   aggregation_size=1,
+                                                   sampling_function=read_network_bytes_received
+                                                   )
+            reg_metric_network_bytes_received = iotcc.register(metric_network_bytes_received)
+            iotcc.create_relationship(iotcc_edge_system, reg_metric_network_bytes_received)
+            reg_metric_network_bytes_received.start_collecting()
+            self.metrics.append(reg_metric_network_bytes_received)
 
-        metric_name = "Memory Free"
-        mem_free_metric = Metric(name=metric_name,
-                                 unit=None, interval=10,
-                                 aggregation_size=1,
-                                 sampling_function=read_mem_free
-                                 )
-        reg_mem_free_metric = iotcc.register(mem_free_metric)
-        iotcc.create_relationship(iotcc_edge_system, reg_mem_free_metric)
-        reg_mem_free_metric.start_collecting()
-        self.metrics.append(reg_mem_free_metric)
+            metric_name = "Memory Free"
+            mem_free_metric = Metric(name=metric_name,
+                                     unit=None, interval=10,
+                                     aggregation_size=1,
+                                     sampling_function=read_mem_free
+                                     )
+            reg_mem_free_metric = iotcc.register(mem_free_metric)
+            iotcc.create_relationship(iotcc_edge_system, reg_mem_free_metric)
+            reg_mem_free_metric.start_collecting()
+            self.metrics.append(reg_mem_free_metric)
+        except Exception, e:
+            log.error(
+                'Exception while loading metric {0} for Edge System {1} - {2}'.format(metric_name,
+                                                                                      iotcc_edge_system.ref_entity.name,
+                                                                                      str(e)))
 
     def clean_up(self):
         """
