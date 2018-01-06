@@ -187,7 +187,7 @@ class PackageClass(LiotaPackage):
             iotcc.create_relationship(iotcc_edge_system, reg_mem_free_metric)
             reg_mem_free_metric.start_collecting()
             self.metrics.append(reg_mem_free_metric)
-        except Exception, e:
+        except Exception as e:
             log.error(
                 'Exception while loading metric {0} for Edge System {1} - {2}'.format(metric_name,
                                                                                       iotcc_edge_system.ref_entity.name,

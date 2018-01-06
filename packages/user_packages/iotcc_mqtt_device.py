@@ -184,7 +184,7 @@ class PackageClass(LiotaPackage):
         # from Pulse IoT Control Center so comment the below logic if the unregsitration of the device is not required
         # to be done on the package unload
         for device in self.reg_devices:
-            self.iotcc.unregister(device)
             for metric in self.metrics:
                 metric.stop_collecting()
+            self.iotcc.unregister(device)
         log.info("Cleanup completed successfully")

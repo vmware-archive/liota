@@ -15,8 +15,9 @@ IoTCC over MQTT Protocol to acquire "registered edge system", i.e. iotcc_edge_sy
 which is pre-loaded during the installation in order to provide the required credentials and configuration parameters in the liota package manager registry.
 The properties for the edge system can be set as 'key:value' pair, you can also set the location by passing the
 'latitude:value' and 'longitude:value' as properties in the user package.
-Kindly include the unregister edge_system call in the clean up method required during the unload of the package. The retry mechanism has been implemented for important
-calls like registration, create_relationship or set_property in case of exception. User Configurable Retry and Delay Settings can be tweaked by user as per the targeted scale.
+If the unregister call is included in the clean up method then the resource will be unregistered and the entire history will be deleted
+from Pulse IoT Control Center so comment the logic if the unregsitration of the resource is not required to be done on the package unload.
+The retry mechanism has been implemented for important calls like registration, create_relationship or set_property in case of exception. User Configurable Retry and Delay Settings can be tweaked by user as per the targeted scale.
 
 * iotcc_mqtt_edge_system_stats.py
 
