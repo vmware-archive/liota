@@ -41,7 +41,8 @@ dependencies = ["general_edge_system", "credentials"]
 
 # --------------------User Configurable Retry and Delay Settings------------------------------#
 
-# The value mentioned below is in multiple of 1K, 2 for 2K, 3 for 3K, 4 for 4K and  5 for 5K Edge Systems
+# The value mentioned below is the total number of Edge System being deployed in the infrastructure
+# minimum 1 for 1K, 2 for 2K, 3 for 3K, 4 for 4K and  5 for 5K Edge Systems
 no_of_edge_system_in_thousands = 1
 # Number of Retries for Connection and Registrations
 no_of_retries_for_connection = 5
@@ -113,7 +114,7 @@ class PackageClass(LiotaPackage):
                                      client_id=registry.get("broker_username"), enable_authentication=True,
                                      mqtt_msg_attr=mqtt_msg_attr))
                     break
-                except Exception, e:
+                except Exception as e:
                     if conn_attempts == retry_attempts:
                         raise
                     conn_attempts += 1
@@ -128,11 +129,11 @@ class PackageClass(LiotaPackage):
                 try:
                     self.iotcc_edge_system = self.iotcc.register(edge_system)
                     break
-                except Exception, e:
+                except Exception as e:
                     if reg_attempts == retry_attempts:
                         raise
                     reg_attempts += 1
-                    log.error('MQTT Connection Failed - {0}'.format(str(e)))
+                    log.error('Exception while registering Edge System- {0}'.format(str(e)))
                     log.info('Trying Edge System {0} Registration: Attempt - {1}'.format(edge_system.name,
                                                                                          str(reg_attempts)))
                     time.sleep(delay_retries)
@@ -142,7 +143,8 @@ class PackageClass(LiotaPackage):
 
             # Attempts for setting edge system properties
             prop_attempts = 0
-            # Set Properties with retry attempts in case of exception
+            # Set multiple properties by passing Dictonary object for Edge System with the retry attempts
+            # in case of exceptions
             while prop_attempts < retry_attempts:
                 try:
                     self.iotcc.set_properties(self.iotcc_edge_system,
@@ -150,7 +152,7 @@ class PackageClass(LiotaPackage):
                                                "Location": "VMware HQ", "Building": "Promontory H Lab",
                                                "Floor": "First Floor"})
                     break
-                except Exception, e:
+                except Exception as e:
                     prop_attempts += 1
                     log.error(
                         'Exception while setting Property for Edge System {0} - {1}'.format(edge_system.name, str(e)))
@@ -159,12 +161,16 @@ class PackageClass(LiotaPackage):
                     time.sleep(delay_retries)
 
         except Exception:
-            log.error("EdgeSystem registration to IOTCC failed even after all the retries starting cleanup process")
-            self.clean_up()
+            log.error("EdgeSystem registration to IOTCC failed even after all the retries, starting connection cleanup")
+            # Disconnecting MQTT
+            self.iotcc.comms.client.disconnect()
             raise
 
     def clean_up(self):
         # Unregister the edge system
+        # On the unload of the package the Edge System will get unregistered and the entire history will be deleted
+        # from Pulse IoT Control Center so comment the below logic if the unregsitration of the device is not required
+        # to be done on the package unload
         self.iotcc.unregister(self.iotcc_edge_system)
         # Disconnecting MQTT
         self.iotcc.comms.client.disconnect()

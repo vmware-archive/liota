@@ -43,7 +43,8 @@ dependencies = ["iotcc_mqtt"]
 
 # --------------------User Configurable Retry and Delay Settings------------------------------#
 
-# The value mentioned below is in multiple of 1K, 2 for 2K, 3 for 3K, 4 for 4K and  5 for 5K Edge Systems
+# The value mentioned below is the total number of Edge System being deployed in the infrastructure
+# minimum 1 for 1K, 2 for 2K, 3 for 3K, 4 for 4K and  5 for 5K Edge Systems
 no_of_edge_system_in_thousands = 1
 # Number of Retries for Connection and Registrations
 no_of_retries_for_connection = 5
@@ -63,7 +64,7 @@ delay_retries = random.randint(lfm(delay_retries_min), lfm(delay_retries_max))
 # IoTCC using MQTT protocol as DCC Comms
 # User defined methods
 
-def dev_metric():
+def device_metric():
     """
     This UDM randomly return values in between 0 to 999 in order to simulate device metric
     Use case specific device metric collection logic should be provided by user
@@ -103,48 +104,50 @@ class PackageClass(LiotaPackage):
                 # Started Device Registration attempts
                 while reg_attempts <= retry_attempts:
                     try:
-                        reg_dev = self.iotcc.register(device)
+                        reg_device = self.iotcc.register(device)
                         break
-                    except Exception, e:
+                    except Exception as e:
                         if reg_attempts == retry_attempts:
                             raise
                         reg_attempts += 1
                         log.error(
-                            '{0} Device Registration Failed with following error - {1}'.format(device.name, str(e)))
+                            'Trying Device {0} Registration failed with following error - {1}'.format(device.name,
+                                                                                                      str(e)))
                         log.info('{0} Device Registration: Attempt: {1}'.format(device.name, str(reg_attempts)))
                         time.sleep(delay_retries)
 
-                self.reg_devices.append(reg_dev)
+                self.reg_devices.append(reg_device)
                 # Attempts to set device relationship with edge system
                 relationship_attempts = 0
                 while relationship_attempts <= retry_attempts:
                     try:
-                        self.iotcc.create_relationship(self.iotcc_edge_system, reg_dev)
+                        self.iotcc.create_relationship(self.iotcc_edge_system, reg_device)
                         break
-                    except Exception, e:
+                    except Exception as e:
                         if relationship_attempts == retry_attempts:
                             raise
                         relationship_attempts += 1
                         log.error(
-                            '{0} Device relationship with Edge System failed with following error - {1}'.format(
+                            'Trying Device {0} relationship with Edge System failed with following error - {1}'.format(
                                 device.name, str(e)))
                         log.info(
                             '{0} Device Relationship: Attempt: {1}'.format(device.name, str(relationship_attempts)))
                         time.sleep(delay_retries)
                 # Use the device name as identifier in the registry to easily refer the device in other packages
                 device_registry_name = socket.gethostname() + "-ChildDev" + str(i)
-                registry.register(device_registry_name, reg_dev)
+                registry.register(device_registry_name, reg_device)
 
-                # Attempts to set properties for registered device
+                # Setting multiple properties by passing Dictonary object for Devices with the retry attempts
+                # in case of exceptions
                 prop_attempts = 0
                 while prop_attempts <= retry_attempts:
                     try:
-                        self.iotcc.set_properties(reg_dev,
+                        self.iotcc.set_properties(reg_device,
                                                   {"Country": "USA-G", "State": "California", "City": "Palo Alto",
                                                    "Location": "VMware HQ", "Building": "Promontory H Lab",
                                                    "Floor": "First Floor"})
                         break
-                    except Exception, e:
+                    except Exception as e:
                         prop_attempts = prop_attempts + 1
                         log.error('Exception while setting property for Device {0} - {1}'.format(
                             (device.name, str(e))))
@@ -157,20 +160,18 @@ class PackageClass(LiotaPackage):
                     self.metrics = []
                     metric_name = "Simulated Metrics"
                     metric_simulated_received = Metric(name=metric_name, unit=None, interval=300,
-                                                       aggregation_size=1, sampling_function=dev_metric)
+                                                       aggregation_size=1, sampling_function=device_metric)
                     reg_metric_simulated_received = self.iotcc.register(metric_simulated_received)
-                    self.iotcc.create_relationship(reg_dev, reg_metric_simulated_received)
+                    self.iotcc.create_relationship(reg_device, reg_metric_simulated_received)
                     reg_metric_simulated_received.start_collecting()
                     self.metrics.append(reg_metric_simulated_received)
-
-                except Exception, e:
+                except Exception as e:
                     log.error(
                         'Exception while loading metric {0} for device {1} - {2}'.format(metric_name, device.name,
                                                                                          str(e)))
 
             except Exception:
-                log.info("Device Registration and Metrics loading failed starting the cleanup process")
-                self.clean_up()
+                log.info("Device Registration and Metrics loading failed")
                 raise
 
     def clean_up(self):
@@ -179,6 +180,9 @@ class PackageClass(LiotaPackage):
         Unregister Device and Stops metric collection
         :return:
         """
+        # On the unload of the package the device will get unregistered and the entire history will be deleted
+        # from Pulse IoT Control Center so comment the below logic if the unregsitration of the device is not required
+        # to be done on the package unload
         for device in self.reg_devices:
             self.iotcc.unregister(device)
             for metric in self.metrics:

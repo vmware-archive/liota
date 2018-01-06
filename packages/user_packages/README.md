@@ -26,7 +26,7 @@ Optional mechanism: If the device raises an intermittent exception during metric
 otherwise if an exception is thrown from user code the collection process will be stopped for that metric.
 If the None value is returned by User Defined Method(UDM) then metric value for that particular collector instance won't be published.
 
-* iotcc_mqtt_dev.py
+* iotcc_mqtt_device.py
 
 This is a sample device package which registers five devices to Pulse IoT Control Center and then a relationship is established to Edge System.
 A basic UDM returns random value it should be tweaked by user in order to collect device specific metric, all the five devices are loaded with dev_metric.
