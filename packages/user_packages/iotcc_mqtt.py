@@ -31,8 +31,36 @@
 # ----------------------------------------------------------------------------#
 
 from liota.core.package_manager import LiotaPackage
+import time
+import logging
+import random
+
+log = logging.getLogger(__name__)
 
 dependencies = ["general_edge_system", "credentials"]
+
+# --------------------User Configurable Retry and Delay Settings------------------------------#
+
+# The value mentioned below is the total number of Edge System being deployed in the infrastructure
+# minimum 1 for 1K, 2 for 2K, 3 for 3K, 4 for 4K and  5 for 5K Edge Systems
+no_of_edge_system_in_thousands = 1
+# Number of Retries for Connection and Registrations
+no_of_retries_for_connection = 5
+# MQTT Connection Delay Min Value in seconds
+mqtt_connection_retry_delay_min = 10
+# MQTT Connection Delay Max Value in seconds
+mqtt_connection_retry_delay_max = 600
+# Retry delay Min Value in seconds
+delay_retries_min = 600
+# Retry delay Max Value in seconds
+retries_delay_max = 1800
+
+# Lambda Function Multiplier uses the above settings for calculating retry and delay logic
+lfm = lambda x: x * no_of_edge_system_in_thousands
+retry_attempts = lfm(no_of_retries_for_connection)
+mqtt_connection_delay_retries = random.randint(lfm(mqtt_connection_retry_delay_min),
+                                               lfm(mqtt_connection_retry_delay_max))
+delay_retries = random.randint(lfm(delay_retries_min), lfm(retries_delay_max))
 
 
 class PackageClass(LiotaPackage):
@@ -44,19 +72,15 @@ class PackageClass(LiotaPackage):
     def run(self, registry):
         """
         The execution function of a liota package.
-
         Establishes connection with IoTControlCenter DCC using MqttDccComms
-
         :param registry: the instance of ResourceRegistryPerPackage of the package
         :return:
         """
         import copy
-        import time
         from liota.lib.utilities.identity import Identity
         from liota.dccs.iotcc import IotControlCenter
         from liota.dcc_comms.mqtt_dcc_comms import MqttDccComms
         from liota.lib.transports.mqtt import MqttMessagingAttributes
-        from liota.dccs.dcc import RegistrationFailure
         from liota.lib.utilities.tls_conf import TLSConf
 
         # Acquire resources from the registry
@@ -76,50 +100,78 @@ class PackageClass(LiotaPackage):
         # Initialize DCC object with MQTT transport
         mqtt_msg_attr = MqttMessagingAttributes(pub_topic="liota/" + registry.get("broker_username") + "/request",
                                                 sub_topic="liota/" + registry.get("broker_username") + "/response")
-        self.iotcc = IotControlCenter(MqttDccComms(edge_system_name=edge_system.name,
-                                                   url=registry.get("broker_ip"), port=registry.get("broker_port"),
-                                                   identity=identity,
-                                                   tls_conf=tls_conf, client_id=registry.get("broker_username"),
-                                                   enable_authentication=True, mqtt_msg_attr=mqtt_msg_attr))
+
+        # Attempts for establishing MQTT Connection
+        conn_attempts = 0
 
         try:
-            # Register edge system (gateway)
-            self.iotcc_edge_system = self.iotcc.register(edge_system)
-            # Set the properties for edge system as key:value pair, you can also set the location
-            # by passing the latitude and longitude as a property in the user package
-            # If the set_properties or register call fails due to DCC_Comms Publish exception
-            # the optional retry mechanism can be implemented in the following way
-            attempts = 0
-            max_retry_attempts = 3
-            while attempts < max_retry_attempts:
+            # Trying to establish MQTT Connection with retry attempts in case of exception
+            while conn_attempts <= retry_attempts:
                 try:
-                    # Register edge system (gateway)
-                    self.iotcc.set_properties(self.iotcc_edge_system, {"key1": "value1", "key2": "value2"})
+                    self.iotcc = IotControlCenter(
+                        MqttDccComms(edge_system_name=edge_system.name, url=registry.get("broker_ip"),
+                                     port=registry.get("broker_port"), identity=identity, tls_conf=tls_conf,
+                                     client_id=registry.get("broker_username"), enable_authentication=True,
+                                     mqtt_msg_attr=mqtt_msg_attr))
                     break
-                except Exception:
-                    # In the third attempt if get exception raise it
-                    if attempts == max_retry_attempts:
+                except Exception as e:
+                    if conn_attempts == retry_attempts:
                         raise
-                    attempts += 1
-                    # The sleep time before re-trying depends on the infrastructure requirement of broker to restart
-                    # It can be modified or removed as per the infrastructure requirement
-                    time.sleep(5)
+                    conn_attempts += 1
+                    log.error('MQTT Connection failed - {0}'.format(str(e)))
+                    log.info('Trying MQTT Connection: Attempt - {0}'.format(str(conn_attempts)))
+                    time.sleep(mqtt_connection_delay_retries)
+
+            # Attempts for Edge System Registration
+            reg_attempts = 0
+            # Edge System Registration with retry attempts in case of exception
+            while reg_attempts <= retry_attempts:
+                try:
+                    self.iotcc_edge_system = self.iotcc.register(edge_system)
+                    break
+                except Exception as e:
+                    if reg_attempts == retry_attempts:
+                        raise
+                    reg_attempts += 1
+                    log.error('Exception while registering Edge System- {0}'.format(str(e)))
+                    log.info('Trying Edge System {0} Registration: Attempt - {1}'.format(edge_system.name,
+                                                                                         str(reg_attempts)))
+                    time.sleep(delay_retries)
+
             registry.register("iotcc_mqtt", self.iotcc)
-            # Store the registered edge system object in liota package manager registry after the
             registry.register("iotcc_mqtt_edge_system", self.iotcc_edge_system)
 
-        except RegistrationFailure:
-            print "EdgeSystem registration to IOTCC failed"
+            # Attempts for setting edge system properties
+            prop_attempts = 0
+            # Set multiple properties by passing Dictonary object for Edge System with the retry attempts
+            # in case of exceptions
+            while prop_attempts < retry_attempts:
+                try:
+                    self.iotcc.set_properties(self.iotcc_edge_system,
+                                              {"Country": "USA-G", "State": "California", "City": "Palo Alto",
+                                               "Location": "VMware HQ", "Building": "Promontory H Lab",
+                                               "Floor": "First Floor"})
+                    break
+                except Exception as e:
+                    prop_attempts += 1
+                    log.error(
+                        'Exception while setting Property for Edge System {0} - {1}'.format(edge_system.name, str(e)))
+                    log.info('Trying setting properties for Edge System {0}: Attempt - {1}'.format(edge_system.name,
+                                                                                                   str(prop_attempts)))
+                    time.sleep(delay_retries)
+
+        except Exception:
+            log.error("EdgeSystem registration to IOTCC failed even after all the retries, starting connection cleanup")
+            # Disconnecting MQTT
+            self.iotcc.comms.client.disconnect()
+            raise
 
     def clean_up(self):
-        """
-        The clean up function of a liota package.
-
-        Disconnects from IoTControlCenter DCC and un-registers the edge-system.
-
-        :return:
-        """
-        # Unregister the edge system on package unload
-        # Kindly include the edge system un-register call on package unload
+        # Unregister the edge system
+        # On the unload of the package the Edge System will get unregistered and the entire history will be deleted
+        # from Pulse IoT Control Center so comment the below logic if the unregsitration of the device is not required
+        # to be done on the package unload
         self.iotcc.unregister(self.iotcc_edge_system)
+        # Disconnecting MQTT
         self.iotcc.comms.client.disconnect()
+        log.info("Cleanup completed successfully")
