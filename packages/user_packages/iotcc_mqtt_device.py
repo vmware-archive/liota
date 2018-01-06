@@ -92,6 +92,7 @@ class PackageClass(LiotaPackage):
         self.iotcc_edge_system = copy.copy(registry.get("iotcc_mqtt_edge_system"))
 
         self.reg_devices = []
+        self.metrics = []
         num_devices = 5
 
         for i in range(0, num_devices):
@@ -157,7 +158,6 @@ class PackageClass(LiotaPackage):
 
                 try:
                     # Registering Metric for Device
-                    self.metrics = []
                     metric_name = "Simulated Metrics"
                     metric_simulated_received = Metric(name=metric_name, unit=None, interval=300,
                                                        aggregation_size=1, sampling_function=device_metric)
@@ -183,8 +183,8 @@ class PackageClass(LiotaPackage):
         # On the unload of the package the device will get unregistered and the entire history will be deleted
         # from Pulse IoT Control Center so comment the below logic if the unregsitration of the device is not required
         # to be done on the package unload
+        for metric in self.metrics:
+            metric.stop_collecting()
         for device in self.reg_devices:
-            for metric in self.metrics:
-                metric.stop_collecting()
             self.iotcc.unregister(device)
         log.info("Cleanup completed successfully")
