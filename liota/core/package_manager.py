@@ -484,11 +484,9 @@ class PackageThread(Thread):
                 with package_lock:
                     offset = 0
                     autoload_flag = False
-                    if msg[1] == '-r':
+                    if len(msg) > 1 and msg[1] == '-r':
                         offset = 1
                         autoload_flag = True
-                    else:
-                        offset = 0
                     if len(msg) < (2 + offset):
                         log.warning("No package is specified: %s" % command)
                         continue
