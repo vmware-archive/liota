@@ -35,10 +35,15 @@
 #
 
 import os
-import pip
 import sys
-from pip.req import parse_requirements
 from setuptools import setup, find_packages
+
+try: # for pip >= 10
+    from pip._internal.req import parse_requirements
+    from pip._internal.download import PipSession
+except ImportError: # for pip <= 9.0
+    from pip.req import parse_requirements
+    from pip.download import PipSession
 
 #
 # Useful Variables
@@ -120,7 +125,7 @@ def get_data_files():
 # Python setup.py definitions
 #
 requirements = [str(requirement.req) for requirement in parse_requirements(
-    'requirements.txt', session=pip.download.PipSession())]
+    'requirements.txt', session=PipSession())]
 
 # Python Version check
 if not sys.version_info[0] == 2:
