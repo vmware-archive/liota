@@ -114,7 +114,7 @@ class Mqtt():
 
     def __init__(self, url, port, identity=None, tls_conf=None, qos_details=None, client_id=None,
                  clean_session=False, userdata=None, protocol="MQTTv311", transport="tcp", keep_alive=60,
-                 enable_authentication=False, conn_disconn_timeout=int(read_liota_config('MQTT_CFG', 'mqtt_conn_disconn_timeout'))):
+                 enable_authentication=False, conn_disconn_timeout=10):
 
         """
         :param url: MQTT Broker URL or IP
