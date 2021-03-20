@@ -246,6 +246,7 @@ class CollectionThread(Thread):
                     metric.reset_aggregation_size()
             except Exception as e:
                 log.error("Error collecting data for metric" + str(metric))
+                log.exception("Collector thread traceback...")
                 raise e
 
 
