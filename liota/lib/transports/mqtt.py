@@ -38,6 +38,7 @@ except ImportError:
     ssl = None
 import sys
 import time
+import random
 
 import paho.mqtt.client as paho
 
@@ -66,6 +67,14 @@ class Mqtt():
         self._connect_result_code = sys.maxsize
         self._disconnect_result_code = rc
         log.info("Disconnected with result code : {0} : {1} ".format(str(rc), paho.connack_string(rc)))
+        if self._disconnect_result_code == 0:
+            log.info("Clean disconnection")
+        else:
+            # Added a random sleep so that every client tries out reconnection to broker at different
+            # time to reduce load
+            wait_time = random.randint(1, 5)
+            log.info("Unexpected disconnection! Reconnecting in {0:d} seconds".format(wait_time))
+            time.sleep(wait_time)
 
     def on_message(self, client, userdata, msg):
         """
